@@ -33,14 +33,18 @@ engine:
 
   # --- 线程池配置 ---
   # num_workers: 0               # gRPC 线程池大小（0 = 自动推荐，llamacpp 上限 4，其他上限 8）
-  # tokenizer_workers: 0         # Tokenizer 编码/解码 CPU 线程池大小（0 = 自动推荐；llamacpp 忽略）
+  tokenizer_workers: 8         # Tokenizer 编码/解码 CPU 线程池大小（0 = 自动推荐；llamacpp 忽略）
   tokenizer_prefer_cpu: true     # 强制 Tokenizer 跑在 CPU，不占用 GPU
 
   # --- GPU / CPU 卸载配置 ---
   # cpu_offload_fraction: 0.0    # CPU 卸载比例 0.0~1.0（预留，vllm 引擎可用）
 
-  # --- Prefill 配置（仅 vllm_mlx 引擎生效）---
-  # prefill_step_size: 0         # Prompt prefill 分步大小（0 = 自动推荐，防止 Metal OOM）
+  # --- Prefill Configuration (vllm_mlx engine only) ---
+  # Base prefill step size. The engine dynamically adapts per-request:
+  #   - Short prompts (< 2048 tokens): single-shot eval (no chunking overhead)
+  #   - Long prompts: adaptive step based on prompt length + available memory
+  # Set 0 for auto-recommendation. Higher values = faster but more peak memory.
+  prefill_step_size: 2048
 
   # --- Function Call 配置 ---
   # tool_call_strategy: "auto"   # FC 解析策略（仅 vllm_mlx 引擎生效）:

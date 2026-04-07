@@ -56,25 +56,27 @@ class LogConfig:
 
 @dataclass
 class EngineConfig:
-    """推理引擎性能配置。
+    """Inference engine performance configuration.
 
-    所有字段支持在 config.yaml 中显式指定；未指定时，
-    通过 auto_fill_defaults() 根据系统硬件自动推荐最优默认值。
+    All fields can be explicitly set in config.yaml; unset values (0/False)
+    are auto-filled by auto_fill_defaults() based on system hardware.
 
-    参数说明：
-      - use_paged_cache:       启用分页 KV Cache（MLX 映射为 RotatingKVCache）
-      - max_kv_size:           KV Cache 最大条目数（0 = 不限制）
-      - kv_bits:               KV Cache 量化位数（0 = 不量化）
-      - kv_group_size:         KV Cache 量化分组大小
-      - continuous_batching:   启用连续批处理（预留，当前 MLX 单请求串行）
-      - num_workers:           gRPC server 线程池大小
-      - tokenizer_workers:     Tokenizer 编码/解码 CPU 线程池大小
-      - tokenizer_prefer_cpu:  强制 Tokenizer 操作只跑在 CPU（不占 GPU）
-      - cpu_offload_fraction:  CPU 卸载比例 0.0~1.0（预留，MLX 暂无此能力）
-      - prefill_step_size:     Prompt prefill 分步大小（降低 prompt 编码峰值显存）
-      - tool_call_strategy:    FC 解析策略（仅 vllm_mlx 引擎生效）
-      - tool_call_temperature: FC 场景温度上限
-      - tool_call_max_tokens:  FC 场景 max_tokens 上限
+    Parameters:
+      - use_paged_cache:       Enable paged KV Cache (MLX → RotatingKVCache)
+      - max_kv_size:           Max KV Cache entries (0 = auto)
+      - kv_bits:               KV Cache quantization bits (0 = no quantization)
+      - kv_group_size:         KV Cache quantization group size
+      - continuous_batching:   Enable continuous batching (reserved; MLX single-request serial)
+      - num_workers:           gRPC server thread pool size
+      - tokenizer_workers:     Tokenizer encode/decode CPU thread pool size
+      - tokenizer_prefer_cpu:  Force tokenizer ops on CPU (avoid GPU contention)
+      - cpu_offload_fraction:  CPU offload ratio 0.0~1.0 (reserved)
+      - prefill_step_size:     Base prefill step size — the engine dynamically adapts this
+                               per-request based on prompt length and available memory.
+                               Short prompts skip chunked prefill entirely.
+      - tool_call_strategy:    FC parsing strategy (vllm_mlx only)
+      - tool_call_temperature: FC scenario temperature cap
+      - tool_call_max_tokens:  FC scenario max_tokens cap
     """
     use_paged_cache: bool = False
     max_kv_size: int = 0
@@ -118,18 +120,21 @@ class EngineConfig:
             else:
                 self.tokenizer_workers = max(2, cpu_count // 2)
 
-        # --- prefill_step_size: 大 prompt 分步编码，防止单次 eval 峰值显存过高 ---
+        # --- prefill_step_size: chunked prompt encoding to prevent peak memory OOM ---
+        # The actual step used per-request is dynamically adapted by the engine
+        # based on prompt length and available memory. This value serves as the
+        # base/maximum step size for the adaptive algorithm.
         if self.prefill_step_size <= 0:
             if engine_type == "vllm_mlx":
-                # MLX Metal 统一内存，按内存大小推荐
+                # MLX Metal unified memory: scale base step by total memory
                 if total_mem_gb >= 64:
-                    self.prefill_step_size = 1024
+                    self.prefill_step_size = 2048
                 elif total_mem_gb >= 32:
-                    self.prefill_step_size = 512
+                    self.prefill_step_size = 1536
                 else:
-                    self.prefill_step_size = 256
+                    self.prefill_step_size = 768
             else:
-                # vLLM / llama.cpp 内部管理 prefill，此参数不生效
+                # vLLM / llama.cpp manage prefill internally
                 self.prefill_step_size = 512
 
         # --- max_kv_size: 根据可用内存自动推荐 ---

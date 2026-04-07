@@ -90,13 +90,19 @@
         <template #pricing="{ row }">
           <div class="text-xs text-dp-text-2 leading-5">
             <template v-if="row.pricing_tiers?.length">
-              <div v-for="(tier, idx) in row.pricing_tiers" :key="idx">
+              <div v-for="(tier, idx) in row.pricing_tiers" :key="'p'+idx">
                 {{ tier.max_input_tokens ? `≤${formatContextLength(tier.max_input_tokens)}` : '∞' }}:
                 入{{ tier.input_price }}/出{{ tier.output_price }}
               </div>
-              <div v-if="row.contributor_price" class="text-dp-text-3">贡献: {{ row.contributor_price }}</div>
             </template>
-            <span v-else class="text-dp-text-3">免费</span>
+            <template v-if="row.contributor_tiers?.length">
+              <div class="text-dp-text-3 mt-0.5">贡献者:</div>
+              <div v-for="(tier, idx) in row.contributor_tiers" :key="'c'+idx" class="text-dp-text-3">
+                {{ tier.max_input_tokens ? `≤${formatContextLength(tier.max_input_tokens)}` : '∞' }}:
+                入{{ tier.input_price }}/出{{ tier.output_price }}
+              </div>
+            </template>
+            <span v-if="!row.pricing_tiers?.length && !row.contributor_tiers?.length" class="text-dp-text-3">免费</span>
           </div>
         </template>
 
@@ -290,16 +296,44 @@
           </div>
         </t-form-item>
 
-        <t-form-item v-if="formData.vendor_type === 'deepnode' || formData.vendor_type === 'hybrid'" label="贡献者单价">
-          <div class="w-full space-y-2">
-            <t-input-number
-              v-model="formData.contributor_price"
-              :min="0"
-              :step="0.5"
-              :decimal-places="2"
-              suffix="元/百万Token"
-            />
-            <div class="text-xs text-dp-text-3">DeepNode 设备贡献者的收益单价（元/百万Token），0 表示无收益。</div>
+        <t-form-item v-if="formData.vendor_type === 'deepnode'" label="贡献者收益（阶梯）">
+          <div class="w-full space-y-3">
+            <div
+              v-for="(tier, idx) in formData.contributor_tiers"
+              :key="idx"
+              class="flex items-center gap-2 bg-dp-bg-2 rounded-lg p-2"
+            >
+              <t-input-number
+                v-model="tier.max_input_tokens"
+                :min="0"
+                :step="1024"
+                placeholder="输入Token上限"
+                class="w-40"
+              />
+              <span class="text-xs text-dp-text-3 shrink-0">输入:</span>
+              <t-input-number
+                v-model="tier.input_price"
+                :min="0"
+                :step="0.5"
+                :decimal-places="2"
+                placeholder="元/百万"
+                class="w-32"
+              />
+              <span class="text-xs text-dp-text-3 shrink-0">输出:</span>
+              <t-input-number
+                v-model="tier.output_price"
+                :min="0"
+                :step="0.5"
+                :decimal-places="2"
+                placeholder="元/百万"
+                class="w-32"
+              />
+              <t-button theme="danger" variant="text" size="small" @click="removeContributorTier(idx)">删除</t-button>
+            </div>
+            <t-button theme="default" variant="dashed" size="small" @click="addContributorTier">+ 添加收益区间</t-button>
+            <div class="text-xs text-dp-text-3">
+              按输入Token长度分段设置贡献者收益（元/百万Token）。交互与消费者计费一致。留空表示无收益。
+            </div>
           </div>
         </t-form-item>
 
@@ -351,7 +385,7 @@ interface ModelRow {
   child_models?: string[]
   routing_policy?: string
   pricing_tiers?: Array<{ max_input_tokens: number; input_price: number; output_price: number }>
-  contributor_price?: number
+  contributor_tiers?: Array<{ max_input_tokens: number; input_price: number; output_price: number }>
   options?: Record<string, any>
   created_at?: string
 }
@@ -461,7 +495,7 @@ const defaultForm = {
   child_models: [] as string[],
   routing_policy: '',
   pricing_tiers: [] as Array<{ max_input_tokens: number; input_price: number; output_price: number }>,
-  contributor_price: 0,
+  contributor_tiers: [] as Array<{ max_input_tokens: number; input_price: number; output_price: number }>,
   options: '',
 }
 
@@ -597,6 +631,7 @@ function resetForm() {
     ...defaultForm,
     child_models: [] as string[],
     pricing_tiers: [] as Array<{ max_input_tokens: number; input_price: number; output_price: number }>,
+    contributor_tiers: [] as Array<{ max_input_tokens: number; input_price: number; output_price: number }>,
   })
 }
 
@@ -632,7 +667,7 @@ function openEditDialog(row: ModelRow) {
   formData.child_models = row.child_models || []
   formData.routing_policy = row.routing_policy || ''
   formData.pricing_tiers = (row.pricing_tiers || []).map((t) => ({ ...t }))
-  formData.contributor_price = row.contributor_price || 0
+  formData.contributor_tiers = (row.contributor_tiers || []).map((t) => ({ ...t }))
   formData.options = row.options ? JSON.stringify(row.options, null, 2) : ''
   fetchChildModelOptions()
   dialogVisible.value = true
@@ -656,11 +691,11 @@ function buildPayload() {
     supports_function_call: formData.supports_function_call,
     max_context_length: formData.max_context_length,
     param_scale: formData.param_scale,
+    pricing_tiers: formData.pricing_tiers.length ? formData.pricing_tiers : [],
     options: parseOptions(),
   }
 
   if (isHybrid.value) {
-    // Hybrid: send child_models + routing_policy, skip deepnode/provider fields.
     payload.child_models = formData.child_models
     if (formData.routing_policy.trim()) {
       payload.routing_policy = formData.routing_policy.trim()
@@ -673,6 +708,7 @@ function buildPayload() {
     payload.min_memory_gb = formData.min_memory_gb
     payload.min_gpu_memory_gb = formData.min_gpu_memory_gb
     payload.priority = formData.priority
+    payload.contributor_tiers = formData.contributor_tiers.length ? formData.contributor_tiers : []
   } else if (requiresProvider.value) {
     payload.provider_type = formData.provider_type.trim() || 'custom'
     payload.endpoint = formData.endpoint.trim()
@@ -765,6 +801,24 @@ async function handleDelete(id: number) {
   } catch (error) {
     MessagePlugin.error(extractErrorMessage(error, '删除失败'))
   }
+}
+
+// ── Pricing tier manipulation ──
+
+function addPricingTier() {
+  formData.pricing_tiers.push({ max_input_tokens: 0, input_price: 0, output_price: 0 })
+}
+
+function removePricingTier(idx: number) {
+  formData.pricing_tiers.splice(idx, 1)
+}
+
+function addContributorTier() {
+  formData.contributor_tiers.push({ max_input_tokens: 0, input_price: 0, output_price: 0 })
+}
+
+function removeContributorTier(idx: number) {
+  formData.contributor_tiers.splice(idx, 1)
 }
 
 function formatEngines(engines?: string[]) {
