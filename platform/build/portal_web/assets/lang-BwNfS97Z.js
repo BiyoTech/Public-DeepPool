@@ -1,0 +1,1 @@
+import{L as n,i as u,N as o,S as s}from"./index-C8b6sVxr.js";const r=n("lang",()=>{const l=u(o.global.locale.value);function a(e){l.value=e,o.global.locale.value=e,localStorage.setItem(s,e),document.documentElement.lang=e==="zh-CN"?"zh-CN":"en"}function t(){a(l.value==="zh-CN"?"en-US":"zh-CN")}return{locale:l,setLocale:a,toggleLocale:t}});export{r as u};

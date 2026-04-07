@@ -1,0 +1,219 @@
+{
+  "nav": {
+    "home": "Home",
+    "docs": "Docs",
+    "service": "Service",
+    "data": "Data",
+    "login": "Login",
+    "register": "Sign Up",
+    "logout": "Logout"
+  },
+  "wallet": {
+    "balance": "Available Balance",
+    "total_earned": "Total Earned",
+    "total_spent": "Total Spent",
+    "contributed_tokens": "Contributed Tokens",
+    "consumed_tokens": "Consumed Tokens",
+    "recharge": "Top Up",
+    "withdraw": "Withdraw",
+    "free_trial_tip": "Free trial across all platforms",
+    "view_data": "View Data Details"
+  },
+  "home": {
+    "hero": {
+      "title": "Distributed LLM Inference Pool",
+      "subtitle": "Fusing edge devices with cloud APIs through intelligent scheduling for cost-effective, reliable LLM inference",
+      "cta_provider": "Earn by Sharing Power",
+      "cta_consumer": "Use API",
+      "welcome": "Welcome back, {name}"
+    },
+    "features": {
+      "title": "Why DeepPool",
+      "subtitle": "Multi-model hybrid scheduling + edge computing pooling — every inference faster, cheaper, and more reliable",
+      "cost": {
+        "title": "Extreme Cost Efficiency",
+        "desc": "Aggregate idle edge device power with on-demand cloud APIs. Cut inference costs 50%+ vs pure cloud — small models run locally, large models scale to cloud"
+      },
+      "smart": {
+        "title": "Smart Model Selection",
+        "desc": "Hybrid routing engine auto-matches the optimal model based on request features: context length, reasoning needs, and function calling — no manual switching"
+      },
+      "reliable": {
+        "title": "Multi-Model Failover",
+        "desc": "Hybrid mode auto-failover across child models: when the primary is unavailable, seamlessly switch to backup in milliseconds for 24/7 availability"
+      },
+      "api": {
+        "title": "OpenAI-Compatible API",
+        "desc": "Fully compatible with OpenAI Chat Completions API. Supports streaming, Function Calling, and Reasoning Content — zero migration for existing SDKs"
+      },
+      "earn": {
+        "title": "Share Power, Earn Income",
+        "desc": "Install DeepNode on your Mac or Linux machine, one-click join the pool. Idle GPUs auto-serve inference requests and earn token-based rewards"
+      },
+      "engine": {
+        "title": "Multi-Engine Coverage",
+        "desc": "Apple Silicon uses MLX Metal, NVIDIA GPUs use vLLM CUDA, generic devices use llama.cpp — hardware auto-detected and matched to the best engine"
+      }
+    },
+    "arch": {
+      "title": "How It Works",
+      "subtitle": "One API endpoint, three model sources, intelligent routing picks the optimal path",
+      "step1_label": "Send Request",
+      "step1_desc": "OpenAI SDK call",
+      "step2_label": "Gateway Auth",
+      "step2_desc": "API Key + Rate Limit + Quota",
+      "step3_label": "Smart Routing",
+      "step3_desc": "Condition match + Load balance",
+      "step4_label": "Inference",
+      "step4_desc": "Edge device / Cloud API",
+      "vt_deepnode_title": "Edge Device Inference",
+      "vt_deepnode_desc": "Mac M-series / Linux GPU local execution, low latency, zero data egress",
+      "vt_provider_title": "Cloud API Proxy",
+      "vt_provider_desc": "OpenAI, Qianfan and other cloud LLMs, on-demand, unlimited capacity",
+      "vt_hybrid_title": "Hybrid Smart Dispatch",
+      "vt_hybrid_desc": "Multi-model combo: condition routing + round-robin + auto failover"
+    },
+    "stats": {
+      "title": "Platform Stats",
+      "online_devices": "Online Devices",
+      "total_users": "Registered Users",
+      "total_devices": "Connected Devices"
+    },
+    "quickstart": {
+      "title": "Quick Start",
+      "provider": {
+        "title": "Computing Provider",
+        "desc": "Share your idle device power, join the distributed inference network, earn token-based income",
+        "step1": "Register and log in to the platform",
+        "step2": "Download and install DeepNode client",
+        "step3": "One-click start, auto-join the pool and start earning",
+        "cta": "Sign Up Now"
+      },
+      "consumer": {
+        "title": "API Consumer",
+        "desc": "Access multi-model LLM inference via standard OpenAI-compatible API",
+        "step1": "Register and create your API Key",
+        "step2": "Use OpenAI SDK or HTTP, point to DeepPool endpoint",
+        "step3": "Hybrid mode auto-selects the best model, pay-per-use",
+        "cta": "Sign Up Now"
+      }
+    }
+  },
+  "footer": {
+    "desc": "Open-source Distributed LLM Inference Platform",
+    "nav_title": "Navigation",
+    "contact_title": "Contact Us",
+    "copyright": "© 2025 DeepPool. All rights reserved."
+  },
+  "auth": {
+    "login": {
+      "title": "Login to DeepPool",
+      "account": "Account",
+      "account_placeholder": "Username / Phone / Email",
+      "password": "Password",
+      "password_placeholder": "Enter your password",
+      "submit": "Login",
+      "no_account": "Don't have an account?",
+      "go_register": "Sign Up"
+    },
+    "register": {
+      "title": "Sign Up for DeepPool",
+      "username": "Username",
+      "username_placeholder": "Enter username",
+      "password": "Password",
+      "password_placeholder": "At least 8 characters",
+      "confirm_password": "Confirm Password",
+      "confirm_password_placeholder": "Enter password again",
+      "phone": "Phone",
+      "phone_placeholder": "Enter phone number",
+      "email": "Email",
+      "email_placeholder": "Enter email address",
+      "submit": "Sign Up",
+      "has_account": "Already have an account?",
+      "go_login": "Login"
+    },
+    "error": {
+      "password_mismatch": "Passwords do not match",
+      "login_failed": "Login failed, please check your credentials",
+      "register_failed": "Registration failed, please try again later"
+    }
+  },
+  "docs": {
+    "title": "Documentation",
+    "search_placeholder": "Search docs...",
+    "toc_title": "On This Page"
+  },
+  "lang": {
+    "zh": "中文",
+    "en": "EN"
+  },
+  "service": {
+    "title": "Service",
+    "chat": {
+      "model": "Model",
+      "placeholder": "Select a model and send a message to start chatting",
+      "input_placeholder": "Type a message...",
+      "send": "Send",
+      "thinking": "💭 Thinking",
+      "need_apikey": "Please create an API Key in the right panel first, then you can start chatting.",
+      "need_model": "There is no routable model available yet. Please ask an administrator to configure one.",
+      "no_models": "No models available",
+      "available_models": "{count} models available",
+      "load_models_failed": "Failed to load the model list. Please try again later."
+    },
+    "apikey": {
+      "title": "API Key",
+      "create": "Create",
+      "create_title": "Create API Key",
+      "name_placeholder": "Enter a name, e.g. \"test key\"",
+      "cancel": "Cancel",
+      "confirm": "Create",
+      "created_tip": "🔑 Key created! Copy and save it now — it won't be shown again.",
+      "copy": "Copy",
+      "dismiss": "Got it",
+      "empty": "No API Keys yet. Click the button above to create one.",
+      "delete": "Delete",
+      "delete_confirm": "Delete this API Key? This action cannot be undone.",
+      "last_used": "Last used: {time}",
+      "never_used": "Never used",
+      "usage_title": "Quick Start",
+      "copy_prefix_tip": "Copied key prefix only — the full key is shown only once at creation",
+      "copy_failed": "Copy failed, please try again",
+      "copy_no_cache": "Full key not available, please create a new key and copy it",
+      "quota_unlimited": "Quota: unlimited"
+    },
+    "params": {
+      "title": "Inference Params",
+      "precise": "Precise",
+      "creative": "Creative",
+      "diversity": "(Diversity)",
+      "system_placeholder": "Define AI role or behavior guidelines...",
+      "stop": "Stop Sequences",
+      "stop_placeholder": "Type and press Enter to add",
+      "reset": "Reset to Defaults"
+    }
+  },
+  "data": {
+    "title": "Data Center",
+    "tab_contribution": "Device Contribution",
+    "tab_consumption": "API Consumption",
+    "summary_contributed": "Total Contributed Tokens",
+    "summary_consumed": "Total Consumed Tokens",
+    "summary_requests": "Total Requests",
+    "filter_device": "Device",
+    "filter_apikey": "API Key",
+    "filter_model": "Model",
+    "filter_date_range": "Date Range",
+    "filter_all": "All",
+    "col_date": "Date",
+    "col_device": "Device",
+    "col_apikey": "API Key",
+    "col_model": "Model",
+    "col_prompt": "Prompt Tokens",
+    "col_completion": "Completion Tokens",
+    "col_total": "Total Tokens",
+    "col_requests": "Requests",
+    "empty": "No data available",
+    "login_required": "Please log in to view your data"
+  }
+}

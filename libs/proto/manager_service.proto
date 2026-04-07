@@ -1,0 +1,195 @@
+syntax = "proto3";
+
+package deeppool.manager.v1;
+
+option go_package = "deeppool/libs/proto/manager/v1;managerv1";
+
+// ManagerService 定义 manager 组件对外提供的 gRPC 接口。
+// 所有 client node ↔ manager 通信统一走 gRPC，包括用户认证。
+service ManagerService {
+  // Login 用户登录（无需 auth_token，返回 token + 用户信息）
+  rpc Login(LoginRequest) returns (LoginResponse);
+
+  // RegisterUser 用户注册（无需 auth_token）
+  rpc RegisterUser(RegisterUserRequest) returns (RegisterUserResponse);
+
+  // GetModelDeployConfig 获取模型部署配置（client node 调用，单模型兼容接口）
+  rpc GetModelDeployConfig(GetModelDeployConfigRequest) returns (GetModelDeployConfigResponse);
+
+  // GetMultiModelDeployConfigs 获取多模型部署配置列表（client node 调用，推荐使用）
+  rpc GetMultiModelDeployConfigs(GetMultiModelDeployConfigsRequest) returns (GetMultiModelDeployConfigsResponse);
+
+  // RegisterDevice 注册/上报设备信息（client node 调用）
+  rpc RegisterDevice(RegisterDeviceRequest) returns (RegisterDeviceResponse);
+
+  // GetDevice 查询设备信息
+  rpc GetDevice(GetDeviceRequest) returns (GetDeviceResponse);
+
+  // UpdateDevice 更新设备信息
+  rpc UpdateDevice(UpdateDeviceRequest) returns (UpdateDeviceResponse);
+
+  // ReportInferLogs Client 批量上报本地推理日志
+  rpc ReportInferLogs(ReportInferLogsRequest) returns (ReportInferLogsResponse);
+
+  // UpdateDeviceStatus 更新设备合法性状态（管理员管控：屏蔽/恢复/标记作弊等）
+  rpc UpdateDeviceStatus(UpdateDeviceStatusRequest) returns (UpdateDeviceStatusResponse);
+}
+
+// --- 用户认证 ---
+
+message LoginRequest {
+  string account = 1;   // 用户名 / 手机号 / 邮箱
+  string password = 2;
+}
+
+message UserInfo {
+  uint64 id = 1;
+  string username = 2;
+  string phone = 3;
+  string email = 4;
+  string role = 5;        // "user" / "admin"
+  string identity = 6;    // "provider" / "consumer"
+  string user_type = 7;   // "personal" / "enterprise"
+}
+
+message LoginResponse {
+  string token = 1;
+  UserInfo user = 2;
+}
+
+message RegisterUserRequest {
+  string username = 1;
+  string password = 2;
+  string phone = 3;
+  string email = 4;
+  string identity = 5;    // 可选: "provider" / "consumer"
+  string user_type = 6;   // 可选: "personal" / "enterprise"
+}
+
+message RegisterUserResponse {
+  UserInfo user = 1;
+}
+
+// --- 模型部署配置 ---
+
+message GetModelDeployConfigRequest {
+  string simei = 1;
+  repeated string supported_models = 2;
+  string auth_token = 3; // Bearer token，用于鉴权
+}
+
+message ModelDeployConfig {
+  string model_name = 1;
+  string repo_id = 2;       // HuggingFace 仓库 ID，如 "Qwen/Qwen2-7B-Instruct"
+  string rpc_host = 3;
+  int32 rpc_port = 4;
+  string engine = 5;
+  map<string, string> options = 6;
+}
+
+message GetModelDeployConfigResponse {
+  ModelDeployConfig config = 1;
+}
+
+// --- 多模型部署配置（推荐） ---
+
+message GetMultiModelDeployConfigsRequest {
+  string simei = 1;
+  repeated string supported_models = 2;
+  string auth_token = 3;
+}
+
+message GetMultiModelDeployConfigsResponse {
+  repeated ModelDeployConfig configs = 1;
+}
+
+// --- 设备管理 ---
+
+message RegisterDeviceRequest {
+  string simei = 1;
+  string device_ip = 2;
+  string device_config = 3;            // JSON 字符串（设备硬件及运行时配置）
+  string auth_token = 4;
+  repeated string registered_models = 5; // 设备已注册的模型列表（独立字段，不嵌入 device_config）
+}
+
+message DeviceInfo {
+  uint64 device_id = 1;
+  uint64 user_id = 2;
+  string simei = 3;
+  string device_ip = 4;
+  string device_config = 5;
+  string created_at = 6;
+  string updated_at = 7;
+  string status = 8;                     // 设备合法性状态："active" / "blocked" / "cheating"
+  repeated string registered_models = 9; // 设备已注册的模型列表
+}
+
+message RegisterDeviceResponse {
+  DeviceInfo device = 1;
+}
+
+message GetDeviceRequest {
+  string simei = 1;
+  string auth_token = 2;
+}
+
+message GetDeviceResponse {
+  DeviceInfo device = 1;
+}
+
+message UpdateDeviceRequest {
+  string simei = 1;
+  string device_ip = 2;
+  string device_config = 3;
+  string auth_token = 4;
+}
+
+message UpdateDeviceResponse {
+  DeviceInfo device = 1;
+}
+
+// --- 推理日志上报 ---
+
+// ClientInferLogEntry Client 本地推理日志条目
+message ClientInferLogEntry {
+  string request_id = 1;
+  string simei = 2;
+  string model_name = 3;
+  int32 prompt_tokens = 4;
+  int32 completion_tokens = 5;
+  int32 total_tokens = 6;
+  int32 reasoning_tokens = 7;
+  int64 duration_ms = 8;
+  bool stream = 9;
+  bool success = 10;
+  string error_message = 11;
+  int64 created_at_ms = 12; // 客户端推理时间（毫秒时间戳）
+  // --- Function Call 指标 ---
+  int32 tool_call_count = 13;       // 检测到的 tool call 数量
+  bool tool_call_success = 14;      // 是否全部解析+校验成功
+  bool tool_call_retried = 15;      // 是否触发了修复重试
+  int64 tool_call_parse_ms = 16;    // 解析+校验总耗时(ms)
+}
+
+message ReportInferLogsRequest {
+  string auth_token = 1;
+  string simei = 2;
+  repeated ClientInferLogEntry logs = 3;
+}
+
+message ReportInferLogsResponse {
+  int32 accepted = 1; // 实际接受写入的条数
+}
+
+// --- 设备合法性状态更新 ---
+
+message UpdateDeviceStatusRequest {
+  string auth_token = 1;
+  string simei = 2;
+  string status = 3; // 设备合法性状态："active" / "blocked" / "cheating"
+}
+
+message UpdateDeviceStatusResponse {
+  bool ok = 1;
+}

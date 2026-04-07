@@ -1,0 +1,35 @@
+server:
+  addr: ":8080"
+  grpc_addr: ":9090"
+  # TLS/HTTPS 配置（enabled=false 时保持明文 HTTP/gRPC）
+  tls:
+    enabled: false
+    cert_file: ""       # PEM 格式证书文件路径
+    key_file: ""        # PEM 格式私钥文件路径
+    skip_verify: false  # gRPC 客户端是否跳过证书验证（仅自签名证书场景使用）
+
+log:
+  level: "debug"
+
+mysql:
+  host: "127.0.0.1"
+  port: 3306
+  user: "root"
+  password: "root@123"
+  database: "deeppool"
+  max_open_conns: 20
+  max_idle_conns: 10
+  conn_max_lifetime_minutes: 30
+
+admin:
+  default_hybrid_policy_path: "config/default_hybrid_policy.yaml"
+  # 32-byte hex string for AES-256-GCM encryption of API keys (exactly 64 hex chars)
+  api_key_encryption_key: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  super_admin:
+    username: "admin"
+    password: "admin@123"
+    phone: "10000000000"
+    email: "admin@deeppool.io"
+  node_managers:
+    - name: "node-local"
+      addr: "101.33.255.185:9092"

@@ -1,0 +1,20 @@
+server:
+  addr: ":8081"
+  grpc_addr: ":9091"
+  # TLS/HTTPS 配置（enabled=false 时保持明文 HTTP/gRPC）
+  tls:
+    enabled: false
+    cert_file: ""
+    key_file: ""
+    skip_verify: false
+
+log:
+  level: "debug"
+
+# scheduler 暂不需要独立 DB，复用 manager 的 mysql 配置
+mysql:
+  host: "127.0.0.1"
+  port: 3306
+  user: "root"
+  password: "root@123"
+  database: "deeppool"

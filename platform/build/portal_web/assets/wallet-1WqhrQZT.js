@@ -1,0 +1,1 @@
+import{h as r}from"./http-CYQbgaed.js";function n(){return r.get("/wallet")}function l(t){return r.post("/wallet/recharge",{amount:t})}function o(t,a){return r.post("/wallet/withdraw",{amount:t,bank_card_id:a})}export{n as g,l as r,o as w};

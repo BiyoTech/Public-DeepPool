@@ -1,0 +1,108 @@
+syntax = "proto3";
+
+package deeppool.nodemanager.v1;
+
+option go_package = "deeppool/libs/proto/nodemanager/v1;nodemanagerv1";
+
+import "llm_infer.proto";
+
+// NodeManagerService — Manager → NodeManager 内部 gRPC 通信接口。
+//
+// 替代原 HTTP 通信，覆盖以下场景：
+//   - 推理代理（流式 + 非流式）
+//   - 健康检查
+//   - Admin 监控查询（在线会话 / 设备统计）
+service NodeManagerService {
+  // Health 健康检查（替代 GET /health）
+  rpc Health(HealthCheckRequest) returns (HealthCheckResponse);
+
+  // ChatCompletion 非流式推理（替代 POST /v1/chat/completions stream=false）
+  rpc ChatCompletion(InternalChatRequest) returns (deeppool.llm.v1.ChatCompletionResponse);
+
+  // ChatCompletionStream 流式推理（替代 POST /v1/chat/completions stream=true）
+  rpc ChatCompletionStream(InternalChatRequest) returns (stream ChatStreamChunk);
+
+  // GetSessions 获取在线会话列表（替代 GET /admin/sessions）
+  rpc GetSessions(GetSessionsRequest) returns (GetSessionsResponse);
+
+  // GetStats 获取在线设备统计（替代 GET /admin/stats）
+  rpc GetStats(GetStatsRequest) returns (GetStatsResponse);
+
+  // NotifyReloadModels 通知指定设备重载模型配置（Manager → NodeManager → DeepNode）
+  rpc NotifyReloadModels(NotifyReloadModelsRequest) returns (NotifyReloadModelsResponse);
+}
+
+// ── 推理请求（携带内部身份信息） ──
+
+message InternalChatRequest {
+  // 原始 ChatCompletionRequest
+  deeppool.llm.v1.ChatCompletionRequest request = 1;
+  // Gateway 透传的 API Key ID
+  uint64 key_id = 2;
+  // Gateway 透传的 User ID
+  uint64 user_id = 3;
+}
+
+// ── 流式推理 chunk ──
+
+message ChatStreamChunk {
+  deeppool.llm.v1.ChatCompletionChunk chunk = 1;
+  // 错误信息（非空表示出错，流终止）
+  string error = 2;
+}
+
+// ── 健康检查 ──
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  string status = 1;         // "ok" / "degraded" 等
+  string service = 2;        // 服务名
+  string region = 3;         // 所属区域
+  int64  online_devices = 4; // 在线设备总数
+}
+
+// ── 在线会话查询 ──
+
+message GetSessionsRequest {
+  // 可选过滤：模型名称（为空返回全部）
+  string model = 1;
+}
+
+message GetSessionsResponse {
+  repeated SessionInfo sessions = 1;
+}
+
+message SessionInfo {
+  string session_id = 1;
+  string simei = 2;
+  string model_name = 3;
+  string engine = 4;
+  uint64 user_id = 5;
+  int64  last_heartbeat = 6; // unix timestamp（秒）
+}
+
+// ── 设备统计 ──
+
+message GetStatsRequest {}
+
+message GetStatsResponse {
+  int64 total = 1;
+  map<string, int64> by_model = 2;
+}
+
+// ── 模型重载通知 ──
+
+message NotifyReloadModelsRequest {
+  // 目标设备 SIMEI 列表
+  repeated string simeis = 1;
+  // 触发原因（供日志追踪）
+  string reason = 2;
+}
+
+message NotifyReloadModelsResponse {
+  // 成功下发通知的设备数量
+  int32 notified = 1;
+  // 未在线（未找到会话）的设备 SIMEI 列表
+  repeated string missed_simeis = 2;
+}

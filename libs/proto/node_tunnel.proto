@@ -1,0 +1,165 @@
+syntax = "proto3";
+
+package deeppool.nodetunnel.v1;
+
+option go_package = "deeppool/libs/proto/nodetunnel/v1;nodetunnelv1";
+
+import "llm_infer.proto";
+
+// ─────────────────────────────────────────────────
+// NodeTunnelService — client ↔ nodemanager 控制面双向流隧道
+//
+// 设计目标：
+// 1. 长连接：client 推理服务启动后建立并维持 TCP 级长连接
+// 2. 安全鉴权：连接建立时首条消息完成身份验证
+// 3. 心跳保活：双向定时心跳，超时自动剔除
+// 4. 任务通道：nodemanager 下发推理任务，client 回传结果（支持流式）
+// 5. 极致性能：基于 gRPC 双向流，避免频繁连接建立开销
+// ─────────────────────────────────────────────────
+service NodeTunnelService {
+  // Tunnel 双向流：承载注册鉴权、心跳、任务下发与结果回传
+  rpc Tunnel(stream ClientMessage) returns (stream ServerMessage);
+}
+
+// ─── Client → Server 消息 ───
+
+message ClientMessage {
+  oneof payload {
+    // 连接建立后首条消息：鉴权注册
+    RegisterRequest    register    = 1;
+    // 心跳响应（回复服务端 ping）
+    Heartbeat          heartbeat   = 2;
+    // 推理任务结果（非流式，单次完整返回）
+    TaskResult         task_result = 3;
+    // 推理任务流式 chunk
+    TaskStreamChunk    task_chunk  = 4;
+    // 模型列表变更通知（重载完成后客户端主动上报）
+    UpdateModelsNotify update_models = 5;
+    // 客户端 ERROR 日志批量上报
+    ErrorLogReport     error_log     = 6;
+  }
+}
+
+// ─── Server → Client 消息 ───
+
+message ServerMessage {
+  oneof payload {
+    // 注册响应
+    RegisterResponse   register_ack   = 1;
+    // 心跳（服务端 ping）
+    Heartbeat          heartbeat      = 2;
+    // 下发推理任务
+    InferenceTask      inference_task = 3;
+    // 取消正在执行的任务
+    TaskCancel         task_cancel    = 4;
+    // 模型重载指令（管理员调整模型分配后触发）
+    ReloadModelsCommand reload_models = 5;
+  }
+}
+
+// ─── 模型重载指令 ───
+
+message ReloadModelsCommand {
+  // 触发原因（供日志追踪）
+  string reason = 1;
+}
+
+// ─── 客户端模型列表变更通知 ───
+
+message UpdateModelsNotify {
+  // 设备当前支持的所有模型名称列表
+  repeated string model_names = 1;
+}
+
+// ─── 鉴权与注册 ───
+
+message RegisterRequest {
+  // 设备唯一标识
+  string simei      = 1;
+  // 鉴权令牌（由 manager 颁发的 session token）
+  string auth_token = 2;
+  // 当前运行的模型名称（兼容旧客户端，新客户端应使用 model_names）
+  string model_name = 3;
+  // 设备本地推理引擎类型（vllm_mlx / vllm / llamacpp）
+  string engine     = 4;
+  // 设备支持的所有模型名称列表（多模型场景）
+  repeated string model_names = 5;
+}
+
+message RegisterResponse {
+  bool   success = 1;
+  string message = 2;
+  // 服务端分配的会话 ID，后续消息引用
+  string session_id       = 3;
+  // 建议的心跳间隔（秒）
+  int32  heartbeat_interval_sec = 4;
+}
+
+// ─── 心跳 ───
+
+message Heartbeat {
+  // 时间戳（毫秒），用于计算 RTT
+  int64 timestamp_ms = 1;
+}
+
+// ─── 推理任务下发 ───
+
+message InferenceTask {
+  // 全局唯一任务 ID，用于追踪与取消
+  string task_id = 1;
+  // 是否流式返回
+  bool   stream  = 2;
+  // 推理请求体，复用 llm_infer.proto 的完整请求结构
+  deeppool.llm.v1.ChatCompletionRequest request = 3;
+}
+
+// ─── 推理任务结果回传（非流式） ───
+
+message TaskResult {
+  string task_id = 1;
+  bool   success = 2;
+  // 错误信息（仅 success=false 时有值）
+  string error   = 3;
+  // 完整推理结果，复用 llm_infer.proto 响应结构
+  deeppool.llm.v1.ChatCompletionResponse response = 4;
+}
+
+// ─── 推理任务流式 chunk 回传 ───
+
+message TaskStreamChunk {
+  string task_id = 1;
+  bool   success = 2;
+  string error   = 3;
+  // 流式 chunk，复用 llm_infer.proto chunk 结构
+  deeppool.llm.v1.ChatCompletionChunk chunk = 4;
+  // 是否为最后一个 chunk（标记流结束）
+  bool   done    = 5;
+}
+
+// ─── 任务取消 ───
+
+message TaskCancel {
+  string task_id = 1;
+  string reason  = 2;
+}
+
+// ─── 设备错误日志上报 ───
+
+// ErrorLogEntry 单条错误日志条目。
+message ErrorLogEntry {
+  // 日志级别：ERROR / CRITICAL
+  string level        = 1;
+  // Python logger 名称（模块路径，如 engine.vllm_mlx）
+  string logger_name  = 2;
+  // 错误消息（客户端截断至 4KB）
+  string message      = 3;
+  // 堆栈信息（客户端截断至 8KB）
+  string traceback    = 4;
+  // 客户端时间戳（毫秒）
+  int64  timestamp_ms = 5;
+}
+
+// ErrorLogReport 批量错误日志上报。
+message ErrorLogReport {
+  repeated ErrorLogEntry entries = 1;
+}

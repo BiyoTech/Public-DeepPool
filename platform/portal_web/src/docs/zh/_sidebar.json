@@ -1,0 +1,23 @@
+[
+  {
+    "title": "快速开始",
+    "children": [
+      { "title": "DeepPool 介绍", "path": "getting-started/introduction" },
+      { "title": "算力提供者指南", "path": "getting-started/quickstart-provider" },
+      { "title": "API 使用者指南", "path": "getting-started/quickstart-consumer" }
+    ]
+  },
+  {
+    "title": "架构设计",
+    "children": [
+      { "title": "系统架构概览", "path": "architecture/overview" },
+      { "title": "模型路由与 Hybrid 调度", "path": "architecture/model-routing" }
+    ]
+  },
+  {
+    "title": "API 参考",
+    "children": [
+      { "title": "OpenAI 兼容 API", "path": "api-reference/openai-compatible" }
+    ]
+  }
+]

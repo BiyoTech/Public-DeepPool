@@ -1,0 +1,43 @@
+# ═══════════════════════════════════════════════════════
+# DeepNode localserver 运行时依赖
+#
+# 原则: 只列出代码中实际 import 的第三方包，不引入多余依赖。
+#        间接传递依赖（如 fastapi → starlette → anyio）由 pip 自动解析。
+# ═══════════════════════════════════════════════════════
+
+# ── Web 框架 + ASGI 服务 ──
+fastapi>=0.115.0                # HTTP API 框架（自动拉取 starlette, pydantic, anyio 等）
+uvicorn[standard]>=0.32.0       # ASGI 服务运行（[standard] 含 httptools, uvloop, websockets）
+
+# ── gRPC 通信 ──
+grpcio>=1.68.0                  # gRPC 客户端/服务端
+protobuf>=5.29.0                # proto 序列化（generated/ 下的 pb2 文件依赖）
+
+# ── 配置 / 工具 ──
+pyyaml>=6.0                     # config.yaml 解析
+psutil>=6.1.0                   # CPU/内存/硬件信息采集
+
+# ── 模型下载 ──
+huggingface-hub>=0.26.0         # HuggingFace 模型下载（snapshot_download）
+modelscope>=1.18.0              # ModelScope 模型下载（dual-source support）
+
+# ── 开发/构建工具（仅编译 proto 时需要，运行时不需要）──
+# grpcio-tools>=1.68.0
+
+# ═══════════════════════════════════════════════════════
+# 可选推理引擎（按平台按需安装，build 脚本会自动处理）
+# ═══════════════════════════════════════════════════════
+
+# macOS Apple Silicon (M系列, macOS >= 13.5):
+#   pip install mlx-lm>=0.31.1      # LLM 推理（自动拉取 mlx, transformers, safetensors, tokenizers, numpy）
+#   pip install mlx-vlm>=0.4.4      # VLM 视觉语言模型推理
+#   pip install outlines             # 约束解码（Function Call 增强，可选）
+
+# macOS Intel / 低版本 macOS:
+#   pip install llama-cpp-python>=0.3.0
+
+# Linux + NVIDIA GPU:
+#   pip install vllm>=0.17.1        # 高吞吐推理（自动拉取 torch）
+
+# 跨平台可选:
+#   pip install distro               # Linux 发行版信息采集（service/device_info.py）

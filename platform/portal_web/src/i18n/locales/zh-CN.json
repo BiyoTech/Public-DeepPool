@@ -1,0 +1,219 @@
+{
+  "nav": {
+    "home": "首页",
+    "docs": "文档",
+    "service": "服务",
+    "data": "数据",
+    "login": "登录",
+    "register": "注册",
+    "logout": "退出"
+  },
+  "wallet": {
+    "balance": "可用余额",
+    "total_earned": "累计收益",
+    "total_spent": "累计消费",
+    "contributed_tokens": "贡献 Tokens",
+    "consumed_tokens": "消耗 Tokens",
+    "recharge": "充值",
+    "withdraw": "提现",
+    "free_trial_tip": "全平台免费试运营",
+    "view_data": "查看数据明细"
+  },
+  "home": {
+    "hero": {
+      "title": "分布式 LLM 推理算力池",
+      "subtitle": "融合边缘设备与云端 API，通过智能调度实现高性价比、高可靠的大模型推理服务",
+      "cta_provider": "贡献算力赚收益",
+      "cta_consumer": "接入 API",
+      "welcome": "欢迎回来，{name}"
+    },
+    "features": {
+      "title": "为什么选择 DeepPool",
+      "subtitle": "多模型融合调度 + 边缘算力池化，让每一次推理都更快、更省、更稳",
+      "cost": {
+        "title": "极致性价比",
+        "desc": "聚合闲置边缘设备算力，结合云端 API 动态调度，推理成本相比纯云端方案降低 50%+，小模型优先本地，大模型按需上云"
+      },
+      "smart": {
+        "title": "智能模型选择",
+        "desc": "Hybrid 路由引擎根据请求特征（上下文长度、是否需要推理、是否 Function Call）自动匹配最优模型，无需手动切换"
+      },
+      "reliable": {
+        "title": "多模型容灾",
+        "desc": "Hybrid 模式下多个子模型自动故障转移：首选模型不可用时毫秒级切换备选，确保 7×24 高可用"
+      },
+      "api": {
+        "title": "OpenAI 兼容 API",
+        "desc": "完全兼容 OpenAI Chat Completions API，支持流式输出、Function Calling、Reasoning Content，现有 SDK 零改造接入"
+      },
+      "earn": {
+        "title": "一键共享算力赚收益",
+        "desc": "安装 DeepNode 客户端，Mac / Linux 设备一键接入算力池，闲置 GPU 自动贡献推理服务，按 Token 计费获得收入"
+      },
+      "engine": {
+        "title": "多引擎全平台覆盖",
+        "desc": "Apple Silicon 走 MLX Metal 加速，NVIDIA GPU 走 vLLM CUDA，通用设备走 llama.cpp，系统自动识别硬件匹配最优引擎"
+      }
+    },
+    "arch": {
+      "title": "工作原理",
+      "subtitle": "一个 API 入口，三种模型来源，智能路由自动选择最优路径",
+      "step1_label": "发起请求",
+      "step1_desc": "OpenAI SDK 调用",
+      "step2_label": "Gateway 鉴权",
+      "step2_desc": "API Key + 限流 + 配额",
+      "step3_label": "智能路由",
+      "step3_desc": "条件匹配 + 负载均衡",
+      "step4_label": "推理执行",
+      "step4_desc": "边缘设备 / 云端 API",
+      "vt_deepnode_title": "边缘设备推理",
+      "vt_deepnode_desc": "Mac M 系列 / Linux GPU 本地执行，低延迟、零数据出境",
+      "vt_provider_title": "云端 API 代理",
+      "vt_provider_desc": "OpenAI / 百度千帆等云端大模型，按需调用，能力无上限",
+      "vt_hybrid_title": "混合智能调度",
+      "vt_hybrid_desc": "多模型组合，条件路由 + Round-Robin + 自动故障转移"
+    },
+    "stats": {
+      "title": "平台数据",
+      "online_devices": "在线设备",
+      "total_users": "注册用户",
+      "total_devices": "接入设备"
+    },
+    "quickstart": {
+      "title": "快速开始",
+      "provider": {
+        "title": "算力提供者",
+        "desc": "贡献闲置设备算力，加入分布式推理网络，按 Token 获得收入",
+        "step1": "注册账号并登录平台",
+        "step2": "下载 DeepNode 客户端并安装",
+        "step3": "一键启动，自动接入算力池开始赚取收益",
+        "cta": "立即注册"
+      },
+      "consumer": {
+        "title": "API 使用者",
+        "desc": "通过标准 OpenAI 兼容 API 调用多种大模型推理服务",
+        "step1": "注册账号并创建 API Key",
+        "step2": "使用 OpenAI SDK 或 HTTP 请求，指向 DeepPool 端点",
+        "step3": "Hybrid 模式自动选择最优模型，按量计费",
+        "cta": "立即注册"
+      }
+    }
+  },
+  "footer": {
+    "desc": "开源分布式 LLM 推理平台",
+    "nav_title": "导航",
+    "contact_title": "联系我们",
+    "copyright": "© 2025 DeepPool. All rights reserved."
+  },
+  "auth": {
+    "login": {
+      "title": "登录 DeepPool",
+      "account": "账号",
+      "account_placeholder": "用户名 / 手机号 / 邮箱",
+      "password": "密码",
+      "password_placeholder": "请输入密码",
+      "submit": "登录",
+      "no_account": "还没有账号？",
+      "go_register": "立即注册"
+    },
+    "register": {
+      "title": "注册 DeepPool",
+      "username": "用户名",
+      "username_placeholder": "请输入用户名",
+      "password": "密码",
+      "password_placeholder": "至少 8 个字符",
+      "confirm_password": "确认密码",
+      "confirm_password_placeholder": "请再次输入密码",
+      "phone": "手机号",
+      "phone_placeholder": "请输入手机号",
+      "email": "邮箱",
+      "email_placeholder": "请输入邮箱",
+      "submit": "注册",
+      "has_account": "已有账号？",
+      "go_login": "去登录"
+    },
+    "error": {
+      "password_mismatch": "两次输入的密码不一致",
+      "login_failed": "登录失败，请检查账号和密码",
+      "register_failed": "注册失败，请稍后重试"
+    }
+  },
+  "docs": {
+    "title": "文档中心",
+    "search_placeholder": "搜索文档...",
+    "toc_title": "目录"
+  },
+  "lang": {
+    "zh": "中文",
+    "en": "EN"
+  },
+  "service": {
+    "title": "服务",
+    "chat": {
+      "model": "模型",
+      "placeholder": "选择模型并发送消息开始对话",
+      "input_placeholder": "输入消息...",
+      "send": "发送",
+      "thinking": "💭 思考过程",
+      "need_apikey": "请先在右侧面板创建一个 API Key，然后即可开始对话。",
+      "need_model": "当前没有可调试的模型，请先联系管理员配置模型。",
+      "no_models": "暂无可用模型",
+      "available_models": "可用模型 {count} 个",
+      "load_models_failed": "加载模型列表失败，请稍后重试。"
+    },
+    "apikey": {
+      "title": "API Key",
+      "create": "创建",
+      "create_title": "创建 API Key",
+      "name_placeholder": "输入名称，例如 测试密钥",
+      "cancel": "取消",
+      "confirm": "创建",
+      "created_tip": "🔑 密钥已创建！请立即复制保存，此密钥不会再次显示。",
+      "copy": "复制",
+      "dismiss": "知道了",
+      "empty": "暂无 API Key，点击上方按钮创建",
+      "delete": "删除",
+      "delete_confirm": "确定删除此 API Key？删除后无法恢复。",
+      "last_used": "最近使用：{time}",
+      "never_used": "从未使用",
+      "usage_title": "接入示例",
+      "copy_prefix_tip": "已复制密钥前缀，完整密钥仅在创建时展示一次",
+      "copy_failed": "复制失败，请重试",
+      "copy_no_cache": "该密钥完整值不可用，请创建新密钥后复制",
+      "quota_unlimited": "配额: 不限"
+    },
+    "params": {
+      "title": "推理参数",
+      "precise": "精确",
+      "creative": "创意",
+      "diversity": "(多样性)",
+      "system_placeholder": "设定 AI 角色或行为准则...",
+      "stop": "Stop 序列",
+      "stop_placeholder": "输入后回车添加",
+      "reset": "重置为默认值"
+    }
+  },
+  "data": {
+    "title": "数据中心",
+    "tab_contribution": "设备贡献",
+    "tab_consumption": "API 消耗",
+    "summary_contributed": "总贡献 Tokens",
+    "summary_consumed": "总消耗 Tokens",
+    "summary_requests": "总请求数",
+    "filter_device": "设备",
+    "filter_apikey": "API Key",
+    "filter_model": "模型",
+    "filter_date_range": "日期范围",
+    "filter_all": "全部",
+    "col_date": "日期",
+    "col_device": "设备",
+    "col_apikey": "API Key",
+    "col_model": "模型",
+    "col_prompt": "Prompt Tokens",
+    "col_completion": "Completion Tokens",
+    "col_total": "Total Tokens",
+    "col_requests": "请求数",
+    "empty": "暂无数据",
+    "login_required": "请先登录后查看数据"
+  }
+}
