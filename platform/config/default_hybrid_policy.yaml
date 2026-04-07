@@ -1,0 +1,6 @@
+# Default hybrid routing policy.
+# No rules defined — all child models are used as default targets
+# with round-robin load balancing and automatic failover.
+load_balance: "round-robin"
+rules: []
+default_targets: []  # empty means use all child_models with round-robin

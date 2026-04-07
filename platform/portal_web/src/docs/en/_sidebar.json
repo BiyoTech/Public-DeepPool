@@ -1,0 +1,23 @@
+[
+  {
+    "title": "Getting Started",
+    "children": [
+      { "title": "Introduction", "path": "getting-started/introduction" },
+      { "title": "Provider Quickstart", "path": "getting-started/quickstart-provider" },
+      { "title": "Consumer Quickstart", "path": "getting-started/quickstart-consumer" }
+    ]
+  },
+  {
+    "title": "Architecture",
+    "children": [
+      { "title": "System Overview", "path": "architecture/overview" },
+      { "title": "Model Routing & Hybrid", "path": "architecture/model-routing" }
+    ]
+  },
+  {
+    "title": "API Reference",
+    "children": [
+      { "title": "OpenAI-Compatible API", "path": "api-reference/openai-compatible" }
+    ]
+  }
+]

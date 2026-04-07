@@ -1,0 +1,57 @@
+# Go
+bin/
+*.test
+*.out
+*.exe
+
+# Node
+**/node_modules/
+
+# Frontend build output (keep source, ignore compiled assets)
+platform/portal_web/dist/
+platform/control_web/dist/
+
+# Python
+/env/
+**/env/
+/venv/
+**/.venv/
+**/__pycache__/
+**/*.pyc
+*.egg-info/
+
+# Tauri
+**/src-tauri/target/
+**/src-tauri/binaries/
+**/src-tauri/build/
+**/src-tauri/dist/
+
+# Build
+**/.build_venv/
+dist/
+
+# IDE/OS
+.DS_Store
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.iml
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Archives / large files
+*.tar.gz
+*.zip
+
+# CodeBuddy
+.codebuddy/
+.idea/
+manager
+nodemanager

@@ -1,0 +1,239 @@
+syntax = "proto3";
+
+package deeppool.llm.v1;
+
+option go_package = "deeppool/libs/proto/llm/v1;llmv1";
+
+// ─────────────────────────────────────────────────
+// LLMInferService — 严格对齐 OpenAI Chat Completions API
+// 支持: 非流式 / 流式 / tools / response_format / logprobs / n
+// 兼容: DeepSeek R1 (reasoning_content) / Qwen3 (think) 等模型
+// ─────────────────────────────────────────────────
+service LLMInferService {
+  // 健康检查
+  rpc Health(HealthRequest) returns (HealthResponse);
+
+  // Chat Completions（非流式）
+  rpc ChatCompletion(ChatCompletionRequest) returns (ChatCompletionResponse);
+
+  // Chat Completions（服务端流式）
+  rpc ChatCompletionStream(ChatCompletionRequest) returns (stream ChatCompletionChunk);
+}
+
+// ─────────── Health ───────────
+
+message HealthRequest {}
+
+message HealthResponse {
+  bool ready = 1;
+  string model_name = 2;
+  string message = 3;
+}
+
+// ─────────── Chat Completions Request ───────────
+
+// 对齐 OpenAI ChatCompletionRequest
+message ChatCompletionRequest {
+  // 模型标识（由调度层填充，引擎层可忽略）
+  string model = 1;
+
+  // 消息列表（system / user / assistant / tool）
+  repeated ChatMessage messages = 2;
+
+  // 采样温度 [0, 2]，默认 1.0
+  float temperature = 3;
+
+  // nucleus 采样概率质量 (0, 1]
+  float top_p = 4;
+
+  // 生成候选数量 >= 1
+  int32 n = 5;
+
+  // 最大生成 token 数
+  int32 max_tokens = 6;
+
+  // 停止序列（遇到即停止生成）
+  repeated string stop = 7;
+
+  // 存在惩罚 [-2, 2]
+  float presence_penalty = 8;
+
+  // 频率惩罚 [-2, 2]
+  float frequency_penalty = 9;
+
+  // 用户标识（用于追踪）
+  string user = 10;
+
+  // 可用工具列表
+  repeated Tool tools = 11;
+
+  // 工具选择策略："none" / "auto" / "required" / 指定函数名
+  string tool_choice = 12;
+
+  // 响应格式控制
+  ResponseFormat response_format = 13;
+
+  // 随机数种子（可复现生成）
+  optional int64 seed = 14;
+
+  // 是否返回 logprobs
+  bool logprobs = 15;
+
+  // 返回 top N 个 logprobs（需 logprobs=true）
+  optional int32 top_logprobs = 16;
+
+  // 请求唯一 ID（平台侧生成，用于追踪链路）
+  string request_id = 17;
+
+  // 是否启用思考/推理模式（enable_thinking）
+  // 部分模型（如 Qwen3）可通过此字段在 chat template 中控制是否进入 thinking 模式
+  optional bool enable_thinking = 18;
+}
+
+// ─────────── Message ───────────
+
+message ChatMessage {
+  // "system" / "user" / "assistant" / "tool"
+  string role = 1;
+
+  // 文本内容（user/system/assistant 使用）
+  optional string content = 2;
+
+  // 函数名（role=tool 时标识回复对应的函数）
+  optional string name = 3;
+
+  // assistant 发起的工具调用列表
+  repeated ToolCall tool_calls = 4;
+
+  // role=tool 时，关联的 tool_call id
+  optional string tool_call_id = 5;
+
+  // 推理/思考内容（DeepSeek R1 的 reasoning_content / Qwen3 的 <think> 内容）
+  // 仅 role=assistant 时有效
+  optional string reasoning_content = 6;
+}
+
+// ─────────── Tool / Function Calling ───────────
+
+message Tool {
+  // 固定为 "function"
+  string type = 1;
+  FunctionDefinition function = 2;
+}
+
+message FunctionDefinition {
+  string name = 1;
+  optional string description = 2;
+  // JSON Schema 字符串（parameters）
+  string parameters = 3;
+}
+
+message ToolCall {
+  string id = 1;
+  // 固定为 "function"
+  string type = 2;
+  FunctionCallDetail function = 3;
+}
+
+message FunctionCallDetail {
+  string name = 1;
+  // JSON 字符串
+  string arguments = 2;
+}
+
+// ─────────── Response Format ───────────
+
+message ResponseFormat {
+  // "text" / "json_object" / "json_schema"
+  string type = 1;
+  // 当 type=json_schema 时，存放 JSON Schema 字符串
+  optional string json_schema = 2;
+}
+
+// ─────────── Logprobs ───────────
+
+message TopLogprob {
+  string token = 1;
+  float logprob = 2;
+  // UTF-8 字节偏移（可选）
+  repeated int32 bytes = 3;
+}
+
+message TokenLogprob {
+  string token = 1;
+  float logprob = 2;
+  repeated int32 bytes = 3;
+  repeated TopLogprob top_logprobs = 4;
+}
+
+message ChoiceLogprobs {
+  repeated TokenLogprob content = 1;
+}
+
+// ─────────── Token 用量统计 ───────────
+
+// 对齐 OpenAI CompletionTokensDetails
+message CompletionTokensDetails {
+  // 推理/思考阶段消耗的 token 数
+  int32 reasoning_tokens = 1;
+}
+
+message Usage {
+  int32 prompt_tokens = 1;
+  int32 completion_tokens = 2;
+  int32 total_tokens = 3;
+  // 补全 token 的细分统计（reasoning_tokens 等）
+  optional CompletionTokensDetails completion_tokens_details = 4;
+}
+
+// ─────────── Chat Completions Response（非流式） ───────────
+
+message ChatCompletionResponse {
+  string id = 1;
+  // 固定 "chat.completion"
+  string object = 2;
+  int64 created = 3;
+  string model = 4;
+  repeated Choice choices = 5;
+  Usage usage = 6;
+  optional string system_fingerprint = 7;
+}
+
+message Choice {
+  int32 index = 1;
+  ChatMessage message = 2;
+  // "stop" / "length" / "tool_calls" / "content_filter"
+  string finish_reason = 3;
+  optional ChoiceLogprobs logprobs = 4;
+}
+
+// ─────────── Chat Completions Chunk（流式） ───────────
+
+message ChatCompletionChunk {
+  string id = 1;
+  // 固定 "chat.completion.chunk"
+  string object = 2;
+  int64 created = 3;
+  string model = 4;
+  repeated ChunkChoice choices = 5;
+  // 最后一个 chunk 携带 usage
+  optional Usage usage = 6;
+  optional string system_fingerprint = 7;
+}
+
+message ChunkChoice {
+  int32 index = 1;
+  ChatMessageDelta delta = 2;
+  // 中间 chunk 为空，最后一个 chunk 携带 finish_reason
+  optional string finish_reason = 3;
+  optional ChoiceLogprobs logprobs = 4;
+}
+
+// 流式 delta（每个字段都是可选的增量片段）
+message ChatMessageDelta {
+  optional string role = 1;
+  optional string content = 2;
+  repeated ToolCall tool_calls = 3;
+  // 推理/思考内容增量（流式输出 reasoning_content）
+  optional string reasoning_content = 4;
+}

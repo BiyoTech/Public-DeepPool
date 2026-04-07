@@ -1,0 +1,68 @@
+# DeepNode localserver 配置
+
+server:
+  host: "127.0.0.1"
+  port: 8765
+
+# Platform 各组件 gRPC 地址（所有与 Manager 的通信均走 gRPC，不依赖 HTTP 端口）
+platform:
+  manager_grpc_target: "101.33.255.185:9090"         # Manager gRPC（直连）
+  scheduler_grpc_target: "101.33.255.185:9091"       # Scheduler gRPC（直连）
+  nodemanager_grpc_target: "101.33.255.185:9092"     # NodeManager gRPC（直连）
+  grpc_tls: false                                     # 是否启用 gRPC TLS 加密连接
+  grpc_tls_ca_cert: ""                                # CA 证书路径（PEM），留空使用系统根证书
+
+log:
+  level: "info"
+  log_dir: "~/.deeppool/logs"       # 日志落盘目录，支持 ~ 展开
+  file_name: "localserver.log"      # 日志文件名
+  backup_count: 7                   # 按天滚动，保留最近 N 天历史日志
+
+# 推理引擎性能配置
+# 不指定或设为 0 时，auto_fill_defaults 会根据系统硬件和引擎类型自动推荐默认值。
+# 各参数在不同引擎（vllm_mlx / vllm / llamacpp）上的生效范围不同，详见 config.py 注释。
+engine:
+  # --- KV Cache 配置（仅 vllm_mlx 引擎生效）---
+  # use_paged_cache: true        # 启用分页 KV Cache（MLX 映射为 RotatingKVCache）
+  # max_kv_size: 8192            # KV Cache 最大条目数（0 = 自动推荐；llamacpp 映射为 n_ctx）
+  # kv_bits: 0                   # KV Cache 量化位数（0 = 不量化，可选 4/8）
+  # kv_group_size: 64            # KV Cache 量化分组大小
+
+  # --- 批处理配置 ---
+  # continuous_batching: false   # 启用连续批处理（预留，MLX Metal 线程不安全，默认 false）
+
+  # --- 线程池配置 ---
+  # num_workers: 0               # gRPC 线程池大小（0 = 自动推荐，llamacpp 上限 4，其他上限 8）
+  # tokenizer_workers: 0         # Tokenizer 编码/解码 CPU 线程池大小（0 = 自动推荐；llamacpp 忽略）
+  tokenizer_prefer_cpu: true     # 强制 Tokenizer 跑在 CPU，不占用 GPU
+
+  # --- GPU / CPU 卸载配置 ---
+  # cpu_offload_fraction: 0.0    # CPU 卸载比例 0.0~1.0（预留，vllm 引擎可用）
+
+  # --- Prefill 配置（仅 vllm_mlx 引擎生效）---
+  # prefill_step_size: 0         # Prompt prefill 分步大小（0 = 自动推荐，防止 Metal OOM）
+
+  # --- Function Call 配置 ---
+  # tool_call_strategy: "auto"   # FC 解析策略（仅 vllm_mlx 引擎生效）:
+                                  #   "parser_only"              — 仅状态机解析 + schema 校验（零额外开销）
+                                  #   "outlines_only"            — 仅 outlines-mlx 约束解码（每次 FC 额外一次推理）
+                                  #   "parser_fallback_outlines" — 先 parser，失败后 fallback outlines-mlx
+                                  #   "auto"                     — 自动检测 outlinesmlx，有则 parser_fallback_outlines，无则 parser_only
+  # tool_call_temperature: 0.2   # FC 场景温度上限（tools 非空时 temperature 不超过此值）
+  # tool_call_max_tokens: 512    # FC 场景最大 token 数上限
+
+# 多模型管理配置
+# 支持按需加载多个模型并通过 LRU 策略自动淘汰，适用于单机部署多模型场景。
+multi_model:
+  max_loaded_models: 3          # 同时加载到内存的最大模型数（0 = 不限制，按内存自动管理）
+  memory_reserve_gb: 4.0        # 为系统保留的最低可用内存（GB），低于此值触发 LRU 淘汰
+
+# 独立运行模式配置
+# 启用后 localserver 自动生成 simei + 自动完成设备初始化，无需 Tauri 桌面应用。
+# 用户通过浏览器访问 http://127.0.0.1:8765/ 查看服务运行状态。
+standalone:
+  enabled: false                   # 是否启用独立运行模式
+  # 认证方式（二选一，优先级 token > account/password）：
+  token: ""                        # 方式1: 直接提供 platform 认证 token
+  account: ""                      # 方式2: Platform 登录账号（用户名/手机号/邮箱）
+  password: ""                     # 方式2: Platform 登录密码（启动时自动调用登录 API 获取 token）

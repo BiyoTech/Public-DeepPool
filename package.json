@@ -1,0 +1,14 @@
+{
+  "name": "deeppool",
+  "private": true,
+  "workspaces": [
+    "platform/web",
+    "clients/deepnode/app"
+  ],
+  "scripts": {
+    "dev:platform:web": "npm --workspace platform/web run dev",
+    "build:platform:web": "npm --workspace platform/web run build",
+    "dev:node:app": "npm --workspace clients/deepnode/app run dev",
+    "build:node:app": "npm --workspace clients/deepnode/app run build"
+  }
+}
