@@ -1,20 +1,22 @@
-"""MLX 推理引擎 — 适用于 Apple Silicon (M系列) Mac。
+"""MLX inference engine — for Apple Silicon (M-series) Macs.
 
-自动区分纯语言模型 (LLM) 与视觉语言模型 (VLM)：
-  - LLM: 使用 mlx_lm（安装: pip install mlx-lm）
-  - VLM: 使用 mlx_vlm（安装: pip install mlx-vlm）
+Auto-detects LLM vs VLM model types:
+  - LLM: mlx_lm (pip install mlx-lm)
+  - VLM: mlx_vlm (pip install mlx-vlm)
 
-支持:
-  - 非流式 / 流式
-  - tools（通过 chat_template 推断）
-  - reasoning_content（自动检测 DeepSeek R1 / Qwen3 等推理模型）
-  - n（降级为循环）
+Features:
+  - Non-streaming / streaming
+  - Tools (via chat_template inference)
+  - reasoning_content (auto-detect DeepSeek R1 / Qwen3 etc.)
+  - n (degraded to loop)
 
-性能特性（由 EngineConfig 控制）:
-  - Tokenizer CPU 线程池卸载：编码/解码在独立 CPU 线程池执行，不占 GPU
-  - KV Cache 分页管理：通过 RotatingKVCache 控制显存峰值
-  - Prefill 分步：大 prompt 按 step_size 分批 eval，防止 Metal OOM
-  - 推理串行保护：MLX Metal 有线程安全限制，默认全流程持锁
+Performance (controlled by EngineConfig):
+  - Tokenizer CPU thread pool offloading
+  - KV Cache paged management (RotatingKVCache)
+  - Adaptive prefill: dynamic step_size based on prompt length + available memory
+  - Short prompt fast-path: skip chunked prefill for small prompts
+  - Inference serial protection: MLX Metal thread-safety constraint
+  - Full observability: prefill_ms / decode_ms / lock_wait_ms / tok_s metrics
 """
 
 from __future__ import annotations
@@ -25,6 +27,7 @@ import json
 import logging
 import re
 import threading
+import time as _time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -51,6 +54,113 @@ from .tool_call_parser import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+# ─────────── Inference Metrics ───────────
+
+class InferMetrics:
+    """Per-request inference timing metrics for observability.
+
+    Captures fine-grained timing: lock wait, prefill, decode phases,
+    and derived throughput (tok/s). Designed to be cheap (no allocations
+    in hot path) and serializable to log / stats.
+    """
+    __slots__ = (
+        "lock_wait_ms", "prefill_ms", "decode_ms", "total_ms",
+        "prompt_tokens", "completion_tokens",
+        "prefill_step_size", "prompt_length",
+    )
+
+    def __init__(self) -> None:
+        self.lock_wait_ms: int = 0
+        self.prefill_ms: int = 0
+        self.decode_ms: int = 0
+        self.total_ms: int = 0
+        self.prompt_tokens: int = 0
+        self.completion_tokens: int = 0
+        self.prefill_step_size: int = 0
+        self.prompt_length: int = 0
+
+    @property
+    def prefill_tok_s(self) -> float:
+        """Prefill throughput (tok/s). Returns 0 if prefill_ms is 0."""
+        return (self.prompt_tokens * 1000.0 / self.prefill_ms) if self.prefill_ms > 0 else 0.0
+
+    @property
+    def decode_tok_s(self) -> float:
+        """Decode throughput (tok/s). Returns 0 if decode_ms is 0."""
+        return (self.completion_tokens * 1000.0 / self.decode_ms) if self.decode_ms > 0 else 0.0
+
+    def log_summary(self, request_id: str = "") -> None:
+        """Emit a single structured log line with all timing metrics."""
+        logger.info(
+            "infer_metrics request_id=%s prompt_tokens=%d completion_tokens=%d "
+            "lock_wait_ms=%d prefill_ms=%d decode_ms=%d total_ms=%d "
+            "prefill_tok_s=%.1f decode_tok_s=%.1f prefill_step_size=%d",
+            request_id, self.prompt_tokens, self.completion_tokens,
+            self.lock_wait_ms, self.prefill_ms, self.decode_ms, self.total_ms,
+            self.prefill_tok_s, self.decode_tok_s, self.prefill_step_size,
+        )
+
+
+# ─────────── Adaptive Prefill Strategy ───────────
+
+# Short prompt threshold: below this, skip chunked prefill entirely
+# (let MLX process in a single eval — lower overhead, no tqdm progress bar)
+_SHORT_PROMPT_THRESHOLD = 2048
+
+# Prefill step tiers: (min_prompt_len, step_size)
+# Larger steps → fewer eval rounds → faster; but higher peak memory.
+# Ordered from longest prompts to shortest for quick lookup.
+_PREFILL_STEP_TIERS = [
+    (16384, 2048),   # very long context: large steps for throughput
+    (8192,  1536),   # long context
+    (4096,  1024),   # medium context
+    (2048,   768),   # moderate context
+]
+
+
+def _compute_adaptive_prefill_step(
+    prompt_tokens: int,
+    base_step: int,
+    available_mem_gb: float,
+) -> int:
+    """Compute optimal prefill_step_size based on prompt length and available memory.
+
+    Strategy:
+      1. Short prompts (< _SHORT_PROMPT_THRESHOLD) → return 0 (skip chunked prefill).
+      2. Select tier step from _PREFILL_STEP_TIERS by prompt length.
+      3. Scale down if available memory is low (< 8 GB → halve the step).
+      4. Clamp to [256, base_step * 2] to stay within safe bounds.
+
+    Args:
+        prompt_tokens: Number of tokens in the prompt.
+        base_step: The static prefill_step_size from EngineConfig.
+        available_mem_gb: Current available system memory in GB.
+
+    Returns:
+        Optimal prefill_step_size, or 0 to skip chunked prefill.
+    """
+    # Short prompts: single-shot eval, no chunking overhead
+    if prompt_tokens < _SHORT_PROMPT_THRESHOLD:
+        return 0
+
+    # Find the matching tier
+    step = base_step
+    for min_len, tier_step in _PREFILL_STEP_TIERS:
+        if prompt_tokens >= min_len:
+            step = tier_step
+            break
+
+    # Memory pressure: scale down under low memory to prevent OOM
+    if available_mem_gb < 8.0:
+        step = max(256, step // 2)
+    elif available_mem_gb < 16.0:
+        step = max(256, int(step * 0.75))
+
+    # Clamp to safe bounds
+    step = max(256, min(step, base_step * 2))
+    return step
 
 # ─────────── 模型默认 stop 序列 ───────────
 # Different models define their own EOS/stop tokens in chat_template, but
@@ -109,7 +219,10 @@ def _get_model_stop_sequences(model_name: str) -> list[str]:
 
 
 # ─────────── Special token cleanup ───────────
-# Filter residual special tokens from model output
+# Filter residual special tokens from model output.
+# IMPORTANT: Gemma4 tool_call tokens (<|tool_call>, <tool_call|>, <|"|>) are
+# deliberately EXCLUDED here — they must survive until after tool call parsing.
+# They are cleaned in a separate post-parse phase via _GEMMA4_TOOL_TOKENS_RE.
 _SPECIAL_TOKENS_RE = re.compile(
     r"<\|im_end\|>|<\|im_start\|>|<\|endoftext\|>|"
     r"<\|end\|>|<\|eot_id\|>|<\|start_header_id\|>|<\|end_header_id\|>|"
@@ -117,27 +230,45 @@ _SPECIAL_TOKENS_RE = re.compile(
     r"<\|end_of_text\|>|<\|end▁of▁sentence\|>|<｜end▁of▁sentence｜>|"
     # Gemma 3 control tokens
     r"<end_of_turn>|<start_of_turn>|"
-    # Gemma 4 control tokens
+    # Gemma 4 turn control tokens (NOT tool_call tokens)
     r"<\|turn>|<turn\|>|"
-    # Gemma 4 tool call / tool response control tokens
-    r'<\|tool_call>|<tool_call\|>|<\|tool_response>|<tool_response\|>|'
-    r'<\|tool>|<tool\|>|<\|"\|>|'
     r"</s>|<s>|<pad>|\[PAD\]|\[SEP\]|\[CLS\]"
 )
 
-# Kimi tool_call 定界 token（tool_call 解析完成后清理）
+# Kimi tool_call delimiter tokens (cleaned after tool_call parsing)
 _KIMI_TOOL_TOKENS_RE = re.compile(
     r"<\|tool_call_begin\|>|<\|tool_call_end\|>|"
     r"<\|tool_calls_section_begin\|>|<\|tool_calls_section_end\|>|"
     r"<\|tool_call_argument_begin\|>"
 )
 
+# Gemma4 tool_call tokens — cleaned ONLY after tool call parsing is complete.
+# Includes: <|tool_call>, <tool_call|>, <|tool_response>, <tool_response|>,
+# <|tool>, <tool|>, <|"|> (parameter quoting token)
+_GEMMA4_TOOL_TOKENS_RE = re.compile(
+    r'<\|tool_call>|<tool_call\|>|<\|tool_response>|<tool_response\|>|'
+    r'<\|tool>|<tool\|>|<\|"\|>'
+)
 
-def _clean_special_tokens(text: str, include_tool_tokens: bool = False) -> str:
-    """移除模型输出中的特殊 token。"""
+
+def _clean_special_tokens(
+    text: str,
+    include_tool_tokens: bool = False,
+    include_gemma4_tokens: bool = False,
+) -> str:
+    """Remove residual special tokens from model output.
+
+    Args:
+        text: Raw model output text.
+        include_tool_tokens: Also clean Kimi tool_call delimiter tokens.
+        include_gemma4_tokens: Also clean Gemma4 tool_call/response tokens.
+            Must only be True AFTER tool call parsing is complete.
+    """
     result = _SPECIAL_TOKENS_RE.sub("", text)
     if include_tool_tokens:
         result = _KIMI_TOOL_TOKENS_RE.sub("", result)
+    if include_gemma4_tokens:
+        result = _GEMMA4_TOOL_TOKENS_RE.sub("", result)
     return result
 
 
@@ -184,12 +315,14 @@ def _messages_to_dict_list(messages: list[ChatMessage], model_type: str = "") ->
       - GLM: maps role="tool" to "observation".
       - Gemma 3 (gemma3/gemma3n): no system role support — system messages
         are merged into the first user message content.
-      - Gemma 4: supports system role natively, no special handling needed.
+      - Gemma 4: converts OpenAI role="tool" messages into tool_responses
+        format on the preceding assistant message, per Gemma4 FC spec.
     """
     result = []
 
     # Gemma 3 pre-processing: collect system content to merge into first user msg
     is_gemma3 = model_type in ("gemma3", "gemma3n")
+    is_gemma4 = model_type == "gemma4"
     system_content_for_merge = ""
     if is_gemma3:
         for m in messages:
@@ -207,6 +340,29 @@ def _messages_to_dict_list(messages: list[ChatMessage], model_type: str = "") ->
         # GLM: tool results use "observation" role
         if model_type == "glm" and role == "tool":
             role = "observation"
+
+        # Gemma 4: merge role=tool into preceding assistant's tool_responses
+        if is_gemma4 and m.role == "tool":
+            # Find the preceding assistant message and attach tool_responses
+            if result:
+                prev = result[-1]
+                if prev.get("role") == "assistant":
+                    if "tool_responses" not in prev:
+                        prev["tool_responses"] = []
+                    # Parse content as JSON if possible (tool results are often JSON)
+                    response_data = m.content or ""
+                    try:
+                        response_data = json.loads(response_data)
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+                    prev["tool_responses"].append({
+                        "name": m.name or "",
+                        "response": response_data,
+                    })
+                    continue
+            # If no preceding assistant found, skip this tool message
+            logger.warning("gemma4: orphan tool message without preceding assistant, skipping")
+            continue
 
         msg: dict[str, Any] = {"role": role, "content": m.content or ""}
 
@@ -660,18 +816,14 @@ class VLLMMLXEngine(LLMEngine):
         return tokenizer.apply_chat_template(messages, **kwargs)
 
     # ------------------------------------------------------------------
-    # 非流式生成
+    # Non-streaming generation
     # ------------------------------------------------------------------
 
     def chat_complete(self, request: ChatCompletionRequest) -> ChatCompletionResult:
-        """非流式 Chat Completions。
+        """Non-streaming Chat Completions with full observability.
 
-        优化策略：
-          - prompt 格式化在锁外执行（纯 CPU 操作）
-          - 推理锁保护 GPU 串行执行
-          - 后处理（reasoning 解析、tool_calls 提取）在锁外执行
-          - 不在热路径触发 gc.collect，仅清理 Metal cache
-          - FC 场景自动降温 + 限制 max_tokens（由 EngineConfig 控制）
+        Pipeline: format prompt (CPU) → acquire lock → GPU inference → release lock
+        → post-process (CPU). Captures lock_wait / prefill / decode timing.
         """
         import mlx.core as mx
 
@@ -684,7 +836,7 @@ class VLLMMLXEngine(LLMEngine):
 
         reasoning_parser = self._create_reasoning_parser()
 
-        # FC 场景参数调整
+        # FC scenario: clamp temperature + max_tokens
         temperature = request.temperature
         max_tokens = request.max_tokens
         if dict_tools and request.tool_choice != "none":
@@ -696,23 +848,26 @@ class VLLMMLXEngine(LLMEngine):
         total_prompt_tokens = 0
         total_completion_tokens = 0
         tc_metrics: ToolCallMetrics | None = None
+        infer_metrics = InferMetrics()
 
         for i in range(request.n):
-            # --- 锁内：GPU 推理（Metal 串行保护）---
+            # Measure lock wait time
+            lock_wait_start = _time.monotonic()
             with self._infer_lock:
-                result_text, prompt_tks, gen_tks = self._generate_with_stats(
-                    formatted_prompt,
+                infer_metrics.lock_wait_ms = int((_time.monotonic() - lock_wait_start) * 1000)
+
+                result_text, prompt_tks, gen_tks = self._generate_with_metrics(
+                    formatted_prompt, infer_metrics,
                     temperature=temperature,
                     max_tokens=max_tokens,
                     top_p=request.top_p,
                 )
-            # 仅清理 Metal cache，不触发 GC（避免热路径延迟）
             mx.clear_cache()
 
-            # --- 锁外：后处理（纯 CPU 操作）---
-            # 第零阶段：按模型 stop 序列硬截断，防止续写下一轮对话
+            # --- Post-processing (CPU-only) ---
             result_text = _truncate_at_stop(result_text, self._stop_sequences)
-            # 第一阶段清理：移除通用特殊 token（保留 Kimi tool_call 定界符）
+            # First cleanup: remove generic special tokens but preserve Gemma4
+            # tool_call tokens (needed by Gemma4Extractor for parsing)
             result_text = _clean_special_tokens(result_text)
 
             reasoning_text = None
@@ -721,13 +876,14 @@ class VLLMMLXEngine(LLMEngine):
                 reasoning_text, parsed_content = reasoning_parser.extract_reasoning(result_text)
                 content_text = parsed_content if parsed_content is not None else ""
 
-            # 配置驱动的 tool_call 解析（传递 model_type）
             parse_result = self._parse_tool_calls(
                 content_text, dict_tools, request.tool_choice, formatted_prompt, max_tokens,
             )
-            # 第二阶段清理：tool_call 解析完成后清理 Kimi 定界 token
+            # Post-parse cleanup: now safe to remove Kimi + Gemma4 tool tokens
             content_text = _clean_special_tokens(
-                parse_result.remaining_text, include_tool_tokens=True,
+                parse_result.remaining_text,
+                include_tool_tokens=True,
+                include_gemma4_tokens=True,
             )
             tool_calls = parse_result.calls
             tc_metrics = parse_result.metrics
@@ -748,7 +904,10 @@ class VLLMMLXEngine(LLMEngine):
             total_prompt_tokens = prompt_tks
             total_completion_tokens += gen_tks
 
-        # 精确统计 reasoning tokens（在 CPU 线程池中 tokenize）
+        # Compute total_ms and emit metrics
+        infer_metrics.total_ms = infer_metrics.lock_wait_ms + infer_metrics.prefill_ms + infer_metrics.decode_ms
+        infer_metrics.log_summary(request.request_id)
+
         reasoning_tokens = self._count_reasoning_tokens(choices)
         details = CompletionTokensDetails(reasoning_tokens=reasoning_tokens) if reasoning_tokens > 0 else None
         usage = UsageStats(
@@ -757,23 +916,21 @@ class VLLMMLXEngine(LLMEngine):
             total_tokens=total_prompt_tokens + total_completion_tokens,
             completion_tokens_details=details,
         )
-        return ChatCompletionResult(choices=choices, usage=usage, tool_call_metrics=tc_metrics)
+        result = ChatCompletionResult(choices=choices, usage=usage, tool_call_metrics=tc_metrics)
+        result.infer_metrics = infer_metrics  # type: ignore[attr-defined]
+        return result
 
     # ------------------------------------------------------------------
-    # 流式生成
+    # Streaming generation
     # ------------------------------------------------------------------
 
     def stream_chat_complete(
         self, request: ChatCompletionRequest,
     ) -> Generator[ChatCompletionChunkResult, None, None]:
-        """流式 Chat Completions。
+        """Streaming Chat Completions with adaptive prefill + observability.
 
-        优化策略：
-          - prompt 格式化在锁外执行（纯 CPU）
-          - 推理锁保护整个 stream（MLX Metal 线程安全约束）
-          - tool_calls 解析在锁释放后执行
-          - 不在热路径触发 gc.collect
-          - FC 场景自动降温 + 限制 max_tokens
+        Pipeline: format (CPU) → lock wait → prefill+decode (GPU stream) → unlock
+        → tool_calls parse (CPU). First chunk boundary splits prefill/decode timing.
         """
         import mlx.core as mx
 
@@ -786,7 +943,7 @@ class VLLMMLXEngine(LLMEngine):
 
         reasoning_parser = self._create_reasoning_parser()
 
-        # FC 场景参数调整
+        # FC scenario: clamp temperature + max_tokens
         temperature = request.temperature
         max_tokens = request.max_tokens
         if dict_tools and request.tool_choice != "none":
@@ -797,33 +954,44 @@ class VLLMMLXEngine(LLMEngine):
         full_text = ""
         previous_text = ""
         last_usage = UsageStats()
+        infer_metrics = InferMetrics()
 
         try:
-            # --- 锁内：GPU 推理 stream（Metal 串行保护）---
+            # Measure lock wait time
+            lock_wait_start = _time.monotonic()
             with self._infer_lock:
+                infer_metrics.lock_wait_ms = int((_time.monotonic() - lock_wait_start) * 1000)
+
                 token_iterator = self._stream_generate(
-                    formatted_prompt,
+                    formatted_prompt, metrics=infer_metrics,
                     temperature=temperature,
                     max_tokens=max_tokens,
                     top_p=request.top_p,
                 )
+
+                first_token = True
+                prefill_start = _time.monotonic()
 
                 for chunk in token_iterator:
                     if chunk is None or not hasattr(chunk, "text"):
                         continue
 
                     delta_text = chunk.text
+
+                    # First token marks end of prefill phase
+                    if first_token and delta_text:
+                        infer_metrics.prefill_ms = int((_time.monotonic() - prefill_start) * 1000)
+                        first_token = False
+
                     full_text += delta_text
 
-                    # 检测 stop 序列: 一旦生成到 stop token 立即截断并终止
+                    # Stop sequence detection: truncate and terminate immediately
                     stop_hit = False
                     if self._stop_sequences:
                         for stop_seq in self._stop_sequences:
                             stop_pos = full_text.find(stop_seq)
                             if stop_pos != -1:
-                                # 计算截断后 full_text 的长度
                                 truncated_full = full_text[:stop_pos]
-                                # 重新计算 delta_text: 只保留截断范围内的增量
                                 prev_len = len(full_text) - len(delta_text)
                                 delta_text = truncated_full[prev_len:] if stop_pos > prev_len else ""
                                 full_text = truncated_full
@@ -849,7 +1017,9 @@ class VLLMMLXEngine(LLMEngine):
                         if delta_msg is None:
                             continue
 
-                        content_part = _clean_special_tokens(delta_msg.content) if delta_msg.content else None
+                        content_part = _clean_special_tokens(
+                            delta_msg.content, include_gemma4_tokens=True,
+                        ) if delta_msg.content else None
                         reasoning_part = delta_msg.reasoning
 
                         if not content_part and not reasoning_part:
@@ -867,7 +1037,9 @@ class VLLMMLXEngine(LLMEngine):
                             ]
                         )
                     else:
-                        cleaned = _clean_special_tokens(delta_text)
+                        # Clean for client display (including Gemma4 tool tokens)
+                        # but full_text retains them for post-stream tool_call parsing
+                        cleaned = _clean_special_tokens(delta_text, include_gemma4_tokens=True)
                         if cleaned:
                             yield ChatCompletionChunkResult(
                                 choices=[
@@ -878,11 +1050,14 @@ class VLLMMLXEngine(LLMEngine):
                                 ]
                             )
 
-                    # stop 序列命中后终止 stream
                     if stop_hit:
                         break
 
-            # --- 锁外：tool_calls 解析 + 最终 chunk（纯 CPU）---
+                # Capture decode phase timing
+                total_gpu_ms = int((_time.monotonic() - prefill_start) * 1000)
+                infer_metrics.decode_ms = max(0, total_gpu_ms - infer_metrics.prefill_ms)
+
+            # --- Outside lock: tool_calls parsing + final chunk (CPU) ---
             if reasoning_parser:
                 _, content_for_tools = reasoning_parser.extract_reasoning(full_text)
                 content_for_tools = content_for_tools or ""
@@ -899,6 +1074,12 @@ class VLLMMLXEngine(LLMEngine):
             if tool_calls:
                 final_delta.tool_calls = tool_calls
 
+            # Finalize metrics
+            infer_metrics.prompt_tokens = last_usage.prompt_tokens
+            infer_metrics.completion_tokens = last_usage.completion_tokens
+            infer_metrics.total_ms = infer_metrics.lock_wait_ms + infer_metrics.prefill_ms + infer_metrics.decode_ms
+            infer_metrics.log_summary(request.request_id)
+
             yield ChatCompletionChunkResult(
                 choices=[
                     StreamChoice(
@@ -908,28 +1089,60 @@ class VLLMMLXEngine(LLMEngine):
                     )
                 ],
                 usage=last_usage,
+                infer_metrics=infer_metrics,  # type: ignore[call-arg]
             )
         finally:
-            # 仅清理 Metal cache，不触发 GC（避免热路径延迟）
             mx.clear_cache()
-            logger.debug("stream generation finished, Metal cache cleared")
 
     # ------------------------------------------------------------------
-    # 后端适配：统一封装 generate / stream_generate
+    # Backend: generate / stream_generate with adaptive prefill
     # ------------------------------------------------------------------
 
     @staticmethod
     def _make_lm_sampler(temperature: float, top_p: float) -> Any:
-        """构建 mlx_lm generate_step 所需的 sampler 回调。
-
-        mlx_lm >= 0.31 不再接受 temperature/top_p 作为直接参数，
-        需要通过 make_sampler 创建采样函数传入 sampler 参数。
-        """
+        """Build mlx_lm sampler callback (mlx_lm >= 0.31 API)."""
         from mlx_lm.sample_utils import make_sampler
         return make_sampler(temp=temperature, top_p=top_p)
 
-    def _generate_with_stats(self, prompt: str, **kwargs: Any) -> tuple[str, int, int]:
-        """非流式生成：通过 stream_generate 收集完整文本 + token 统计。
+    def _estimate_prompt_tokens(self, prompt: str) -> int:
+        """Fast prompt token count estimate for adaptive prefill decisions.
+
+        Uses the tokenizer CPU pool to avoid blocking GPU. Falls back to
+        a rough char-based estimate if tokenization fails.
+        """
+        try:
+            return self._count_tokens_on_cpu(prompt)
+        except Exception:
+            # Rough fallback: ~3.5 chars per token for English/Chinese mix
+            return len(prompt) // 4
+
+    def _resolve_prefill_step(self, prompt_tokens: int) -> int:
+        """Resolve the effective prefill_step_size for this request.
+
+        Short prompts → 0 (single-shot eval, skip chunked prefill).
+        Long prompts → adaptive step based on prompt length + available memory.
+        """
+        ec = self._engine_config
+        if ec.prefill_step_size <= 0:
+            return 0
+
+        from service.memory_guard import get_available_memory_gb
+        available_mem = get_available_memory_gb()
+        step = _compute_adaptive_prefill_step(prompt_tokens, ec.prefill_step_size, available_mem)
+        if step > 0:
+            logger.debug(
+                "adaptive prefill: prompt_tokens=%d available_mem=%.1fGB → step=%d (base=%d)",
+                prompt_tokens, available_mem, step, ec.prefill_step_size,
+            )
+        return step
+
+    def _generate_with_metrics(
+        self, prompt: str, metrics: InferMetrics, **kwargs: Any,
+    ) -> tuple[str, int, int]:
+        """Non-streaming generation with full timing metrics.
+
+        Wraps _stream_generate, tracks prefill/decode phases via the first
+        chunk boundary (first chunk = prefill done).
 
         Returns:
             (text, prompt_tokens, generation_tokens)
@@ -937,20 +1150,36 @@ class VLLMMLXEngine(LLMEngine):
         full_text = ""
         prompt_tokens = 0
         generation_tokens = 0
-        for chunk in self._stream_generate(prompt, **kwargs):
+        first_token = True
+        prefill_start = _time.monotonic()
+
+        for chunk in self._stream_generate(prompt, metrics=metrics, **kwargs):
             if chunk is None:
                 continue
+            if first_token and hasattr(chunk, "text") and chunk.text:
+                # First token marks end of prefill phase
+                metrics.prefill_ms = int((_time.monotonic() - prefill_start) * 1000)
+                first_token = False
+
             full_text += getattr(chunk, "text", "")
             prompt_tokens = getattr(chunk, "prompt_tokens", prompt_tokens)
             generation_tokens = getattr(chunk, "generation_tokens", generation_tokens)
-        logger.debug(
-            "generate_with_stats: prompt_tokens=%d generation_tokens=%d",
-            prompt_tokens, generation_tokens,
-        )
+
+        # Decode phase = total GPU time - prefill time
+        total_gpu_ms = int((_time.monotonic() - prefill_start) * 1000)
+        metrics.decode_ms = max(0, total_gpu_ms - metrics.prefill_ms)
+        metrics.prompt_tokens = prompt_tokens
+        metrics.completion_tokens = generation_tokens
         return full_text, prompt_tokens, generation_tokens
 
-    def _stream_generate(self, prompt: str, **kwargs: Any) -> Any:
-        """根据模型类型调用对应的 stream_generate，传入 KV Cache 和 prefill 配置。"""
+    def _stream_generate(self, prompt: str, metrics: InferMetrics | None = None, **kwargs: Any) -> Any:
+        """Dispatch to LLM/VLM stream_generate with KV Cache + adaptive prefill.
+
+        Args:
+            prompt: Formatted prompt string.
+            metrics: Optional InferMetrics to record prefill_step_size used.
+            **kwargs: temperature, max_tokens, top_p.
+        """
         temperature = kwargs.get("temperature", 1.0)
         max_tokens = kwargs.get("max_tokens", 512)
         top_p = kwargs.get("top_p", 1.0)
@@ -969,11 +1198,10 @@ class VLLMMLXEngine(LLMEngine):
 
         from mlx_lm import stream_generate
 
-        # 构建 KV Cache 和 prefill 参数
         extra_kwargs: dict[str, Any] = {}
         ec = self._engine_config
 
-        # KV Cache 分页管理：使用 RotatingKVCache 控制显存峰值
+        # KV Cache: RotatingKVCache for memory-bounded inference
         if ec.use_paged_cache and ec.max_kv_size > 0:
             try:
                 from mlx_lm.models.cache import RotatingKVCache
@@ -982,16 +1210,17 @@ class VLLMMLXEngine(LLMEngine):
                     cache_kwargs["kv_bits"] = ec.kv_bits
                     cache_kwargs["kv_group_size"] = ec.kv_group_size
                 extra_kwargs["kv_cache"] = RotatingKVCache(**cache_kwargs)
-                logger.debug(
-                    "using RotatingKVCache: max_size=%d kv_bits=%d",
-                    ec.max_kv_size, ec.kv_bits,
-                )
             except ImportError:
-                logger.warning("RotatingKVCache not available in current mlx_lm version, using default cache")
+                logger.warning("RotatingKVCache not available, using default cache")
 
-        # Prefill 分步大小：防止大 prompt 单次 eval 导致 Metal OOM
-        if ec.prefill_step_size > 0:
-            extra_kwargs["prefill_step_size"] = ec.prefill_step_size
+        # Adaptive prefill: compute optimal step_size per request
+        prompt_tokens_est = self._estimate_prompt_tokens(prompt)
+        step = self._resolve_prefill_step(prompt_tokens_est)
+        if step > 0:
+            extra_kwargs["prefill_step_size"] = step
+        if metrics is not None:
+            metrics.prefill_step_size = step
+            metrics.prompt_length = prompt_tokens_est
 
         return stream_generate(
             model=self._model,
@@ -1053,8 +1282,7 @@ class VLLMMLXEngine(LLMEngine):
         tools: list[dict],
         max_tokens: int = 512,
     ) -> ToolCallParseResult:
-        """通过 outlines-mlx 约束解码生成 tool_call。"""
-        import time as _time
+        """Generate tool_call via outlines-mlx constrained decoding."""
         start_ms = int(_time.monotonic() * 1000)
 
         schema = ToolCallParser.build_tool_call_json_schema(tools)

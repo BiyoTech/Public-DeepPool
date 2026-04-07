@@ -11,7 +11,7 @@ from __future__ import annotations
 import abc
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Generator, Optional
+from typing import Any, Generator, Optional
 
 
 # ─────────── 请求数据结构 ───────────
@@ -131,24 +131,25 @@ class ChatChoice:
 
 @dataclass
 class ChatCompletionResult:
-    """非流式完整响应。"""
+    """Non-streaming complete response."""
     choices: list[ChatChoice] = field(default_factory=list)
     usage: UsageStats = field(default_factory=UsageStats)
-    tool_call_metrics: "ToolCallMetrics | None" = None  # FC 解析指标（延迟导入避免循环）
+    tool_call_metrics: "ToolCallMetrics | None" = None  # FC parse metrics (lazy import)
+    infer_metrics: Any = None  # InferMetrics from vllm_mlx engine (timing observability)
 
 
 @dataclass
 class StreamDelta:
-    """流式增量片段。"""
+    """Streaming delta fragment."""
     role: Optional[str] = None
     content: Optional[str] = None
-    reasoning_content: Optional[str] = None  # 推理/思考内容增量
+    reasoning_content: Optional[str] = None  # Reasoning/thinking content delta
     tool_calls: list[ToolCallResult] | None = None
 
 
 @dataclass
 class StreamChoice:
-    """流式单个 choice 增量。"""
+    """Streaming single choice delta."""
     index: int = 0
     delta: StreamDelta | None = None
     finish_reason: Optional[str] = None
@@ -157,9 +158,10 @@ class StreamChoice:
 
 @dataclass
 class ChatCompletionChunkResult:
-    """流式单个 chunk。"""
+    """Streaming single chunk."""
     choices: list[StreamChoice] = field(default_factory=list)
     usage: UsageStats | None = None
+    infer_metrics: Any = None  # InferMetrics from vllm_mlx engine (timing observability)
 
 
 # ─────────── 引擎抽象 ───────────

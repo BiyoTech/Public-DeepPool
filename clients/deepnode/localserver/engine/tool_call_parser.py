@@ -544,27 +544,80 @@ register_extractor("mistral", MistralExtractor)
 class Gemma4Extractor(ToolCallExtractor):
     """Gemma 4 tool call extractor.
 
-    Official format (https://ai.google.dev/gemma/docs/core/prompt-formatting-gemma4):
+    Supports two output formats per official docs
+    (https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4):
+
+    Format A — inline key-value with <|"|> quoting (most common in practice):
+        <|tool_call>call:func_name{key1:<|"|>value1<|"|>,key2:<|"|>value2<|"|>}<tool_call|>
+
+    Format B — JSON body (newline-separated):
         <|tool_call>
-        call: function_name
-        {"arg1": "value1", "arg2": "value2"}
+        call: func_name
+        {"key1": "value1", "key2": "value2"}
         <tool_call|>
 
     Multiple tool calls are emitted as consecutive blocks.
-    The <|"|> quoting syntax used in tool responses is NOT expected in
-    model output — the model always produces plain JSON arguments.
     """
 
-    # Match a single tool_call block.
-    # Group 1: function name after "call:"
-    # Group 2: JSON arguments body (everything between name line and closing tag)
-    _BLOCK_RE = re.compile(
+    # Format A: inline call with {} args block (no newline between name and args)
+    _INLINE_BLOCK_RE = re.compile(
+        r"<\|tool_call>\s*call:\s*(?P<name>\w+)\s*\{(?P<args>[^}]*)\}\s*<tool_call\|>",
+        re.DOTALL,
+    )
+
+    # Format B: JSON body after newline
+    _JSON_BLOCK_RE = re.compile(
         r"<\|tool_call>\s*"
-        r"call:\s*(?P<name>[^\n]+?)\s*\n"
-        r"(?P<args>.*?)"
+        r"call:\s*(?P<name>[^\n{]+?)\s*\n"
+        r"(?P<args>\{.*?\})"
         r"\s*<tool_call\|>",
         re.DOTALL,
     )
+
+    # For extracting key-value pairs from Format A args string
+    # Matches: key:<|"|>value<|"|> or key:bare_value
+    _KV_RE = re.compile(
+        r'(\w+)\s*:\s*(?:<\|"\|>(.*?)<\|"\|>|([^,}]*))',
+    )
+
+    @staticmethod
+    def _cast_value(v: str) -> Any:
+        """Attempt to cast a string value to int/float/bool, fallback to str."""
+        v = v.strip()
+        if not v:
+            return v
+        try:
+            return int(v)
+        except ValueError:
+            pass
+        try:
+            return float(v)
+        except ValueError:
+            pass
+        lower = v.lower()
+        if lower == "true":
+            return True
+        if lower == "false":
+            return False
+        # Strip surrounding quotes if present
+        if len(v) >= 2 and v[0] in ("'", '"') and v[-1] == v[0]:
+            return v[1:-1]
+        return v
+
+    def _parse_inline_args(self, args_str: str) -> dict[str, Any]:
+        """Parse inline key-value args from Format A.
+
+        Input example: 'key1:<|"|>value1<|"|>,key2:<|"|>value2<|"|>'
+        """
+        result: dict[str, Any] = {}
+        for match in self._KV_RE.finditer(args_str):
+            key = match.group(1)
+            # group(2) = quoted value, group(3) = bare value
+            quoted_val = match.group(2)
+            bare_val = match.group(3)
+            value = quoted_val if quoted_val is not None else (bare_val or "")
+            result[key] = self._cast_value(value)
+        return result
 
     def extract(self, text: str, tools: list[dict] | None = None) -> ExtractedToolCalls:
         cleaned = _strip_think_tags(text)
@@ -577,27 +630,35 @@ class Gemma4Extractor(ToolCallExtractor):
         content = cleaned[:first_pos].strip() if first_pos > 0 else None
 
         calls: list[dict] = []
-        for match in self._BLOCK_RE.finditer(cleaned):
+
+        # Try Format A first (inline key-value, most common)
+        for match in self._INLINE_BLOCK_RE.finditer(cleaned):
             func_name = match.group("name").strip()
             args_str = match.group("args").strip()
-
             if not func_name:
                 continue
+            arguments = self._parse_inline_args(args_str)
+            calls.append({"name": func_name, "arguments": arguments})
 
-            # Parse JSON arguments
-            try:
-                args = json.loads(args_str)
-            except json.JSONDecodeError:
-                logger.warning(
-                    "gemma4 tool_call JSON parse failed for func=%s, raw=%s",
-                    func_name, args_str[:200],
-                )
-                args = {}
-
-            calls.append({
-                "name": func_name,
-                "arguments": args if isinstance(args, dict) else {},
-            })
+        # If no inline matches, try Format B (JSON body)
+        if not calls:
+            for match in self._JSON_BLOCK_RE.finditer(cleaned):
+                func_name = match.group("name").strip()
+                args_str = match.group("args").strip()
+                if not func_name:
+                    continue
+                try:
+                    args = json.loads(args_str)
+                except json.JSONDecodeError:
+                    logger.warning(
+                        "gemma4 tool_call JSON parse failed for func=%s, raw=%s",
+                        func_name, args_str[:200],
+                    )
+                    args = {}
+                calls.append({
+                    "name": func_name,
+                    "arguments": args if isinstance(args, dict) else {},
+                })
 
         if calls:
             logger.debug("gemma4 extractor found %d tool call(s)", len(calls))

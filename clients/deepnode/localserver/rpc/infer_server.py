@@ -303,12 +303,13 @@ class LLMInferServicer(llm_infer_pb2_grpc.LLMInferServiceServicer):
         )
         response.choices.extend(proto_choices)
 
-        # 记录成功请求
+        # Record stats with enhanced metrics
         reasoning_tokens = (
             engine_result.usage.completion_tokens_details.reasoning_tokens
             if engine_result.usage.completion_tokens_details else 0
         )
         tc_m = engine_result.tool_call_metrics
+        im = getattr(engine_result, 'infer_metrics', None)
         _record_stats(
             request_id=request_id, source="local",
             model_name=model_name,
@@ -324,10 +325,17 @@ class LLMInferServicer(llm_infer_pb2_grpc.LLMInferServiceServicer):
         )
 
         logger.info(
-            "ChatCompletion done request_id=%s choices=%d prompt_tokens=%d completion_tokens=%d duration=%dms",
+            "ChatCompletion done request_id=%s choices=%d prompt_tokens=%d "
+            "completion_tokens=%d duration=%dms lock_wait_ms=%d "
+            "prefill_ms=%d decode_ms=%d prefill_tok_s=%.1f decode_tok_s=%.1f",
             request_id, len(proto_choices),
             engine_result.usage.prompt_tokens, engine_result.usage.completion_tokens,
             duration_ms,
+            im.lock_wait_ms if im else 0,
+            im.prefill_ms if im else 0,
+            im.decode_ms if im else 0,
+            im.prefill_tok_s if im else 0.0,
+            im.decode_tok_s if im else 0.0,
         )
         return response
 
@@ -372,12 +380,15 @@ class LLMInferServicer(llm_infer_pb2_grpc.LLMInferServiceServicer):
         created = int(time.time())
         model = model_name
         last_usage = None
-        last_tool_call_metrics = None  # 跟踪流式中最后一次 tool_call 指标
+        last_tool_call_metrics = None
+        last_infer_metrics = None  # Track InferMetrics from final chunk
 
         for chunk_result in stream:
-            # 跟踪 tool_call_metrics（引擎可能在最后一个 chunk 携带指标）
+            # Track tool_call_metrics and infer_metrics from final chunk
             if hasattr(chunk_result, 'tool_call_metrics') and chunk_result.tool_call_metrics is not None:
                 last_tool_call_metrics = chunk_result.tool_call_metrics
+            if hasattr(chunk_result, 'infer_metrics') and chunk_result.infer_metrics is not None:
+                last_infer_metrics = chunk_result.infer_metrics
             if chunk_result.usage:
                 last_usage = chunk_result.usage
 
@@ -458,7 +469,17 @@ class LLMInferServicer(llm_infer_pb2_grpc.LLMInferServiceServicer):
                 tool_call_parse_ms=tc_m.tool_call_parse_ms if tc_m else 0,
             )
 
-        logger.info("ChatCompletionStream done request_id=%s duration=%dms", request_id, duration_ms)
+        logger.info(
+            "ChatCompletionStream done request_id=%s duration=%dms "
+            "lock_wait_ms=%d prefill_ms=%d decode_ms=%d "
+            "prefill_tok_s=%.1f decode_tok_s=%.1f",
+            request_id, duration_ms,
+            last_infer_metrics.lock_wait_ms if last_infer_metrics else 0,
+            last_infer_metrics.prefill_ms if last_infer_metrics else 0,
+            last_infer_metrics.decode_ms if last_infer_metrics else 0,
+            last_infer_metrics.prefill_tok_s if last_infer_metrics else 0.0,
+            last_infer_metrics.decode_tok_s if last_infer_metrics else 0.0,
+        )
 
 
 # ─────────────────────────────────────────────────
