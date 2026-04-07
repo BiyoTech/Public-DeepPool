@@ -10,7 +10,7 @@ bin/
 # Frontend build output (keep source, ignore compiled assets)
 platform/portal_web/dist/
 platform/control_web/dist/
-
+platform/build/
 # Python
 /env/
 **/env/
