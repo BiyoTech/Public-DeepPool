@@ -13,7 +13,7 @@ platform:
   grpc_tls_ca_cert: ""                                # CA 证书路径（PEM），留空使用系统根证书
 
 log:
-  level: "info"
+  level: "debug"
   log_dir: "~/.deeppool/logs"       # 日志落盘目录，支持 ~ 展开
   file_name: "localserver.log"      # 日志文件名
   backup_count: 7                   # 按天滚动，保留最近 N 天历史日志

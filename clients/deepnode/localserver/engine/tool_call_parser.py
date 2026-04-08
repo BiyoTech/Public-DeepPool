@@ -44,17 +44,24 @@ logger = logging.getLogger(__name__)
 # 抽象提取器基类 + 注册表
 # ═════════════════════════════════════════════════════════════════════
 
-# 用于在 tool call 提取前去除 <think> 标签（防止推理内容干扰解析）
+# Strip reasoning tags before tool call extraction to prevent interference.
+# Supports: <think>...</think> and Gemma4 <|channel>thought...<channel|>
 _THINK_FULL_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
 _THINK_IMPLICIT_RE = re.compile(r"^.*?</think>", re.DOTALL)
+_CHANNEL_FULL_RE = re.compile(r"<\|channel>thought\s*\n?.*?\n?\s*<channel\|>", re.DOTALL)
+_CHANNEL_IMPLICIT_RE = re.compile(r"^.*?<channel\|>", re.DOTALL)
 
 
 def _strip_think_tags(text: str) -> str:
-    """去除 <think>...</think> 标签，支持完整和隐式两种模式。"""
+    """Strip reasoning tags (<think> and Gemma4 <|channel>thought) before tool call parsing."""
     result = _THINK_FULL_RE.sub("", text)
     if result == text and "</think>" in text:
         result = _THINK_IMPLICIT_RE.sub("", text)
-    return result.strip()
+    # Gemma4 channel format
+    result2 = _CHANNEL_FULL_RE.sub("", result)
+    if result2 == result and "<channel|>" in result:
+        result2 = _CHANNEL_IMPLICIT_RE.sub("", result)
+    return result2.strip()
 
 
 @dataclass

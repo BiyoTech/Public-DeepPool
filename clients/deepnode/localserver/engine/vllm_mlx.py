@@ -192,7 +192,7 @@ _MODEL_STOP_SEQUENCES: dict[str, list[str]] = {
         "<end_of_turn>", "<start_of_turn>",
     ],
     "gemma4": [
-        "<turn|>", "<|turn>", "<|tool_response>",
+        "<turn|>", "<|turn>", "<|tool_response>", "<channel|>",
     ],
 }
 
@@ -232,6 +232,8 @@ _SPECIAL_TOKENS_RE = re.compile(
     r"<end_of_turn>|<start_of_turn>|"
     # Gemma 4 turn control tokens (NOT tool_call tokens)
     r"<\|turn>|<turn\|>|"
+    # Gemma 4 channel tokens (thinking/reasoning delimiters)
+    r"<\|channel>thought|<\|channel>|<channel\|>|"
     r"</s>|<s>|<pad>|\[PAD\]|\[SEP\]|\[CLS\]"
 )
 
@@ -249,6 +251,94 @@ _GEMMA4_TOOL_TOKENS_RE = re.compile(
     r'<\|tool_call>|<tool_call\|>|<\|tool_response>|<tool_response\|>|'
     r'<\|tool>|<tool\|>|<\|"\|>'
 )
+
+
+# ─────────── Gemma4 Chat Template ───────────
+# Official Gemma4 prompt format per:
+#   https://ai.google.dev/gemma/docs/core/prompt-formatting-gemma4
+#   https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4
+#
+# Injected at runtime when the model's tokenizer lacks a built-in chat_template.
+# Supports: system, user, model/assistant, tools, tool_calls, tool_responses,
+# and optional thinking mode via enable_thinking parameter.
+
+_GEMMA4_CHAT_TEMPLATE = """\
+{%- set ns = namespace(tool_decls='', think_mode=false) -%}
+
+{#- Determine if thinking mode is enabled -#}
+{%- if enable_thinking is defined and enable_thinking -%}
+  {%- set ns.think_mode = true -%}
+{%- endif -%}
+
+{#- Build tool declarations string -#}
+{%- if tools is defined and tools -%}
+  {%- for tool in tools -%}
+    {%- if tool.function is defined -%}
+      {%- set func = tool.function -%}
+      {%- set decl = 'declaration:' + func.name + '{' -%}
+      {%- if func.description is defined and func.description -%}
+        {%- set decl = decl + 'description:<|"|>' + func.description + '<|"|>,' -%}
+      {%- endif -%}
+      {%- if func.parameters is defined and func.parameters -%}
+        {%- set decl = decl + 'parameters:<|"|>' + func.parameters | tojson + '<|"|>' -%}
+      {%- endif -%}
+      {%- set decl = decl + '}' -%}
+      {%- set ns.tool_decls = ns.tool_decls + '<|tool>' + decl + '<tool|>' -%}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endif -%}
+
+{#- Render messages -#}
+{%- for message in messages -%}
+  {%- set role = message.role -%}
+  {%- if role == 'assistant' -%}
+    {%- set role = 'model' -%}
+  {%- endif -%}
+
+  {%- if role == 'system' -%}
+<|turn>system
+{% if ns.think_mode %}<|think|>{% endif %}{{ message.content }}{{ ns.tool_decls }}<turn|>
+  {%- elif role == 'user' -%}
+    {#- If no system message was given yet and we have tool decls, inject them -#}
+    {%- if loop.first and ns.tool_decls -%}
+<|turn>system
+{% if ns.think_mode %}<|think|>{% endif %}{{ ns.tool_decls }}<turn|>
+    {%- endif -%}
+<|turn>user
+{{ message.content }}<turn|>
+  {%- elif role == 'model' -%}
+<|turn>model
+{{ message.content }}
+    {#- Render tool_calls if present -#}
+    {%- if message.tool_calls is defined and message.tool_calls -%}
+      {%- for tc in message.tool_calls -%}
+        {%- set func = tc.function if tc.function is defined else tc -%}
+        {%- set args = func.arguments -%}
+<|tool_call>call:{{ func.name }}{
+        {%- for key, value in args.items() -%}
+{{ key }}:<|"|>{{ value }}<|"|>{% if not loop.last %},{% endif %}
+        {%- endfor -%}
+}<tool_call|>
+      {%- endfor -%}
+    {%- endif -%}
+    {#- Render tool_responses if present -#}
+    {%- if message.tool_responses is defined and message.tool_responses -%}
+<|turn>model
+      {%- for tr in message.tool_responses -%}
+<|tool_response>response:{{ tr.name }}{{ tr.response | tojson }}<tool_response|>
+      {%- endfor -%}
+    {%- endif -%}
+<turn|>
+  {%- elif role == 'tool' -%}
+    {#- OpenAI-style role=tool; skip — handled via tool_responses on assistant msg -#}
+  {%- endif -%}
+{%- endfor -%}
+
+{#- Generation prompt -#}
+{%- if add_generation_prompt -%}
+<|turn>model
+{%- endif -%}
+"""
 
 
 def _clean_special_tokens(
@@ -307,20 +397,13 @@ def _is_vlm(model_dir: str) -> bool:
 def _messages_to_dict_list(messages: list[ChatMessage], model_type: str = "") -> list[dict]:
     """Convert ChatMessage list to dict format for chat template.
 
-    Historical reasoning_content is wrapped in <think>...</think> and
-    prepended to content, so the model can "see" prior reasoning in
-    multi-turn conversations.
-
     Model-specific adaptations:
       - GLM: maps role="tool" to "observation".
-      - Gemma 3 (gemma3/gemma3n): no system role support — system messages
-        are merged into the first user message content.
-      - Gemma 4: converts OpenAI role="tool" messages into tool_responses
-        format on the preceding assistant message, per Gemma4 FC spec.
+      - Gemma 3: system messages merged into first user message.
+      - Gemma 4: role="tool" → tool_responses on preceding assistant message.
     """
     result = []
 
-    # Gemma 3 pre-processing: collect system content to merge into first user msg
     is_gemma3 = model_type in ("gemma3", "gemma3n")
     is_gemma4 = model_type == "gemma4"
     system_content_for_merge = ""
@@ -329,44 +412,86 @@ def _messages_to_dict_list(messages: list[ChatMessage], model_type: str = "") ->
             if m.role == "system" and m.content:
                 system_content_for_merge += m.content + "\n\n"
 
+    # Debug: log input message structure
+    logger.debug(
+        "messages_to_dict: model_type=%s is_gemma4=%s msg_count=%d roles=[%s]",
+        model_type, is_gemma4, len(messages),
+        ", ".join(f"{m.role}(tc={bool(m.tool_calls)},tcid={bool(m.tool_call_id)},name={m.name})"
+                  for m in messages),
+    )
+
     first_user_seen = False
-    for m in messages:
+    gemma4_tool_merged = 0
+    for idx, m in enumerate(messages):
         role = m.role
 
-        # Gemma 3: skip system messages (already collected for merge)
         if is_gemma3 and role == "system":
             continue
 
-        # GLM: tool results use "observation" role
         if model_type == "glm" and role == "tool":
             role = "observation"
 
         # Gemma 4: merge role=tool into preceding assistant's tool_responses
         if is_gemma4 and m.role == "tool":
-            # Find the preceding assistant message and attach tool_responses
             if result:
                 prev = result[-1]
                 if prev.get("role") == "assistant":
                     if "tool_responses" not in prev:
                         prev["tool_responses"] = []
-                    # Parse content as JSON if possible (tool results are often JSON)
                     response_data = m.content or ""
                     try:
                         response_data = json.loads(response_data)
                     except (json.JSONDecodeError, TypeError):
                         pass
+
+                    # Resolve function name: prefer m.name, fallback to matching
+                    # tool_call_id in the preceding assistant's tool_calls.
+                    # Upstream clients often omit name on role=tool messages.
+                    func_name = m.name or ""
+                    if not func_name and m.tool_call_id and prev.get("tool_calls"):
+                        for tc in prev["tool_calls"]:
+                            if tc.get("id") == m.tool_call_id:
+                                func_name = tc.get("function", {}).get("name", "")
+                                break
+                    # Last resort: if only one tool_call, use its name
+                    if not func_name and prev.get("tool_calls") and len(prev["tool_calls"]) == 1:
+                        func_name = prev["tool_calls"][0].get("function", {}).get("name", "")
+
+                    if not func_name:
+                        logger.warning(
+                            "gemma4: tool_response at idx=%d has no function name "
+                            "(name=%s, tool_call_id=%s), model may not correlate response",
+                            idx, m.name, m.tool_call_id,
+                        )
+
                     prev["tool_responses"].append({
-                        "name": m.name or "",
+                        "name": func_name,
                         "response": response_data,
                     })
+                    gemma4_tool_merged += 1
+                    logger.debug(
+                        "gemma4: merged tool_response[%d] name=%s (resolved from %s) "
+                        "into assistant (content_len=%d)",
+                        gemma4_tool_merged, func_name,
+                        "msg.name" if m.name else "tool_call_id" if func_name else "none",
+                        len(m.content or ""),
+                    )
                     continue
-            # If no preceding assistant found, skip this tool message
-            logger.warning("gemma4: orphan tool message without preceding assistant, skipping")
+                else:
+                    logger.warning(
+                        "gemma4: tool msg at idx=%d but prev role=%s (expected assistant), "
+                        "tool_call_id=%s name=%s",
+                        idx, prev.get("role"), m.tool_call_id, m.name,
+                    )
+            logger.warning(
+                "gemma4: orphan tool msg at idx=%d, no preceding assistant, "
+                "tool_call_id=%s name=%s content=%s",
+                idx, m.tool_call_id, m.name, (m.content or "")[:100],
+            )
             continue
 
         msg: dict[str, Any] = {"role": role, "content": m.content or ""}
 
-        # Gemma 3: merge system content into first user message
         if is_gemma3 and role == "user" and not first_user_seen and system_content_for_merge:
             msg["content"] = system_content_for_merge + (m.content or "")
             first_user_seen = True
@@ -375,21 +500,50 @@ def _messages_to_dict_list(messages: list[ChatMessage], model_type: str = "") ->
 
         # Prepend reasoning_content from historical assistant messages
         if m.role == "assistant" and m.reasoning_content:
-            msg["content"] = f"<think>{m.reasoning_content}</think>{m.content or ''}"
+            if is_gemma4:
+                msg["content"] = f"<|channel>thought\n{m.reasoning_content}\n<channel|>{m.content or ''}"
+            else:
+                msg["content"] = f"<think>{m.reasoning_content}</think>{m.content or ''}"
         if m.tool_calls:
-            msg["tool_calls"] = [
-                {
+            tc_list = []
+            for tc in m.tool_calls:
+                args = tc.function_arguments
+                if is_gemma4 and isinstance(args, str):
+                    try:
+                        args = json.loads(args)
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+                tc_list.append({
                     "id": tc.id,
                     "type": tc.type,
-                    "function": {"name": tc.function_name, "arguments": tc.function_arguments},
-                }
-                for tc in m.tool_calls
-            ]
+                    "function": {"name": tc.function_name, "arguments": args},
+                })
+            msg["tool_calls"] = tc_list
         if m.tool_call_id:
             msg["tool_call_id"] = m.tool_call_id
         if m.name:
             msg["name"] = m.name
         result.append(msg)
+
+    # Debug: log output structure
+    if is_gemma4:
+        for i, d in enumerate(result):
+            has_tc = "tool_calls" in d
+            has_tr = "tool_responses" in d
+            tr_count = len(d.get("tool_responses", []))
+            tc_count = len(d.get("tool_calls", []))
+            if has_tc or has_tr:
+                logger.debug(
+                    "gemma4 dict_msg[%d] role=%s tool_calls=%d tool_responses=%d",
+                    i, d.get("role"), tc_count, tr_count,
+                )
+        if gemma4_tool_merged == 0 and any(m.role == "tool" for m in messages):
+            logger.warning(
+                "gemma4: %d tool messages in input but 0 merged — "
+                "tool_responses may be missing from prompt!",
+                sum(1 for m in messages if m.role == "tool"),
+            )
+
     return result
 
 
@@ -552,7 +706,12 @@ class VLLMMLXEngine(LLMEngine):
             self._config = self._model.config if hasattr(self._model, "config") else None
             self._model_name = model_name
 
-            # 向 tokenizer 注册模型特有的 stop token 为 EOS token。
+            # Gemma4 models may ship without a built-in chat_template.
+            # Inject the official template so apply_chat_template works correctly,
+            # especially for multi-turn tool call conversations.
+            self._ensure_gemma4_chat_template(model_name)
+
+            # Register model-specific stop tokens as EOS tokens in tokenizer.
             # mlx_lm.stream_generate 只通过 tokenizer.eos_token_ids 检测停止，
             # 不接受 stop 参数。必须在 token 层面注册，才能让生成在遇到这些 token 时立即停止。
             self._register_extra_eos_tokens(model_name)
@@ -625,6 +784,66 @@ class VLLMMLXEngine(LLMEngine):
         return len(token_ids)
 
     # ------------------------------------------------------------------
+    # Gemma4 chat template injection
+    # ------------------------------------------------------------------
+
+    def _ensure_gemma4_chat_template(self, model_name: str) -> None:
+        """Inject Gemma4 chat template if the tokenizer doesn't have one.
+
+        Many Gemma4 model variants (e.g. E4B quantized) ship without a
+        chat_template in tokenizer_config.json. Without a proper template,
+        apply_chat_template fails or produces malformed prompts — causing
+        the model to ignore tool results and repeat the same tool call.
+
+        The template follows the official Gemma4 prompt formatting spec:
+        https://ai.google.dev/gemma/docs/core/prompt-formatting-gemma4
+        """
+        name_lower = model_name.lower()
+        if not ("gemma4" in name_lower or "gemma-4" in name_lower):
+            return
+
+        tokenizer = self._get_tokenizer()
+        # Check both wrapper and inner tokenizer
+        wrapper_ct = getattr(tokenizer, "chat_template", None)
+        inner_ct = None
+        if hasattr(tokenizer, "_tokenizer"):
+            inner_ct = getattr(tokenizer._tokenizer, "chat_template", None)
+        has_template = wrapper_ct is not None or inner_ct is not None
+
+        logger.info(
+            "gemma4 chat_template check: wrapper_has=%s inner_has=%s wrapper_type=%s",
+            wrapper_ct is not None, inner_ct is not None, type(tokenizer).__name__,
+        )
+
+        if has_template:
+            logger.info("gemma4 model already has chat_template, skipping injection")
+            return
+
+        logger.info(
+            "gemma4 model has NO chat_template, injecting official template "
+            "(len=%d, is_vlm=%s, tokenizer_type=%s)",
+            len(_GEMMA4_CHAT_TEMPLATE), self._is_vlm, type(tokenizer).__name__,
+        )
+
+        # Set chat_template on the tokenizer that apply_chat_template uses.
+        # For VLM (GemmaTokenizer): set directly on the tokenizer object.
+        # For LLM (TokenizerWrapper): set on the inner HF tokenizer, since
+        # the wrapper delegates to _tokenizer.apply_chat_template().
+        tokenizer.chat_template = _GEMMA4_CHAT_TEMPLATE
+        # Also set on the inner tokenizer if it exists (for LLM TokenizerWrapper)
+        inner = getattr(tokenizer, "_tokenizer", None)
+        if inner is not None and hasattr(inner, "chat_template"):
+            inner.chat_template = _GEMMA4_CHAT_TEMPLATE
+
+        # Flag the wrapper as having a template
+        if hasattr(tokenizer, "has_chat_template"):
+            tokenizer.has_chat_template = True
+
+        # Verify injection succeeded
+        verify = getattr(tokenizer, "chat_template", None)
+        logger.info("gemma4 chat_template injection verified: %s", verify is not None)
+
+    # ------------------------------------------------------------------
     # tool parser
     # ------------------------------------------------------------------
 
@@ -673,8 +892,9 @@ class VLLMMLXEngine(LLMEngine):
             # Gemma 4: <turn|> marks turn end (new control token system)
             # <|tool_response> marks the boundary where model expects tool results
             # <tool_call|> marks end of a tool call block
+            # <channel|> marks end of thinking channel (reasoning)
             "gemma4": [
-                "<turn|>", "<|turn>", "<|tool_response>", "<tool_call|>",
+                "<turn|>", "<|turn>", "<|tool_response>", "<tool_call|>", "<channel|>",
             ],
         }
 
@@ -789,31 +1009,69 @@ class VLLMMLXEngine(LLMEngine):
     ) -> str:
         """Format prompt using chat template, dispatching LLM vs VLM backends.
 
-        For Gemma 3/4 models, follows mlx_vlm convention: set
-        add_special_tokens=False when the processor has a chat_template,
-        preventing duplicate BOS tokens.
+        Gemma4 always uses our custom template (even when loaded as VLM) because
+        mlx_vlm's apply_chat_template doesn't support Gemma4's tool_calls /
+        tool_responses format — causing the model to never see tool results.
         """
-        if self._is_vlm:
+        # Gemma4: always use the LLM tokenizer path with our injected template.
+        # mlx_vlm's apply_chat_template does NOT render tool_responses correctly.
+        is_gemma4_format = self._chat_format == "gemma4"
+
+        if self._is_vlm and not is_gemma4_format:
             from mlx_vlm.prompt_utils import apply_chat_template
             return apply_chat_template(
                 self._processor, self._config, messages,
                 num_images=0, tools=tools,
             )
-        tokenizer = self._get_tokenizer()
+
+        # For Gemma4 VLM: use the inner tokenizer (which has our injected template)
+        if is_gemma4_format and self._is_vlm:
+            tokenizer = self._get_tokenizer()
+            # Ensure inner tokenizer has our template
+            inner = getattr(tokenizer, "_tokenizer", tokenizer)
+            if not getattr(inner, "chat_template", None):
+                logger.warning("gemma4 VLM: inner tokenizer missing chat_template, injecting now")
+                inner.chat_template = _GEMMA4_CHAT_TEMPLATE
+        else:
+            tokenizer = self._get_tokenizer()
+
         kwargs: dict[str, Any] = {
             "tokenize": False,
             "add_generation_prompt": True,
         }
         if tools:
             kwargs["tools"] = tools
-        # Some models (e.g. Qwen3) support enable_thinking in chat template
         if enable_thinking is not None:
             kwargs["enable_thinking"] = enable_thinking
-        # Gemma 3/4: set add_special_tokens=False when using chat_template
-        # to prevent duplicate BOS tokens (follows mlx_vlm convention)
         if self._is_gemma_model():
             kwargs["add_special_tokens"] = False
-        return tokenizer.apply_chat_template(messages, **kwargs)
+        formatted = tokenizer.apply_chat_template(messages, **kwargs)
+
+        # Debug: validate the formatted prompt for Gemma4 FC scenarios
+        if is_gemma4_format:
+            has_tool_call = "<|tool_call>" in formatted
+            has_tool_response = "tool_response" in formatted
+            has_tool_decl = "<|tool>" in formatted
+            input_has_tr = any(
+                "tool_responses" in m and m["tool_responses"]
+                for m in messages if isinstance(m, dict)
+            )
+            logger.debug(
+                "gemma4 formatted_prompt: len=%d has_tool_decl=%s has_tool_call=%s "
+                "has_tool_response=%s input_has_tool_responses=%s is_vlm=%s",
+                len(formatted), has_tool_decl, has_tool_call,
+                has_tool_response, input_has_tr, self._is_vlm,
+            )
+            if input_has_tr and not has_tool_response:
+                logger.error(
+                    "gemma4 CRITICAL: tool_responses in input messages but NOT in formatted prompt! "
+                    "Model will not see tool results and may repeat the same tool_call. "
+                    "prompt_preview=%s",
+                    formatted[-500:],
+                )
+            logger.debug("gemma4 prompt_tail(1000): %s", formatted[-1000:])
+
+        return formatted
 
     # ------------------------------------------------------------------
     # Non-streaming generation
@@ -865,6 +1123,11 @@ class VLLMMLXEngine(LLMEngine):
             mx.clear_cache()
 
             # --- Post-processing (CPU-only) ---
+            # Debug: log raw model output before any processing
+            logger.debug(
+                "raw model output (len=%d): %s",
+                len(result_text), result_text[:500],
+            )
             result_text = _truncate_at_stop(result_text, self._stop_sequences)
             # First cleanup: remove generic special tokens but preserve Gemma4
             # tool_call tokens (needed by Gemma4Extractor for parsing)
