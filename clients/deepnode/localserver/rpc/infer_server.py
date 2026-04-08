@@ -53,7 +53,7 @@ def _record_stats(**kwargs) -> None:
 # ─────────────────────────────────────────────────
 
 def _proto_messages_to_engine(proto_msgs) -> list[EngineChatMessage]:
-    """将 proto ChatMessage 列表转换为引擎层 ChatMessage。"""
+    """Convert proto ChatMessage list to engine ChatMessage list."""
     result = []
     for pm in proto_msgs:
         tool_calls = None
@@ -67,17 +67,27 @@ def _proto_messages_to_engine(proto_msgs) -> list[EngineChatMessage]:
                 )
                 for tc in pm.tool_calls
             ]
-        result.append(
-            EngineChatMessage(
-                role=pm.role,
-                content=pm.content if pm.HasField("content") else None,
-                name=pm.name if pm.HasField("name") else None,
-                tool_calls=tool_calls,
-                tool_call_id=pm.tool_call_id if pm.HasField("tool_call_id") else None,
-                # 多轮对话历史中 assistant 消息可能携带 reasoning_content
-                reasoning_content=pm.reasoning_content if pm.HasField("reasoning_content") else None,
-            )
+        msg = EngineChatMessage(
+            role=pm.role,
+            content=pm.content if pm.HasField("content") else None,
+            name=pm.name if pm.HasField("name") else None,
+            tool_calls=tool_calls,
+            tool_call_id=pm.tool_call_id if pm.HasField("tool_call_id") else None,
+            reasoning_content=pm.reasoning_content if pm.HasField("reasoning_content") else None,
         )
+        result.append(msg)
+
+    # Debug: log message structure for tracing FC issues
+    logger.debug(
+        "proto_to_engine: %d messages [%s]",
+        len(result),
+        ", ".join(
+            f"{m.role}(tc={len(m.tool_calls) if m.tool_calls else 0},"
+            f"tcid={m.tool_call_id or '-'},name={m.name or '-'},"
+            f"content_len={len(m.content) if m.content else 0})"
+            for m in result
+        ),
+    )
     return result
 
 

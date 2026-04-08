@@ -287,18 +287,143 @@ class Qwen3Parser(ThinkTagParser):
         return super().extract_reasoning(model_output)
 
 
-# ─────────── 解析器注册表 ───────────
+# ─────────── Gemma 4 Channel Parser ───────────
+
+
+class Gemma4ChannelParser(ReasoningParser):
+    """Gemma 4 reasoning parser using <|channel>thought ... <channel|> format.
+
+    Per official docs (https://ai.google.dev/gemma/docs/core/prompt-formatting-gemma4):
+      - Thinking is activated by <|think|> in system prompt.
+      - Model outputs: <|channel>thought\n{reasoning}\n<channel|>{content}
+      - The word "thought" immediately follows <|channel> as the channel type.
+
+    Patterns handled:
+      1. <|channel>thought\n{reasoning}\n<channel|>{content}
+      2. Implicit: {reasoning}<channel|>{content} (if <|channel> was in prompt)
+      3. Only <|channel>thought (reasoning not finished)
+      4. No channel tags → pure content
+    """
+
+    START_TOKEN = "<|channel>thought"
+    END_TOKEN = "<channel|>"
+
+    # Match full channel block: <|channel>thought\n...\n<channel|>
+    _CHANNEL_RE = re.compile(
+        r"<\|channel>thought\s*\n?(.*?)\n?\s*<channel\|>",
+        re.DOTALL,
+    )
+
+    # ─── Non-streaming ───
+
+    def extract_reasoning(self, model_output: str) -> tuple[str | None, str | None]:
+        text = model_output
+
+        # Case 1: full channel block present
+        m = self._CHANNEL_RE.search(text)
+        if m:
+            reasoning = m.group(1).strip() or None
+            content = text[m.end():].strip() or None
+            return reasoning, content
+
+        # Case 2: only <channel|> (implicit — <|channel>thought was in prompt)
+        if self.END_TOKEN in text:
+            reasoning, _, content = text.partition(self.END_TOKEN)
+            return reasoning.strip() or None, content.strip() or None
+
+        # Case 3: only <|channel>thought (reasoning not finished)
+        if self.START_TOKEN in text:
+            _, _, reasoning = text.partition(self.START_TOKEN)
+            # Strip leading newline after "thought"
+            reasoning = reasoning.lstrip("\n")
+            return reasoning.strip() or None, None
+
+        # Case 4: no channel tags → pure content
+        return None, model_output
+
+    # ─── Streaming ───
+
+    def extract_reasoning_streaming(
+        self,
+        previous_text: str,
+        current_text: str,
+        delta_text: str,
+    ) -> ReasoningDelta | None:
+        # Skip pure control tokens
+        stripped = delta_text.strip()
+        if stripped in (self.START_TOKEN, self.END_TOKEN, "<|channel>", "thought"):
+            return None
+
+        start_in_prev = self.START_TOKEN in previous_text
+        start_in_current = self.START_TOKEN in current_text
+        end_in_prev = self.END_TOKEN in previous_text
+        end_in_delta = self.END_TOKEN in delta_text
+
+        # Phase 1: <|channel>thought has been seen — we are in or past reasoning
+        if start_in_prev or (start_in_current and self.START_TOKEN not in delta_text):
+            if end_in_delta:
+                # Transition: reasoning → content
+                idx = delta_text.find(self.END_TOKEN)
+                r = delta_text[:idx]
+                c = delta_text[idx + len(self.END_TOKEN):]
+                return ReasoningDelta(
+                    reasoning=r if r else None,
+                    content=c if c else None,
+                )
+            elif end_in_prev:
+                # Past reasoning phase → pure content
+                return ReasoningDelta(content=delta_text)
+            else:
+                # Still in reasoning phase
+                return ReasoningDelta(reasoning=delta_text)
+
+        # Phase 2: <|channel>thought appears in THIS delta (reasoning starts now)
+        if self.START_TOKEN in delta_text:
+            after = delta_text.split(self.START_TOKEN, 1)[1]
+            after = after.lstrip("\n")
+            if end_in_delta:
+                idx = after.find(self.END_TOKEN)
+                r = after[:idx]
+                c = after[idx + len(self.END_TOKEN):]
+                return ReasoningDelta(
+                    reasoning=r if r else None,
+                    content=c if c else None,
+                )
+            return ReasoningDelta(reasoning=after if after else None)
+
+        # Phase 3: only <channel|> seen (implicit — <|channel>thought was in prompt)
+        if self.END_TOKEN in current_text and not start_in_current:
+            if end_in_delta:
+                idx = delta_text.find(self.END_TOKEN)
+                r = delta_text[:idx]
+                c = delta_text[idx + len(self.END_TOKEN):]
+                return ReasoningDelta(
+                    reasoning=r if r else None,
+                    content=c if c else None,
+                )
+            elif end_in_prev:
+                return ReasoningDelta(content=delta_text)
+            else:
+                return ReasoningDelta(reasoning=delta_text)
+
+        # Default: no channel tags seen at all → pure content.
+        # Gemma4 thinking is opt-in (activated by <|think|> in system prompt).
+        # If the model doesn't use thinking mode, all output is content.
+        return ReasoningDelta(content=delta_text)
+
+
+# ─────────── Parser Registry ───────────
 
 _PARSER_REGISTRY: dict[str, type[ReasoningParser]] = {}
 
 
 def register_parser(name: str, parser_class: type[ReasoningParser]) -> None:
-    """注册推理解析器。"""
+    """Register a reasoning parser."""
     _PARSER_REGISTRY[name] = parser_class
 
 
 def get_parser(name: str) -> type[ReasoningParser]:
-    """根据名称获取推理解析器类。"""
+    """Get reasoning parser class by name."""
     if name not in _PARSER_REGISTRY:
         available = list(_PARSER_REGISTRY.keys())
         raise KeyError(f"reasoning parser '{name}' not found, available: {available}")
@@ -306,20 +431,21 @@ def get_parser(name: str) -> type[ReasoningParser]:
 
 
 def list_parsers() -> list[str]:
-    """列出所有已注册的解析器名称。"""
+    """List all registered parser names."""
     return list(_PARSER_REGISTRY.keys())
 
 
 def _register_builtin_parsers() -> None:
-    """注册内置解析器。"""
+    """Register built-in parsers."""
     register_parser("deepseek_r1", DeepSeekR1Parser)
     register_parser("qwen3", Qwen3Parser)
     register_parser("glm", ThinkTagParser)
     register_parser("kimi", ThinkTagParser)
     register_parser("think", ThinkTagParser)
+    register_parser("gemma4", Gemma4ChannelParser)
 
 
-# 模块加载时注册内置解析器
+# Register built-in parsers at module load time
 _register_builtin_parsers()
 
 
@@ -333,34 +459,41 @@ def create_reasoning_parser(name: str) -> ReasoningParser:
 
 
 def detect_reasoning_parser(model_name: str) -> ReasoningParser | None:
-    """根据模型名称自动推断推理解析器。
+    """Auto-detect reasoning parser based on model name.
 
-    通过模型名称中的关键词匹配，返回对应解析器实例。
-    无法识别时返回 None。
+    Returns parser instance or None if no reasoning format detected.
     """
     name_lower = model_name.lower()
 
-    # DeepSeek R1 系列
+    # Gemma 4: uses <|channel>thought...<channel|> format (NOT <think>)
+    if "gemma" in name_lower:
+        if "gemma4" in name_lower or "gemma-4" in name_lower:
+            logger.info("auto-detected reasoning parser: gemma4 (channel) for model=%s", model_name)
+            return Gemma4ChannelParser()
+        # Gemma 3 does not have a standard reasoning format
+        return None
+
+    # DeepSeek R1 series
     if "deepseek" in name_lower and ("r1" in name_lower or "reasoner" in name_lower):
         logger.info("auto-detected reasoning parser: deepseek_r1 for model=%s", model_name)
         return DeepSeekR1Parser()
 
-    # Qwen3 系列（Qwen3 默认启用 thinking）
+    # Qwen3 series (Qwen3 enables thinking by default)
     if "qwen3" in name_lower or "qwen-3" in name_lower:
         logger.info("auto-detected reasoning parser: qwen3 for model=%s", model_name)
         return Qwen3Parser()
 
-    # GLM 系列（GLM-4.7/GLM-5 使用 <think> 标签）
+    # GLM series (GLM-4.7/GLM-5 use <think> tags)
     if "glm" in name_lower:
         logger.info("auto-detected reasoning parser: glm (think) for model=%s", model_name)
         return ThinkTagParser()
 
-    # Kimi / Moonshot 系列
+    # Kimi / Moonshot series
     if "kimi" in name_lower or "moonshot" in name_lower:
         logger.info("auto-detected reasoning parser: kimi (think) for model=%s", model_name)
         return ThinkTagParser()
 
-    # 通用 <think> 检测: 模型名含 "think" / "cot" / "reasoning" / "r1-distill"
+    # Generic <think> detection: model name contains "think" / "cot" / "reasoning" / "r1-distill"
     think_keywords = {"think", "cot", "reasoning", "r1-distill"}
     if any(kw in name_lower for kw in think_keywords):
         logger.info("auto-detected reasoning parser: think (generic) for model=%s", model_name)
