@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ──────────────────────────────────────────────────────────
-# build_standalone.sh — 构建 Vue 前端 + PyInstaller 打包 deepnode-server
+# build_standalone_mac_dev.sh — 构建 Vue 前端 + PyInstaller 打包 deepnode-server（开发环境）
 #
 # 打包策略:
 #   - PyInstaller (onedir) 打包业务代码为 frozen 二进制（代码保护）
@@ -25,7 +25,7 @@
 #   - mlx-packages/          mlx 系列原生 Python 包
 #
 # 用法:
-#   cd clients/deepnode && bash build_standalone.sh
+#   cd clients/deepnode && bash build_standalone_mac_dev.sh
 #
 # 运行:
 #   tar xzf deepnode-v1.0.0-macos15-arm64.tar.gz && cd deepnode-server
@@ -38,7 +38,7 @@ set -euo pipefail
 show_help() {
     cat << 'EOF'
 用法:
-  cd clients/deepnode && bash build_standalone.sh [选项]
+  cd clients/deepnode && bash build_standalone_mac_dev.sh [选项]
 
 描述:
   构建 Vue 前端 + PyInstaller 打包 deepnode-server 独立运行制品。
@@ -61,7 +61,7 @@ show_help() {
 
                       注意: 值越低兼容性越广，但 PyPI 上不一定有对应 wheel。
                       建议设置为目标机器的 macOS 主版本号。
-                      示例: TARGET_MACOS_VER=15_0 bash build_standalone.sh
+                      示例: TARGET_MACOS_VER=15_0 bash build_standalone_mac_dev.sh
 
   TARGET_ARCH         PyInstaller 目标架构（如 "arm64" / "x86_64"）。
                       默认自动检测当前架构。
@@ -90,13 +90,13 @@ show_help() {
 
 示例:
   # 默认构建（自动检测当前平台）
-  bash build_standalone.sh
+  bash build_standalone_mac_dev.sh
 
   # 指定目标 macOS 15.0+
-  TARGET_MACOS_VER=15_0 bash build_standalone.sh
+  TARGET_MACOS_VER=15_0 bash build_standalone_mac_dev.sh
 
   # 查看帮助
-  bash build_standalone.sh --help
+  bash build_standalone_mac_dev.sh --help
 EOF
     exit 0
 }
@@ -285,6 +285,9 @@ os.environ['no_proxy'] = 'localhost,127.0.0.1,::1'
 os.environ['NO_PROXY'] = 'localhost,127.0.0.1,::1'
 os.environ['grpc_proxy'] = ''
 
+# Set build profile for platform_defaults module
+os.environ['DEEPPOOL_PROFILE'] = 'dev'
+
 warnings.filterwarnings("ignore", message=".*nanobind.*", category=RuntimeWarning)
 HOOK_EOF
 
@@ -396,6 +399,7 @@ a = Analysis(
         'service', 'service.credential', 'service.device_fingerprint',
         'service.log_reporter', 'service.manager', 'service.platform_auth',
         'service.statistics', 'service.memory_guard', 'service.device_info',
+        'platform_defaults',
         'log_setup',
         # 标准库 C 扩展
         '_contextvars', '_hashlib', '_ssl', '_uuid', '_decimal', '_json', '_sqlite3',

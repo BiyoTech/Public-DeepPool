@@ -277,6 +277,7 @@ class NodeManagerClient:
             platform_client = PlatformClient(
                 grpc_target=cfg.platform.manager_grpc_target,
                 auth_token=self._token,
+                **cfg.platform.tls_kwargs,
             )
 
             # 重新拉取平台分配的模型配置列表

@@ -48,7 +48,10 @@ class RegisterBody(BaseModel):
 def auth_login(body: LoginBody) -> dict:
     """用户登录 — 通过 gRPC 调用 Manager Login。"""
     cfg = get_config()
-    client = PlatformClient(grpc_target=cfg.platform.manager_grpc_target, auth_token="")
+    client = PlatformClient(
+        grpc_target=cfg.platform.manager_grpc_target, auth_token="",
+        **cfg.platform.tls_kwargs,
+    )
     try:
         result = client.login(account=body.account, password=body.password)
         return {"code": 0, "message": "ok", "data": result}
@@ -63,7 +66,10 @@ def auth_login(body: LoginBody) -> dict:
 def auth_register(body: RegisterBody) -> dict:
     """用户注册 — 通过 gRPC 调用 Manager RegisterUser。"""
     cfg = get_config()
-    client = PlatformClient(grpc_target=cfg.platform.manager_grpc_target, auth_token="")
+    client = PlatformClient(
+        grpc_target=cfg.platform.manager_grpc_target, auth_token="",
+        **cfg.platform.tls_kwargs,
+    )
     try:
         user = client.register_user(
             username=body.username,
@@ -93,7 +99,7 @@ def device_check(simei: str, authorization: str = Header(default="")) -> dict:
         return {"code": 401, "message": "authorization required"}
 
     cfg = get_config()
-    client = PlatformClient(grpc_target=cfg.platform.manager_grpc_target, auth_token=token)
+    client = PlatformClient(grpc_target=cfg.platform.manager_grpc_target, auth_token=token, **cfg.platform.tls_kwargs)
     try:
         device = client.get_device(simei)
         if device is None:
