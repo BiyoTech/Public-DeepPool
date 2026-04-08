@@ -184,7 +184,7 @@ def _try_restore_and_connect() -> None:
 
         _log_reporter = LogReporter(
             stats_db=get_statistics_db(),
-            platform_client=PlatformClient(grpc_target=platform_grpc_target, auth_token=cred.token),
+            platform_client=PlatformClient(grpc_target=platform_grpc_target, auth_token=cred.token, **cfg.platform.tls_kwargs),
             simei=cred.simei,
         )
         _log_reporter.start()
@@ -212,6 +212,7 @@ def _try_restore_and_connect() -> None:
             model_name=running.model_name,
             engine_type=running.engine_type,
             service_manager=manager,
+            **cfg.platform.tls_kwargs,
         )
         _tunnel_client.start()
 

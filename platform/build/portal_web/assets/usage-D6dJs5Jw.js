@@ -1,1 +1,0 @@
-import{h as n}from"./http-CYQbgaed.js";function e(t){return n.get("/usage/contribution",{params:t})}function o(t){return n.get("/usage/consumption",{params:t})}function r(){return n.get("/usage/summary")}export{e as a,o as b,r as g};

@@ -1,1 +1,0 @@
-import{h as t}from"./http-CYQbgaed.js";function s(e){return t.post("/apikeys",{name:e})}function n(){return t.get("/apikeys")}function a(e){return t.delete(`/apikeys/${e}`)}function i(e){return t.get(`/apikeys/${e}/secret`)}export{s as c,a as d,i as f,n as l};

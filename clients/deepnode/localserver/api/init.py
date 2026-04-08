@@ -81,6 +81,7 @@ def init_device(payload: dict) -> dict:
     try:
         platform_client = PlatformClient(
             grpc_target=cfg.platform.manager_grpc_target, auth_token=token,
+            **cfg.platform.tls_kwargs,
         )
 
         # ── Step 1: 获取部署配置 ──
@@ -228,6 +229,7 @@ def _update_device_status_to_ready(
     try:
         platform_client = PlatformClient(
             grpc_target=cfg.platform.manager_grpc_target, auth_token=token,
+            **cfg.platform.tls_kwargs,
         )
 
         hw = get_device_hardware_info()
@@ -376,6 +378,7 @@ def _start_tunnel_connection(simei: str, token: str, running, manager) -> None:
             model_name=running.model_name,
             engine_type=running.engine_type,
             service_manager=manager,
+            **cfg.platform.tls_kwargs,
         )
         client.start()
 
@@ -407,6 +410,7 @@ def _start_log_reporter(simei: str, token: str) -> None:
             stats_db=get_statistics_db(),
             platform_client=PlatformClient(
                 grpc_target=cfg.platform.manager_grpc_target, auth_token=token,
+                **cfg.platform.tls_kwargs,
             ),
             simei=simei,
         )

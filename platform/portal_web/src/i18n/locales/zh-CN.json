@@ -214,6 +214,21 @@
     "col_total": "Total Tokens",
     "col_requests": "请求数",
     "empty": "暂无数据",
-    "login_required": "请先登录后查看数据"
+    "login_required": "请先登录后查看数据",
+    "tab_billing": "计费说明",
+    "billing_empty": "暂无计费模型",
+    "billing_col_model": "模型名称",
+    "billing_col_input_tokens": "单次请求的输入 Token 数",
+    "billing_col_input_price": "输入单价（每百万 Token）",
+    "billing_col_output_price": "输出单价（每百万 Token）",
+    "billing_params": "{scale}B 参数",
+    "billing_context": "上下文 {len}",
+    "billing_unit": "元",
+    "billing_note1": "* 单价单位：元 / 百万 Token。按单次请求的输入 Token 数匹配阶梯，输入和输出分别计价。",
+    "billing_note2": "* 输出单价包含思维链（reasoning）和正式回答的 Token。",
+    "col_cost": "消耗 (元)",
+    "col_earning": "收益 (元)",
+    "search": "查询",
+    "records": "条记录"
   }
 }

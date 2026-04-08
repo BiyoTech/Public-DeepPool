@@ -214,6 +214,21 @@
     "col_total": "Total Tokens",
     "col_requests": "Requests",
     "empty": "No data available",
-    "login_required": "Please log in to view your data"
+    "login_required": "Please log in to view your data",
+    "tab_billing": "Billing",
+    "billing_empty": "No billing models available",
+    "billing_col_model": "Model",
+    "billing_col_input_tokens": "Input Tokens per Request",
+    "billing_col_input_price": "Input Price (per Million Tokens)",
+    "billing_col_output_price": "Output Price (per Million Tokens)",
+    "billing_params": "{scale}B params",
+    "billing_context": "Context {len}",
+    "billing_unit": "¥",
+    "billing_note1": "* Price unit: ¥ (CNY) per million tokens. Tier is matched by single-request input token count; input and output are priced separately.",
+    "billing_note2": "* Output price covers both reasoning (chain-of-thought) and final answer tokens.",
+    "col_cost": "Cost (¥)",
+    "col_earning": "Earning (¥)",
+    "search": "Search",
+    "records": "records"
   }
 }

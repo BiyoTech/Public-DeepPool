@@ -30,12 +30,22 @@ class ServerConfig:
 
 @dataclass
 class PlatformConfig:
-    """Platform 各组件 gRPC 地址配置。"""
-    manager_grpc_target: str = "127.0.0.1:9090"
-    scheduler_grpc_target: str = "127.0.0.1:9091"
-    nodemanager_grpc_target: str = "127.0.0.1:9092"
-    grpc_tls: bool = False                  # 是否启用 gRPC TLS 加密连接
-    grpc_tls_ca_cert: str = ""              # CA 证书路径（PEM）；留空则使用系统根证书
+    """Platform gRPC connection config — sourced from build-time defaults.
+
+    gRPC targets and TLS settings are determined by the build profile
+    (DEEPPOOL_PROFILE env var) via platform_defaults module, NOT from YAML.
+    This prevents end-users from seeing or modifying server addresses.
+    """
+    manager_grpc_target: str = ""
+    scheduler_grpc_target: str = ""
+    nodemanager_grpc_target: str = ""
+    grpc_tls: bool = False
+    grpc_tls_ca_cert: str = ""
+
+    @property
+    def tls_kwargs(self) -> dict:
+        """Return dict with use_tls/ca_cert for passing to gRPC client constructors."""
+        return {"use_tls": self.grpc_tls, "ca_cert": self.grpc_tls_ca_cert}
 
 
 @dataclass
@@ -243,9 +253,8 @@ class AppConfig:
 
 
 def _build_config(raw: dict[str, Any]) -> AppConfig:
-    """从原始 dict 构建 AppConfig，缺失字段用默认值。"""
+    """Build AppConfig from raw dict, using platform_defaults for gRPC targets."""
     server_raw = raw.get("server") or {}
-    platform_raw = raw.get("platform") or {}
     log_raw = raw.get("log") or {}
     engine_raw = raw.get("engine") or {}
     multi_model_raw = raw.get("multi_model") or {}
@@ -270,17 +279,21 @@ def _build_config(raw: dict[str, Any]) -> AppConfig:
     # 因此延迟到 ServiceManager._create_engine 确定引擎类型后再调用。
     # 这里只做 YAML → dataclass 的字段映射。
 
+    # Platform gRPC targets come from build-time defaults, not YAML
+    from platform_defaults import get_platform_defaults
+    _pd = get_platform_defaults()
+
     return AppConfig(
         server=ServerConfig(
             host=str(server_raw.get("host", "127.0.0.1")),
             port=int(server_raw.get("port", 8765)),
         ),
         platform=PlatformConfig(
-            manager_grpc_target=str(platform_raw.get("manager_grpc_target", "127.0.0.1:9090")),
-            scheduler_grpc_target=str(platform_raw.get("scheduler_grpc_target", "127.0.0.1:9091")),
-            nodemanager_grpc_target=str(platform_raw.get("nodemanager_grpc_target", "127.0.0.1:9092")),
-            grpc_tls=bool(platform_raw.get("grpc_tls", False)),
-            grpc_tls_ca_cert=str(platform_raw.get("grpc_tls_ca_cert", "")),
+            manager_grpc_target=_pd.manager_grpc_target,
+            scheduler_grpc_target=_pd.scheduler_grpc_target,
+            nodemanager_grpc_target=_pd.nodemanager_grpc_target,
+            grpc_tls=_pd.grpc_tls,
+            grpc_tls_ca_cert=_pd.grpc_tls_ca_cert,
         ),
         log=LogConfig(
             level=str(log_raw.get("level", "info")).lower(),

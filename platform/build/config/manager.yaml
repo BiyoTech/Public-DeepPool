@@ -1,15 +1,14 @@
 server:
   addr: ":8080"
   grpc_addr: ":9090"
-  # TLS/HTTPS 配置（enabled=false 时保持明文 HTTP/gRPC）
   tls:
     enabled: false
-    cert_file: ""       # PEM 格式证书文件路径
-    key_file: ""        # PEM 格式私钥文件路径
-    skip_verify: false  # gRPC 客户端是否跳过证书验证（仅自签名证书场景使用）
+    cert_file: ""
+    key_file: ""
+    skip_verify: false
 
 log:
-  level: "debug"
+  level: "info"
 
 mysql:
   host: "127.0.0.1"
@@ -31,5 +30,5 @@ admin:
     phone: "10000000000"
     email: "admin@deeppool.io"
   node_managers:
-    - name: "node-local"
-      addr: "101.33.255.185:9092"
+    - name: "node-prod"
+      addr: "deeppool.tech:9092"

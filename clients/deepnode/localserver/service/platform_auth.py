@@ -36,10 +36,10 @@ def platform_login(account: str, password: str) -> LoginResult:
         RuntimeError: 登录失败。
     """
     cfg = get_config()
-    # Login RPC 不需要 auth_token，传空字符串
     client = PlatformClient(
         grpc_target=cfg.platform.manager_grpc_target,
         auth_token="",
+        **cfg.platform.tls_kwargs,
     )
 
     try:

@@ -1,1 +1,0 @@
-import{h as r}from"./http-CYQbgaed.js";function n(){return r.get("/bank-cards")}function e(a){return r.post("/bank-cards",a)}function s(a){return r.delete(`/bank-cards/${a}`)}export{e as c,s as d,n as l};

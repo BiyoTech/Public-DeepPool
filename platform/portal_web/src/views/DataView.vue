@@ -35,7 +35,7 @@
               :class="activeTab === tab.key
                 ? 'text-dp-blue'
                 : 'text-dp-muted hover:text-dp-title'"
-              @click="switchTab(tab.key)"
+              @click="switchTab(tab.key as 'contribution' | 'consumption' | 'billing')"
             >
               {{ tab.label }}
               <span
@@ -44,6 +44,64 @@
               />
             </button>
           </div>
+
+          <!-- ═══ Billing Tab: Tiered Pricing Table ═══ -->
+          <div v-if="activeTab === 'billing'" class="px-6 py-6">
+            <div v-if="billingModels.length === 0" class="py-12 text-center text-dp-muted">
+              {{ $t('data.billing_empty') }}
+            </div>
+            <div v-else class="overflow-x-auto">
+              <table class="w-full text-sm border-collapse">
+                <thead>
+                  <tr class="bg-slate-50 text-dp-muted text-xs">
+                    <th class="py-3 px-4 text-left font-medium border-b border-slate-200">{{ $t('data.billing_col_model') }}</th>
+                    <th class="py-3 px-4 text-left font-medium border-b border-slate-200">{{ $t('data.billing_col_input_tokens') }}</th>
+                    <th class="py-3 px-4 text-right font-medium border-b border-slate-200">{{ $t('data.billing_col_input_price') }}</th>
+                    <th class="py-3 px-4 text-right font-medium border-b border-slate-200">{{ $t('data.billing_col_output_price') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template v-for="model in billingModels" :key="model.model_name">
+                    <tr
+                      v-for="(tier, tierIdx) in model.pricing_tiers"
+                      :key="`${model.model_name}-${tierIdx}`"
+                      class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors"
+                    >
+                      <td
+                        v-if="tierIdx === 0"
+                        :rowspan="model.pricing_tiers.length"
+                        class="py-3 px-4 text-dp-title font-medium align-top border-r border-slate-100"
+                      >
+                        <div>{{ model.model_name }}</div>
+                        <div v-if="model.param_scale" class="text-xs text-dp-muted mt-0.5">
+                          {{ $t('data.billing_params', { scale: model.param_scale }) }}
+                        </div>
+                        <div v-if="model.max_context_length" class="text-xs text-dp-muted">
+                          {{ $t('data.billing_context', { len: formatContextLength(model.max_context_length) }) }}
+                        </div>
+                      </td>
+                      <td class="py-3 px-4 text-dp-body">
+                        {{ formatTierRange(model.pricing_tiers, tierIdx) }}
+                      </td>
+                      <td class="py-3 px-4 text-right text-dp-body tabular-nums font-mono">
+                        {{ tier.input_price }} {{ $t('data.billing_unit') }}
+                      </td>
+                      <td class="py-3 px-4 text-right text-dp-body tabular-nums font-mono">
+                        {{ tier.output_price }} {{ $t('data.billing_unit') }}
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+              <div class="mt-4 text-xs text-dp-muted leading-relaxed">
+                <p>{{ $t('data.billing_note1') }}</p>
+                <p>{{ $t('data.billing_note2') }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══ Usage Tabs: Filter + Table + Pagination ═══ -->
+          <template v-if="activeTab !== 'billing'">
 
           <!-- 筛选栏 -->
           <div class="px-6 py-4 border-b border-slate-50 flex flex-wrap gap-3 items-center">
@@ -82,7 +140,7 @@
               class="px-4 py-1.5 rounded-lg bg-dp-blue text-white text-sm font-medium hover:bg-dp-blue-dark transition-colors"
               @click="fetchData"
             >
-              {{ $t('service.chat.send') === '发送' ? '查询' : 'Search' }}
+              {{ $t('data.search') }}
             </button>
           </div>
 
@@ -99,8 +157,8 @@
                   <th class="py-3 px-4 text-right font-medium">{{ $t('data.col_completion') }}</th>
                   <th class="py-3 px-4 text-right font-medium">{{ $t('data.col_total') }}</th>
                   <th class="py-3 px-4 text-right font-medium">{{ $t('data.col_requests') }}</th>
-                  <th v-if="activeTab === 'consumption'" class="py-3 px-4 text-right font-medium">消耗 (元)</th>
-                  <th v-if="activeTab === 'contribution'" class="py-3 px-4 text-right font-medium">收益 (元)</th>
+                  <th v-if="activeTab === 'consumption'" class="py-3 px-4 text-right font-medium">{{ $t('data.col_cost') }}</th>
+                  <th v-if="activeTab === 'contribution'" class="py-3 px-4 text-right font-medium">{{ $t('data.col_earning') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -132,7 +190,7 @@
           <!-- 分页 -->
           <div v-if="totalRows > pageSize" class="px-6 py-4 border-t border-slate-50 flex items-center justify-between">
             <span class="text-xs text-dp-muted">
-              {{ totalRows }} {{ $t('data.col_requests') === '请求数' ? '条记录' : 'records' }}
+              {{ totalRows }} {{ $t('data.records') }}
             </span>
             <div class="flex gap-1">
               <button
@@ -148,6 +206,8 @@
               </button>
             </div>
           </div>
+
+          </template><!-- end usage tabs -->
         </div>
       </template>
     </div>
@@ -160,16 +220,18 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { getContribution, getConsumption, getUsageSummary } from '@/api/usage'
 import { listAPIKeys, type APIKey } from '@/api/apikey'
+import { getPublicModels, type PublicModel, type PricingTier } from '@/api/model'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
 
-// Tab 定义
+// Tab definition
 const tabs = computed(() => [
   { key: 'contribution', label: t('data.tab_contribution') },
   { key: 'consumption', label: t('data.tab_consumption') },
+  { key: 'billing', label: t('data.tab_billing') },
 ])
-const activeTab = ref<'contribution' | 'consumption'>('contribution')
+const activeTab = ref<'contribution' | 'consumption' | 'billing'>('contribution')
 
 // 汇总数据
 const summary = ref({
@@ -235,12 +297,16 @@ function extractModelNames(items: UsageRow[]): string[] {
   return [...new Set(items.map(item => item.model_name).filter(Boolean))].sort((left, right) => left.localeCompare(right))
 }
 
-function switchTab(tab: 'contribution' | 'consumption') {
+function switchTab(tab: 'contribution' | 'consumption' | 'billing') {
   activeTab.value = tab
   page.value = 1
   filterModel.value = ''
   filterAPIKeyID.value = ''
-  fetchData()
+  if (tab === 'billing') {
+    fetchModels()
+  } else {
+    fetchData()
+  }
 }
 
 function goPage(p: number) {
@@ -303,6 +369,36 @@ async function fetchAPIKeys() {
   } catch {
     apiKeyList.value = []
   }
+}
+
+// Billing tab: model pricing data
+const billingModels = ref<PublicModel[]>([])
+
+async function fetchModels() {
+  try {
+    const res = await getPublicModels()
+    const data = res.data?.data
+    billingModels.value = Array.isArray(data) ? data.filter(m => m.pricing_tiers?.length > 0) : []
+  } catch {
+    billingModels.value = []
+  }
+}
+
+/** Format token threshold for billing table display (e.g. 32768 → "32K") */
+function formatContextLength(tokens: number): string {
+  if (!tokens) return '∞'
+  if (tokens >= 1_000_000) return (tokens / 1_000_000).toFixed(0) + 'M'
+  if (tokens >= 1_000) return (tokens / 1_000).toFixed(0) + 'K'
+  return String(tokens)
+}
+
+/** Format tier range string, e.g. "0 < Token ≤ 32K" */
+function formatTierRange(tiers: PricingTier[], idx: number): string {
+  const tier = tiers[idx]
+  const prevMax = idx > 0 ? tiers[idx - 1].max_input_tokens : 0
+  const lower = prevMax > 0 ? formatContextLength(prevMax) : '0'
+  const upper = tier.max_input_tokens > 0 ? formatContextLength(tier.max_input_tokens) : '∞'
+  return `${lower} < Token ≤ ${upper}`
 }
 
 /** Format large numbers with locale separators */

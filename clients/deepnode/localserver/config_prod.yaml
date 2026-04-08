@@ -1,11 +1,11 @@
-# DeepNode localserver 配置
+# DeepNode localserver production config
 
 server:
   host: "127.0.0.1"
   port: 8765
 
 log:
-  level: "debug"
+  level: "info"
   log_dir: "~/.deeppool/logs"       # 日志落盘目录，支持 ~ 展开
   file_name: "localserver.log"      # 日志文件名
   backup_count: 7                   # 按天滚动，保留最近 N 天历史日志
@@ -57,7 +57,7 @@ multi_model:
 # 启用后 localserver 自动生成 simei + 自动完成设备初始化，无需 Tauri 桌面应用。
 # 用户通过浏览器访问 http://127.0.0.1:8765/ 查看服务运行状态。
 standalone:
-  enabled: false                   # 是否启用独立运行模式
+  enabled: true                    # 线上环境默认启用独立运行模式
   # 认证方式（二选一，优先级 token > account/password）：
   token: ""                        # 方式1: 直接提供 platform 认证 token
   account: ""                      # 方式2: Platform 登录账号（用户名/手机号/邮箱）
