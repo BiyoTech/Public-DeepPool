@@ -170,17 +170,47 @@
           <t-select v-model="formData.provider_type" :options="providerOptions" clearable />
         </t-form-item>
 
-        <!-- Hybrid: child model selector -->
+        <!-- Hybrid: child model selector with rich rendering -->
         <t-form-item v-if="isHybrid" label="子模型列表" required>
           <div class="w-full space-y-2">
             <t-select
               v-model="formData.child_models"
-              :options="childModelOptions"
               :loading="loadingChildModels"
               multiple
               filterable
               placeholder="选择至少 2 个 DeepNode / Provider 子模型"
-            />
+            >
+              <t-option
+                v-for="opt in childModelOptions"
+                :key="opt.value"
+                :value="opt.value"
+                :label="opt.label"
+                style="height: auto; line-height: normal;"
+              >
+                <div class="flex items-center justify-between w-full gap-2" style="padding: 6px 0;">
+                  <div class="flex-1 min-w-0">
+                    <div class="font-medium text-sm truncate leading-5">{{ opt.label }}</div>
+                    <div
+                      v-if="opt.param_scale || opt.max_context_length || opt.tags?.length"
+                      class="flex flex-wrap items-center gap-1 mt-0.5 leading-4"
+                    >
+                      <span v-if="opt.param_scale" class="text-[10px] text-gray-500">{{ opt.param_scale }}B</span>
+                      <span v-if="opt.param_scale && opt.max_context_length" class="text-[10px] text-gray-300">|</span>
+                      <span v-if="opt.max_context_length" class="text-[10px] text-gray-500">{{ formatContextLength(opt.max_context_length) }}</span>
+                      <span
+                        v-for="tag in opt.tags"
+                        :key="tag"
+                        class="inline-flex items-center rounded-full bg-slate-100 px-1.5 text-[10px] text-gray-500 leading-4"
+                      >{{ tag }}</span>
+                    </div>
+                  </div>
+                  <span
+                    :class="vendorTagClass(opt.vendor_type)"
+                    class="inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none"
+                  >{{ vendorLabelMap[opt.vendor_type] || opt.vendor_type }}</span>
+                </div>
+              </t-option>
+            </t-select>
             <div class="text-xs text-dp-text-3">选择已有的 DeepNode 或 Provider 模型进行组合路由。</div>
           </div>
         </t-form-item>
@@ -266,6 +296,18 @@
           <t-input-number v-model="formData.param_scale" :min="0" :step="0.5" :decimal-places="1" placeholder="如 0.6, 7, 72" />
         </t-form-item>
 
+        <t-form-item label="模型标签">
+          <div class="w-full space-y-2">
+            <t-tag-input
+              v-model="formData.tags"
+              placeholder="输入标签后按回车添加，如 多模态、推理增强"
+              :max="10"
+              clearable
+            />
+            <div class="text-xs text-dp-text-3">用于描述模型特点，如"多模态"、"推理增强"、"低延迟"。</div>
+          </div>
+        </t-form-item>
+
         <t-form-item label="允许外部调用">
           <div class="w-full space-y-2">
             <t-switch v-model="formData.allow_external_call" />
@@ -275,8 +317,13 @@
           </div>
         </t-form-item>
 
-        <!-- Pricing configuration -->
-        <t-form-item label="计费策略（阶梯）">
+        <!-- Pricing configuration (hidden for hybrid — hybrid uses dynamic billing from child models) -->
+        <t-form-item v-if="isHybrid" label="计费策略">
+          <div class="text-xs text-dp-text-3">
+            Hybrid 模型采用动态计费：按实际路由到的子模型单价计费，无需单独配置。
+          </div>
+        </t-form-item>
+        <t-form-item v-if="!isHybrid" label="计费策略（阶梯）">
           <div class="w-full space-y-3">
             <div
               v-for="(tier, idx) in formData.pricing_tiers"
@@ -409,6 +456,7 @@ interface ModelRow {
   routing_policy?: string
   pricing_tiers?: Array<{ max_input_tokens: number; input_price: number; output_price: number }>
   contributor_tiers?: Array<{ max_input_tokens: number; input_price: number; output_price: number }>
+  tags?: string[]
   options?: Record<string, any>
   created_at?: string
 }
@@ -521,6 +569,7 @@ const defaultForm = {
   routing_policy: '',
   pricing_tiers: [] as Array<{ max_input_tokens: number; input_price: number; output_price: number }>,
   contributor_tiers: [] as Array<{ max_input_tokens: number; input_price: number; output_price: number }>,
+  tags: [] as string[],
   options: '',
 }
 
@@ -597,15 +646,16 @@ default_targets:
   <tr><th>Model Type</th><th>Consumer (pricing_tiers)</th><th>Contributor (contributor_tiers)</th></tr>
   <tr><td><b>DeepNode</b></td><td>✅ Configure here</td><td>✅ Configure here</td></tr>
   <tr><td><b>Provider</b></td><td>✅ Configure here</td><td>❌ Not applicable</td></tr>
-  <tr><td><b>Hybrid</b></td><td>✅ Configure here (charges user)</td><td>❌ Derived from resolved child</td></tr>
+  <tr><td><b>Hybrid</b></td><td>Dynamic (from child model)</td><td>❌ Derived from resolved child</td></tr>
 </table>
 
 <h3>How Hybrid Billing Works</h3>
 <ul>
-  <li><b>Consumer cost</b>: Uses the Hybrid model's own <code>pricing_tiers</code></li>
+  <li><b>Consumer cost</b>: Dynamically calculated from the resolved child model's <code>pricing_tiers</code> at request time</li>
   <li><b>Contributor earning</b>: Uses the resolved child model's <code>contributor_tiers</code></li>
   <li>If child is DeepNode → uses that DeepNode's contributor tiers</li>
   <li>If child is Provider → contributor earning = ¥0</li>
+  <li>No need to configure pricing_tiers on Hybrid — it is derived from children</li>
 </ul>
 
 <h3>Tiered Pricing</h3>
@@ -632,8 +682,16 @@ Tier 3: unlimited   → input ¥4.00/M, output ¥8.00/M</code></pre>
 `)
 
 // Child model options for hybrid model selector.
+interface ChildModelOption {
+  label: string
+  value: string
+  vendor_type: string
+  param_scale: number
+  max_context_length: number
+  tags: string[]
+}
 const loadingChildModels = ref(false)
-const childModelOptions = ref<{ label: string; value: string }[]>([])
+const childModelOptions = ref<ChildModelOption[]>([])
 
 async function fetchChildModelOptions() {
   loadingChildModels.value = true
@@ -643,7 +701,14 @@ async function fetchChildModelOptions() {
     // Only show deepnode/provider models as candidates (exclude hybrid).
     childModelOptions.value = items
       .filter((m) => m.vendor_type !== 'hybrid')
-      .map((m) => ({ label: `${m.model_name} (${m.vendor_type})`, value: m.model_name }))
+      .map((m) => ({
+        label: m.model_name,
+        value: m.model_name,
+        vendor_type: m.vendor_type || 'deepnode',
+        param_scale: m.param_scale || 0,
+        max_context_length: m.max_context_length || 0,
+        tags: m.tags || [],
+      }))
   } catch {
     childModelOptions.value = []
   } finally {
@@ -657,6 +722,7 @@ function resetForm() {
     child_models: [] as string[],
     pricing_tiers: [] as Array<{ max_input_tokens: number; input_price: number; output_price: number }>,
     contributor_tiers: [] as Array<{ max_input_tokens: number; input_price: number; output_price: number }>,
+    tags: [] as string[],
   })
 }
 
@@ -695,6 +761,7 @@ function openEditDialog(row: ModelRow) {
   formData.pricing_tiers = (row.pricing_tiers || []).map((t) => ({ ...t }))
   formData.contributor_tiers = (row.contributor_tiers || []).map((t) => ({ ...t }))
   formData.options = row.options ? JSON.stringify(row.options, null, 2) : ''
+  formData.tags = row.tags || []
   fetchChildModelOptions()
   dialogVisible.value = true
 }
@@ -718,6 +785,7 @@ function buildPayload() {
     max_context_length: formData.max_context_length,
     param_scale: formData.param_scale,
     pricing_tiers: formData.pricing_tiers.length ? formData.pricing_tiers : [],
+    tags: formData.tags.length ? formData.tags : [],
     allow_external_call: formData.allow_external_call,
     options: parseOptions(),
   }
@@ -878,6 +946,12 @@ function vendorTheme(vendorType: string) {
   if (vendorType === 'provider') return 'warning'
   if (vendorType === 'hybrid') return 'primary'
   return 'success'
+}
+
+function vendorTagClass(vendorType: string): string {
+  if (vendorType === 'provider') return 'bg-orange-50 text-orange-600'
+  if (vendorType === 'hybrid') return 'bg-red-50 text-red-500'
+  return 'bg-green-50 text-green-600'
 }
 
 onMounted(() => fetchModels())

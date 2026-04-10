@@ -45,7 +45,7 @@
             </button>
           </div>
 
-          <!-- ═══ Billing Tab: Tiered Pricing Table ═══ -->
+          <!-- ═══ Billing Tab: Tiered Pricing Table + Hybrid Price Range ═══ -->
           <div v-if="activeTab === 'billing'" class="px-6 py-6">
             <div v-if="billingModels.length === 0" class="py-12 text-center text-dp-muted">
               {{ $t('data.billing_empty') }}
@@ -62,7 +62,34 @@
                 </thead>
                 <tbody>
                   <template v-for="model in billingModels" :key="model.model_name">
+                    <!-- Hybrid model: display dynamic price range -->
                     <tr
+                      v-if="model.vendor_type === 'hybrid' && model.price_range"
+                      class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors"
+                    >
+                      <td class="py-3 px-4 text-dp-title font-medium align-top border-r border-slate-100">
+                        <div class="flex items-center gap-1.5">
+                          {{ model.model_name }}
+                          <span class="inline-block px-1.5 py-0.5 text-[10px] font-medium bg-blue-50 text-blue-600 rounded">Hybrid</span>
+                        </div>
+                        <div v-if="model.price_range.child_models?.length" class="text-xs text-dp-muted mt-0.5">
+                          {{ $t('data.billing_hybrid_children', { count: model.price_range.child_models.length }) }}
+                        </div>
+                      </td>
+                      <td class="py-3 px-4 text-dp-muted text-xs italic">
+                        {{ $t('data.billing_hybrid_dynamic') }}
+                      </td>
+                      <td class="py-3 px-4 text-right text-dp-body tabular-nums font-mono">
+                        {{ formatPriceRange(model.price_range.min_input_price, model.price_range.max_input_price) }}
+                      </td>
+                      <td class="py-3 px-4 text-right text-dp-body tabular-nums font-mono">
+                        {{ formatPriceRange(model.price_range.min_output_price, model.price_range.max_output_price) }}
+                      </td>
+                    </tr>
+
+                    <!-- Standard model: display tiered pricing rows -->
+                    <tr
+                      v-else
                       v-for="(tier, tierIdx) in model.pricing_tiers"
                       :key="`${model.model_name}-${tierIdx}`"
                       class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors"
@@ -96,6 +123,7 @@
               <div class="mt-4 text-xs text-dp-muted leading-relaxed">
                 <p>{{ $t('data.billing_note1') }}</p>
                 <p>{{ $t('data.billing_note2') }}</p>
+                <p>{{ $t('data.billing_note3') }}</p>
               </div>
             </div>
           </div>
@@ -220,7 +248,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { getContribution, getConsumption, getUsageSummary } from '@/api/usage'
 import { listAPIKeys, type APIKey } from '@/api/apikey'
-import { getPublicModels, type PublicModel, type PricingTier } from '@/api/model'
+import { getPublicModels, type PublicModel, type PricingTier, type PriceRange } from '@/api/model'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
@@ -378,7 +406,10 @@ async function fetchModels() {
   try {
     const res = await getPublicModels()
     const data = res.data?.data
-    billingModels.value = Array.isArray(data) ? data.filter(m => m.pricing_tiers?.length > 0) : []
+    // Include models with pricing_tiers (standard) or price_range (hybrid dynamic pricing).
+    billingModels.value = Array.isArray(data)
+      ? data.filter(m => m.pricing_tiers?.length > 0 || m.price_range)
+      : []
   } catch {
     billingModels.value = []
   }
@@ -399,6 +430,13 @@ function formatTierRange(tiers: PricingTier[], idx: number): string {
   const lower = prevMax > 0 ? formatContextLength(prevMax) : '0'
   const upper = tier.max_input_tokens > 0 ? formatContextLength(tier.max_input_tokens) : '∞'
   return `${lower} < Token ≤ ${upper}`
+}
+
+/** Format hybrid price range: "1.00 ~ 4.00 元" or "1.00 元" when min === max */
+function formatPriceRange(min: number, max: number): string {
+  const unit = t('data.billing_unit')
+  if (min === max) return `${min} ${unit}`
+  return `${min} ~ ${max} ${unit}`
 }
 
 /** Format large numbers with locale separators */
