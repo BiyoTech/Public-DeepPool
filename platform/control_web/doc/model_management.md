@@ -145,26 +145,28 @@ When a candidate fails **before writing any response bytes** to the client, the 
 |------------|----------------------------------|----------------------------------------|
 | **DeepNode** | ✅ Configure here | ✅ Configure here |
 | **Provider** | ✅ Configure here | ❌ Not applicable (no contributor) |
-| **Hybrid** | ✅ Configure here (charges the user) | ❌ Derived from the resolved child model |
+| **Hybrid** | Dynamic (from resolved child model) | ❌ Derived from the resolved child model |
 
 ### 2.3 How Hybrid Billing Works
 
-When a Hybrid model processes a request:
+Hybrid models use **dynamic billing** — no `pricing_tiers` are configured on the Hybrid model itself. When a request is processed:
 
-1. **Consumer cost**: Calculated using the **Hybrid model's own `pricing_tiers`**
+1. **Consumer cost**: Calculated using the **resolved child model's `pricing_tiers`** (the child model that actually handles the request)
 2. **Contributor earning**: Calculated using the **resolved child model's `contributor_tiers`**
    - If the child is a DeepNode → uses that DeepNode's contributor tiers
    - If the child is a Provider → contributor earning is 0 (no device contributor)
 
 ```
-User Request → hybrid-model (pricing_tiers: charges user ¥X)
+User Request → hybrid-model (no own pricing)
                   │
-                  ├─ routes to deepnode-child → contributor_tiers: pays device owner ¥Y
+                  ├─ routes to deepnode-child → pricing_tiers: charges user ¥X
+                  │                          → contributor_tiers: pays device owner ¥Y
                   │
-                  └─ routes to provider-child → contributor earning: ¥0
+                  └─ routes to provider-child → pricing_tiers: charges user ¥Z
+                                             → contributor earning: ¥0
 ```
 
-> **Why this design**: The Hybrid model is a virtual routing layer — it doesn't know which child will be selected until runtime. Consumer pricing is fixed at the Hybrid level for predictable user billing. Contributor earning varies based on the actual execution backend.
+> **Why dynamic billing**: Different child models may have vastly different costs (e.g., a local 0.6B model vs. GPT-4o). Dynamic billing ensures the user pays a fair price that reflects the actual compute backend used. The public API displays a price range computed from all children so users know the possible cost bounds.
 
 ### 2.4 Tiered Pricing Configuration
 
@@ -210,17 +212,20 @@ contributor_tiers (device owner):
   unlimited:   input ¥1.00/M, output ¥2.00/M
 ```
 
-#### Example: Hybrid model billing
+#### Example: Hybrid model billing (dynamic)
 
 ```
-hybrid-model pricing_tiers (consumer):
-  unlimited:  input ¥2.00/M, output ¥4.00/M
+hybrid-model has NO own pricing_tiers.
+Child models: deepnode-child (input ¥1.00/M, output ¥2.00/M) + provider-child (input ¥10.00/M, output ¥30.00/M)
+
+→ Public API shows price range: input ¥1.00 ~ ¥10.00/M, output ¥2.00 ~ ¥30.00/M
 
 → If routed to deepnode-child:
-    contributor_tiers from deepnode-child:
-      unlimited: input ¥0.80/M, output ¥1.60/M
+    consumer cost: input ¥1.00/M, output ¥2.00/M (from deepnode-child's pricing_tiers)
+    contributor earning: from deepnode-child's contributor_tiers
 
 → If routed to provider-child:
+    consumer cost: input ¥10.00/M, output ¥30.00/M (from provider-child's pricing_tiers)
     contributor earning = ¥0
 ```
 
@@ -241,12 +246,13 @@ Leave `pricing_tiers` empty → model is free for consumers.
 | endpoint + api_key | — | ✅ Required | — |
 | child_models (≥2) | — | — | ✅ Required |
 | routing_policy | — | — | Optional (YAML) |
-| pricing_tiers | Optional | Optional | Optional |
+| pricing_tiers | Optional | Optional | — (dynamic from children) |
 | contributor_tiers | Optional | — | — (derived from child) |
 
 ### Common Mistakes
 
-1. **Setting contributor_tiers on Hybrid** → Will be ignored; contributor billing comes from the resolved child model.
-2. **Routing policy targets not in child_models** → Validation error; all targets must reference existing child models.
-3. **Only 1 child model** → Validation error; Hybrid requires at least 2 children.
-4. **Recursive Hybrid** → Not allowed; a Hybrid's child cannot be another Hybrid.
+1. **Setting pricing_tiers on Hybrid** → Will be ignored and cleared; consumer billing is dynamic from the resolved child model.
+2. **Setting contributor_tiers on Hybrid** → Will be ignored; contributor billing comes from the resolved child model.
+3. **Routing policy targets not in child_models** → Validation error; all targets must reference existing child models.
+4. **Only 1 child model** → Validation error; Hybrid requires at least 2 children.
+5. **Recursive Hybrid** → Not allowed; a Hybrid's child cannot be another Hybrid.

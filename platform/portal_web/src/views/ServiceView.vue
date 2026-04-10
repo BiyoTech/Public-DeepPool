@@ -58,7 +58,19 @@
                       :class="model.id === selectedModel ? 'bg-blue-50 text-dp-blue font-medium' : 'text-dp-body'"
                       @click="selectModel(model.id)"
                     >
-                      <span class="truncate">{{ model.id }}</span>
+                      <div class="flex-1 min-w-0">
+                        <div class="truncate">{{ model.id }}</div>
+                        <div class="flex flex-wrap items-center gap-1 mt-0.5">
+                          <span v-if="model.param_scale" class="text-[10px] text-slate-400">{{ model.param_scale }}B</span>
+                          <span v-if="model.param_scale && model.max_context_length" class="text-[10px] text-slate-300">|</span>
+                          <span v-if="model.max_context_length" class="text-[10px] text-slate-400">{{ formatModelCtx(model.max_context_length) }}</span>
+                          <span
+                            v-for="tag in (model.tags || []).slice(0, 3)"
+                            :key="tag"
+                            class="inline-flex items-center rounded-full bg-slate-100 px-1.5 py-0 text-[10px] text-slate-500"
+                          >{{ tag }}</span>
+                        </div>
+                      </div>
                       <span :class="vendorTypeTagClass(model.vendor_type)" class="inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none">
                         {{ vendorTypeLabel(model.vendor_type) }}
                       </span>
@@ -433,6 +445,9 @@ interface GatewayModelOption {
   vendor_type?: string
   provider_type?: string
   owned_by?: string
+  param_scale?: number
+  max_context_length?: number
+  tags?: string[]
 }
 
 const selectedModel = ref('')
@@ -463,6 +478,14 @@ function vendorTypeTagClass(vendorType?: string): string {
     default:
       return 'bg-blue-100 text-dp-blue'
   }
+}
+
+/** Format context length for dropdown display (e.g. 131072 → "128K") */
+function formatModelCtx(n: number): string {
+  if (!n) return ''
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(0) + 'M'
+  if (n >= 1_000) return (n / 1_000).toFixed(0) + 'K'
+  return String(n)
 }
 
 function handleClickOutsideDropdown(e: MouseEvent) {
@@ -918,6 +941,9 @@ function normalizeGatewayModels(items: unknown[]): GatewayModelOption[] {
         vendor_type: String(record.vendor_type || '').trim(),
         provider_type: String(record.provider_type || '').trim(),
         owned_by: String(record.owned_by || '').trim(),
+        param_scale: Number(record.param_scale || 0),
+        max_context_length: Number(record.max_context_length || 0),
+        tags: Array.isArray(record.tags) ? (record.tags as string[]) : [],
       }
     })
     .filter(model => {
