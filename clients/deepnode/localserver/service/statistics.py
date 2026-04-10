@@ -223,9 +223,9 @@ class StatisticsDB:
             if snap.recent_completion_tokens > 0 and recent_seconds > 0:
                 snap.token_output_rate = round(snap.recent_completion_tokens / recent_seconds, 1)
 
-            # 今日统计（UTC 零点起）
+            # Today's statistics (UTC midnight as start-of-day)
             import datetime
-            today_start = datetime.datetime.now().replace(
+            today_start = datetime.datetime.utcnow().replace(
                 hour=0, minute=0, second=0, microsecond=0,
             ).timestamp()
             cur.execute("""

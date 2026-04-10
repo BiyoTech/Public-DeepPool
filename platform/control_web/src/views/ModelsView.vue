@@ -111,6 +111,11 @@
           <t-tag v-else theme="default" variant="light" size="small">禁用</t-tag>
         </template>
 
+        <template #allow_external_call="{ row }">
+          <t-tag v-if="row.allow_external_call" theme="success" variant="light" size="small">允许</t-tag>
+          <t-tag v-else theme="warning" variant="light" size="small">禁止</t-tag>
+        </template>
+
         <template #created_at="{ row }">
           <span class="text-dp-text-2 text-sm">{{ formatTime(row.created_at) }}</span>
         </template>
@@ -125,6 +130,14 @@
               @click="toggleEnabled(row)"
             >
               {{ row.enabled ? '禁用' : '启用' }}
+            </t-button>
+            <t-button
+              variant="text"
+              :theme="row.allow_external_call ? 'warning' : 'success'"
+              size="small"
+              @click="toggleExternalCall(row)"
+            >
+              {{ row.allow_external_call ? '禁止外调' : '允许外调' }}
             </t-button>
             <t-popconfirm content="确认删除该模型？删除后不可恢复。" @confirm="handleDelete(row.id)">
               <t-button variant="text" theme="danger" size="small">删除</t-button>
@@ -253,6 +266,15 @@
           <t-input-number v-model="formData.param_scale" :min="0" :step="0.5" :decimal-places="1" placeholder="如 0.6, 7, 72" />
         </t-form-item>
 
+        <t-form-item label="允许外部调用">
+          <div class="w-full space-y-2">
+            <t-switch v-model="formData.allow_external_call" />
+            <div class="text-xs text-dp-text-3">
+              关闭后，Portal 用户无法直接调用该模型，但仍可作为 Hybrid 子模型被调度，Admin 也可在 Chat 调试页调用。
+            </div>
+          </div>
+        </t-form-item>
+
         <!-- Pricing configuration -->
         <t-form-item label="计费策略（阶梯）">
           <div class="w-full space-y-3">
@@ -379,6 +401,7 @@ interface ModelRow {
   max_context_length?: number
   param_scale?: number
   enabled?: boolean
+  allow_external_call?: boolean
   endpoint?: string
   upstream_model?: string
   api_key_masked?: string
@@ -439,8 +462,9 @@ const columns = [
   { colKey: 'priority', title: '优先级', width: 90 },
   { colKey: 'pricing', title: '计费', width: 160, cell: 'pricing' },
   { colKey: 'enabled', title: '状态', width: 80, cell: 'enabled' },
+  { colKey: 'allow_external_call', title: '外部调用', width: 100, cell: 'allow_external_call' },
   { colKey: 'created_at', title: '创建时间', width: 170, cell: 'created_at' },
-  { colKey: 'op', title: '操作', width: 180, cell: 'op', fixed: 'right' },
+  { colKey: 'op', title: '操作', width: 240, cell: 'op', fixed: 'right' },
 ]
 
 async function fetchModels() {
@@ -488,6 +512,7 @@ const defaultForm = {
   supports_function_call: false,
   max_context_length: 0,
   param_scale: 0,
+  allow_external_call: true,
   endpoint: '',
   upstream_model: '',
   api_key: '',
@@ -660,6 +685,7 @@ function openEditDialog(row: ModelRow) {
   formData.supports_function_call = row.supports_function_call || false
   formData.max_context_length = row.max_context_length || 0
   formData.param_scale = row.param_scale || 0
+  formData.allow_external_call = row.allow_external_call !== false
   formData.endpoint = row.endpoint || ''
   formData.upstream_model = row.upstream_model || ''
   formData.api_key = ''
@@ -692,6 +718,7 @@ function buildPayload() {
     max_context_length: formData.max_context_length,
     param_scale: formData.param_scale,
     pricing_tiers: formData.pricing_tiers.length ? formData.pricing_tiers : [],
+    allow_external_call: formData.allow_external_call,
     options: parseOptions(),
   }
 
@@ -787,6 +814,16 @@ async function toggleEnabled(row: ModelRow) {
   try {
     await updateModel(row.id, { enabled: !row.enabled })
     MessagePlugin.success(row.enabled ? '已禁用' : '已启用')
+    fetchModels()
+  } catch (error) {
+    MessagePlugin.error(extractErrorMessage(error, '操作失败'))
+  }
+}
+
+async function toggleExternalCall(row: ModelRow) {
+  try {
+    await updateModel(row.id, { allow_external_call: !row.allow_external_call })
+    MessagePlugin.success(row.allow_external_call ? '已禁止外部调用' : '已允许外部调用')
     fetchModels()
   } catch (error) {
     MessagePlugin.error(extractErrorMessage(error, '操作失败'))

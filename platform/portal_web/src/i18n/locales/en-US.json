@@ -108,10 +108,19 @@
   "auth": {
     "login": {
       "title": "Login to DeepPool",
+      "tab_password": "Password",
+      "tab_email": "Email Code",
       "account": "Account",
       "account_placeholder": "Username / Phone / Email",
       "password": "Password",
       "password_placeholder": "Enter your password",
+      "email": "Email",
+      "email_placeholder": "Enter your email",
+      "code": "Code",
+      "code_placeholder": "Enter verification code",
+      "send_code": "Send Code",
+      "code_sent": "{seconds}s",
+      "forgot_password": "Forgot password?",
       "submit": "Login",
       "no_account": "Don't have an account?",
       "go_register": "Sign Up"
@@ -124,18 +133,46 @@
       "password_placeholder": "At least 8 characters",
       "confirm_password": "Confirm Password",
       "confirm_password_placeholder": "Enter password again",
-      "phone": "Phone",
-      "phone_placeholder": "Enter phone number",
+      "phone": "Phone (optional)",
+      "phone_placeholder": "Enter phone number (optional)",
       "email": "Email",
       "email_placeholder": "Enter email address",
+      "email_code": "Email Code",
+      "email_code_placeholder": "Enter verification code",
+      "send_code": "Send Code",
+      "code_sent": "{seconds}s",
       "submit": "Sign Up",
       "has_account": "Already have an account?",
-      "go_login": "Login"
+      "go_login": "Login",
+      "register_success": "Registration successful! Redirecting to login in 3 seconds..."
+    },
+    "forgot": {
+      "title": "Reset Password",
+      "step1_title": "Verify Email",
+      "step2_title": "Set New Password",
+      "email_placeholder": "Enter your registered email",
+      "code_placeholder": "Enter verification code",
+      "send_code": "Send Code",
+      "code_sent": "{seconds}s",
+      "next_step": "Next",
+      "new_password": "New Password",
+      "new_password_placeholder": "At least 8 characters",
+      "confirm_password": "Confirm Password",
+      "confirm_password_placeholder": "Enter new password again",
+      "reset_submit": "Reset Password",
+      "reset_success": "Password reset successful, redirecting to login...",
+      "back_to_login": "Back to Login"
     },
     "error": {
       "password_mismatch": "Passwords do not match",
       "login_failed": "Login failed, please check your credentials",
-      "register_failed": "Registration failed, please try again later"
+      "email_login_failed": "Login failed, please check your email and code",
+      "register_failed": "Registration failed, please try again later",
+      "register_duplicate": "Username, phone, or email is already registered. Please use different ones.",
+      "send_code_failed": "Failed to send verification code, please try again",
+      "code_rate_limit": "Verification code already sent, please wait and try again",
+      "reset_failed": "Password reset failed, please try again",
+      "invalid_code": "Invalid or expired verification code"
     }
   },
   "docs": {

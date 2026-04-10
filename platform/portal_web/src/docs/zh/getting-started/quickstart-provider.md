@@ -8,6 +8,17 @@
 - 稳定的网络连接
 - 至少 8GB 可用内存（运行小型模型）
 
+### macOS 版本要求
+
+DeepPool 在 Mac 上使用 [MLX](https://github.com/ml-explore/mlx) 框架进行推理加速。**不同 macOS 版本对模型的支持范围不同**：
+
+| macOS 版本 | MLX 版本 | mlx-lm 版本 | 支持的模型架构 |
+|-----------|---------|------------|-------------|
+| **14.0+ (Sonoma)** | 0.30+ | 0.31+ | ✅ 全部（含 Gemma 4、Llama 4 等最新架构） |
+| 13.5 (Ventura) | ≤ 0.29 | ≤ 0.30 | ⚠️ 仅支持较旧的模型架构 |
+
+> **强烈建议将 macOS 升级到 14.0 (Sonoma) 或更高版本**，以获得最新模型的完整支持。macOS 13.x 用户可能无法加载部分新架构模型（如 Gemma 4 系列）。
+
 ## 步骤
 
 ### 1. 注册平台账号
@@ -43,10 +54,10 @@ DeepNode 是一个桌面客户端应用（基于 Tauri 构建）：
 
 ## 支持的推理引擎
 
-| 引擎 | 适用平台 | 加速方式 |
-|------|---------|---------|
-| MLX | macOS Apple Silicon | Metal GPU |
-| vLLM | Linux + NVIDIA | CUDA |
-| llama.cpp | 通用 | CPU / 弱 GPU |
+| 引擎 | 适用平台 | 加速方式 | 备注 |
+|------|---------|---------|------|
+| MLX | macOS Apple Silicon (M1+) | Metal GPU | 推荐 macOS 14.0+，13.x 可用但模型支持有限 |
+| vLLM | Linux + NVIDIA | CUDA | 高吞吐，适合服务器部署 |
+| llama.cpp | 通用 | CPU / 弱 GPU | 兜底引擎，兼容性最广 |
 
 系统根据设备硬件自动选择最优引擎，无需手动配置。

@@ -29,6 +29,15 @@ admin:
     password: "admin@123"
     phone: "10000000000"
     email: "admin@deeppool.io"
+  # SMTP mail server for sending verification codes (email login / password reset)
+  smtp:
+    host: "smtpdm.aliyun.com"
+    port: 465
+    user: "user_reg@smail.deeppool.tech"
+    password: "UerRegdeeppool0410"
+    from: "DeepPool <postmaster@deeppool.com>"
+    use_tls: true
+    insecure_skip_verify: true  # smtp.deeppool.tech TLS cert doesn't include this hostname
   node_managers:
     - name: "node-prod"
       addr: "deeppool.tech:9092"

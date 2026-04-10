@@ -30,17 +30,35 @@ class ServerConfig:
 
 @dataclass
 class PlatformConfig:
-    """Platform gRPC connection config — sourced from build-time defaults.
+    """Platform gRPC connection config — always sourced from platform_defaults.
 
     gRPC targets and TLS settings are determined by the build profile
     (DEEPPOOL_PROFILE env var) via platform_defaults module, NOT from YAML.
     This prevents end-users from seeing or modifying server addresses.
+
+    Default values are loaded from platform_defaults at class definition time,
+    ensuring that even a bare AppConfig() has correct platform settings.
     """
     manager_grpc_target: str = ""
     scheduler_grpc_target: str = ""
     nodemanager_grpc_target: str = ""
     grpc_tls: bool = False
     grpc_tls_ca_cert: str = ""
+
+    def __post_init__(self):
+        """Fill empty fields from platform_defaults — the single source of truth."""
+        from platform_defaults import get_platform_defaults
+        _pd = get_platform_defaults()
+        if not self.manager_grpc_target:
+            self.manager_grpc_target = _pd.manager_grpc_target
+        if not self.scheduler_grpc_target:
+            self.scheduler_grpc_target = _pd.scheduler_grpc_target
+        if not self.nodemanager_grpc_target:
+            self.nodemanager_grpc_target = _pd.nodemanager_grpc_target
+        if not self.grpc_tls:
+            self.grpc_tls = _pd.grpc_tls
+        if not self.grpc_tls_ca_cert:
+            self.grpc_tls_ca_cert = _pd.grpc_tls_ca_cert
 
     @property
     def tls_kwargs(self) -> dict:
@@ -316,9 +334,11 @@ def _build_config(raw: dict[str, Any]) -> AppConfig:
 
 
 def load_config(path: str | Path | None = None) -> AppConfig:
-    """加载配置文件。
+    """Load configuration file.
 
-    优先级：参数 path > 环境变量 LOCALSERVER_CONFIG > 默认 config.yaml
+    Priority: path arg > env LOCALSERVER_CONFIG > default config.yaml.
+    Platform gRPC targets always come from platform_defaults module regardless
+    of whether the config file exists.
     """
     if path is None:
         path = os.environ.get("LOCALSERVER_CONFIG", "").strip() or _DEFAULT_CONFIG_PATH
@@ -326,7 +346,7 @@ def load_config(path: str | Path | None = None) -> AppConfig:
 
     if not path.exists():
         logger.warning("config file not found: %s, using defaults", path)
-        return AppConfig()
+        return _build_config({})
 
     with open(path, "r", encoding="utf-8") as f:
         raw = yaml.safe_load(f) or {}

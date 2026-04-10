@@ -1,20 +1,76 @@
-"""platform manager gRPC 客户端封装。
+"""Platform manager gRPC client with connection pooling and automatic retry.
 
-后台服务间通信统一走 gRPC。本模块封装了 client node 与 platform manager 之间的
-所有 gRPC 调用，包括获取模型部署配置和设备注册。
+All client-node ↔ platform-manager communication goes through gRPC.
+This module provides:
+  - PlatformClient: low-level gRPC client wrapping every Manager RPC
+  - get_shared_platform_client(): module-level singleton factory that reuses
+    the underlying gRPC channel across requests, with automatic reconnect
+    on transient failures
+  - _retry_on_transient(): retry decorator for idempotent / read-only RPCs
 """
 
 from __future__ import annotations
 
 import logging
+import threading
+import time
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Callable, TypeVar
 
 import grpc
 
 from generated import manager_service_pb2, manager_service_pb2_grpc
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar("T")
+
+# gRPC status codes considered transient (safe to retry for idempotent calls)
+_RETRYABLE_CODES = frozenset({
+    grpc.StatusCode.UNAVAILABLE,
+    grpc.StatusCode.DEADLINE_EXCEEDED,
+})
+
+# Default retry parameters
+_DEFAULT_MAX_RETRIES = 3
+_DEFAULT_BASE_DELAY = 1.0  # seconds
+
+
+def _retry_on_transient(
+    fn: Callable[..., T],
+    *args: Any,
+    max_retries: int = _DEFAULT_MAX_RETRIES,
+    base_delay: float = _DEFAULT_BASE_DELAY,
+    **kwargs: Any,
+) -> T:
+    """Execute *fn* with exponential-backoff retry on transient gRPC errors.
+
+    Only retries when the gRPC status code is in _RETRYABLE_CODES.
+    Non-retryable errors are raised immediately.
+
+    Args:
+        fn:          callable to invoke
+        max_retries: total attempts (including the first one)
+        base_delay:  initial backoff delay in seconds (doubles each attempt)
+    """
+    last_exc: Exception | None = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            return fn(*args, **kwargs)
+        except grpc.RpcError as exc:
+            code = exc.code() if hasattr(exc, "code") else None
+            if code not in _RETRYABLE_CODES or attempt >= max_retries:
+                raise
+            last_exc = exc
+            delay = base_delay * (2 ** (attempt - 1))
+            logger.warning(
+                "transient gRPC error (code=%s, attempt=%d/%d), retrying in %.1fs: %s",
+                code, attempt, max_retries, delay,
+                exc.details() if hasattr(exc, "details") else str(exc),
+            )
+            time.sleep(delay)
+    # Should not reach here, but satisfy type checker
+    raise last_exc  # type: ignore[misc]
 
 
 def _create_grpc_channel(target: str, use_tls: bool, ca_cert: str = "") -> grpc.Channel:
@@ -97,14 +153,16 @@ class PlatformClient:
     def get_model_deploy_config(
         self, simei: str, supported_models: list[str]
     ) -> ModelDeployConfig:
-        """获取单个模型部署配置。"""
+        """Get single model deploy config (idempotent, retries on transient errors)."""
         req = manager_service_pb2.GetModelDeployConfigRequest(
             simei=simei,
             supported_models=supported_models,
             auth_token=self._token,
         )
         try:
-            resp = self._stub.GetModelDeployConfig(req, timeout=self._timeout)
+            resp = _retry_on_transient(
+                self._stub.GetModelDeployConfig, req, timeout=self._timeout,
+            )
         except grpc.RpcError as exc:
             detail = exc.details() if hasattr(exc, "details") else str(exc)
             logger.error("grpc GetModelDeployConfig failed: %s", detail)
@@ -141,14 +199,16 @@ class PlatformClient:
         Returns:
             模型部署配置列表，可能为空（平台未分配任何模型时）。
         """
-        # 优先尝试批量接口
+        # Prefer batch API (idempotent, retries on transient errors)
         try:
             req = manager_service_pb2.GetMultiModelDeployConfigsRequest(
                 simei=simei,
                 supported_models=supported_models,
                 auth_token=self._token,
             )
-            resp = self._stub.GetMultiModelDeployConfigs(req, timeout=self._timeout)
+            resp = _retry_on_transient(
+                self._stub.GetMultiModelDeployConfigs, req, timeout=self._timeout,
+            )
             configs = []
             for cfg in resp.configs:
                 options = dict(cfg.options)
@@ -260,7 +320,9 @@ class PlatformClient:
             logs=entries,
         )
         try:
-            resp = self._stub.ReportInferLogs(req, timeout=self._timeout)
+            resp = _retry_on_transient(
+                self._stub.ReportInferLogs, req, timeout=self._timeout,
+            )
         except grpc.RpcError as exc:
             detail = exc.details() if hasattr(exc, "details") else str(exc)
             logger.error("grpc ReportInferLogs failed: %s", detail)
@@ -296,19 +358,22 @@ class PlatformClient:
 
     def update_device(
         self, simei: str, device_config: str, device_ip: str = "",
+        registered_models: list[str] | None = None,
     ) -> DeviceInfo:
-        """更新设备信息到平台（模型加载完成后更新 device_config）。
+        """Update device info on platform.
 
         Args:
-            simei: 设备 SIMEI
-            device_config: 设备配置 JSON 字符串
-            device_ip: 设备 IP（可选，留空则不更新）
+            simei: device SIMEI
+            device_config: device config JSON string
+            device_ip: device IP (optional, empty = no change)
+            registered_models: models actually loaded and serving (optional)
         """
         req = manager_service_pb2.UpdateDeviceRequest(
             simei=simei,
             device_ip=device_ip,
             device_config=device_config,
             auth_token=self._token,
+            registered_models=registered_models or [],
         )
         try:
             resp = self._stub.UpdateDevice(req, timeout=self._timeout)
@@ -410,7 +475,9 @@ class PlatformClient:
             auth_token=self._token,
         )
         try:
-            resp = self._stub.GetDevice(req, timeout=self._timeout)
+            resp = _retry_on_transient(
+                self._stub.GetDevice, req, timeout=self._timeout,
+            )
         except grpc.RpcError as exc:
             code = exc.code() if hasattr(exc, "code") else None
             if code == grpc.StatusCode.NOT_FOUND:
@@ -431,7 +498,71 @@ class PlatformClient:
             updated_at=d.updated_at,
         )
 
+    def update_token(self, new_token: str) -> None:
+        """Update the auth token without rebuilding the gRPC channel."""
+        self._token = new_token.strip()
+
     def close(self):
-        """关闭 gRPC channel。"""
+        """Close the gRPC channel."""
         self._channel.close()
-        logger.info("platform grpc channel closed")
+        logger.info("platform grpc channel closed target=%s", self._target)
+
+
+# ---------------------------------------------------------------------------
+# Module-level shared client singleton — reuses gRPC channel across requests
+# ---------------------------------------------------------------------------
+
+_shared_client: PlatformClient | None = None
+_shared_client_lock = threading.Lock()
+_shared_client_token: str = ""
+
+
+def get_shared_platform_client(auth_token: str) -> PlatformClient:
+    """Get or create the module-level shared PlatformClient.
+
+    The underlying gRPC channel is reused across requests to avoid
+    repeated TCP + TLS handshake overhead.  When the *auth_token* changes
+    (e.g. after re-login), the existing client's token is updated in-place
+    without recreating the channel.
+
+    Thread-safe: concurrent callers will receive the same instance.
+    """
+    global _shared_client, _shared_client_token
+
+    token = auth_token.strip()
+
+    # Fast path: client exists and token unchanged
+    if _shared_client is not None and _shared_client_token == token:
+        return _shared_client
+
+    with _shared_client_lock:
+        # Double-check after acquiring lock
+        if _shared_client is not None:
+            if _shared_client_token != token:
+                _shared_client.update_token(token)
+                _shared_client_token = token
+                logger.info("shared platform client: token updated")
+            return _shared_client
+
+        # First creation — read platform defaults from config
+        from config import get_config
+        cfg = get_config()
+        _shared_client = PlatformClient(
+            grpc_target=cfg.platform.manager_grpc_target,
+            auth_token=token,
+            **cfg.platform.tls_kwargs,
+        )
+        _shared_client_token = token
+        logger.info("shared platform client created target=%s", cfg.platform.manager_grpc_target)
+        return _shared_client
+
+
+def close_shared_platform_client() -> None:
+    """Close the shared client (call during application shutdown)."""
+    global _shared_client, _shared_client_token
+    with _shared_client_lock:
+        if _shared_client is not None:
+            _shared_client.close()
+            _shared_client = None
+            _shared_client_token = ""
+            logger.info("shared platform client closed")

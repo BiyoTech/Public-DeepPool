@@ -145,7 +145,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { ChatIcon, SendIcon, AddIcon } from 'tdesign-icons-vue-next'
-import { getNodeManagers } from '@/api/admin'
+import { getNodeManagers, getEnabledModels } from '@/api/admin'
 
 interface TimingInfo {
   ttft: number
@@ -203,15 +203,15 @@ const modelOptions = computed(() => {
   }))
 })
 
+// Fetch all enabled models via admin API (includes models with allow_external_call=false).
 async function fetchModels() {
   try {
-    const res = await fetch('/v1/models')
-    if (!res.ok) return
-    const json = await res.json()
-    const models = (json.data || [])
+    const res = await getEnabledModels()
+    const items = res?.data?.data || []
+    const models = items
       .map((item: any) => ({
-        label: item.provider_type ? `${item.id} (${item.provider_type}/${item.vendor_type})` : `${item.id} (${item.vendor_type || 'deepnode'})`,
-        value: item.id,
+        label: item.provider_type ? `${item.model_name} (${item.provider_type}/${item.vendor_type})` : `${item.model_name} (${item.vendor_type || 'deepnode'})`,
+        value: item.model_name,
         vendorType: item.vendor_type || 'deepnode',
         providerType: item.provider_type || '',
       }))

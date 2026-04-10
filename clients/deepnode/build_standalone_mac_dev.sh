@@ -238,7 +238,12 @@ if getattr(sys, 'frozen', False):
     import types as _types
 
     class _TorchBlocker:
-        """Meta path finder that blocks torch import with a lightweight stub."""
+        """Meta path finder that blocks torch/torchvision imports with deep stubs.
+
+        transformers' image_utils.py does 'from torchvision.transforms import InterpolationMode'
+        at module level. The stub must support arbitrary sub-attribute access so these
+        imports silently resolve to dummy objects instead of crashing.
+        """
         _BLOCKED = frozenset({'torch', 'torchvision', 'functorch', 'torchgen'})
 
         def find_module(self, fullname, path=None):
@@ -249,13 +254,28 @@ if getattr(sys, 'frozen', False):
         def load_module(self, fullname):
             if fullname in sys.modules:
                 return sys.modules[fullname]
-            mod = _types.ModuleType(fullname)
-            mod.__file__ = '<blocked>'
-            mod.__path__ = []
-            mod.__loader__ = self
-            mod.__package__ = fullname
+            mod = _StubModule(fullname)
             sys.modules[fullname] = mod
             return mod
+
+    class _StubModule(_types.ModuleType):
+        """A stub module where any attribute access returns another stub."""
+        def __init__(self, name):
+            super().__init__(name)
+            self.__file__ = '<blocked>'
+            self.__path__ = []
+            self.__package__ = name
+            self.__all__ = []
+
+        def __getattr__(self, name):
+            if name.startswith('_'):
+                raise AttributeError(name)
+            # Return a nested stub so 'from torchvision.transforms import X' works.
+            qual = f'{self.__name__}.{name}'
+            if qual not in sys.modules:
+                sub = _StubModule(qual)
+                sys.modules[qual] = sub
+            return sys.modules[qual]
 
     sys.meta_path.insert(0, _TorchBlocker())
     print("[runtime_hook] torch import blocker installed", flush=True)
@@ -414,7 +434,7 @@ a = Analysis(
         # 不需要的大包
         'cv2', 'opencv-python', 'opencv-python-headless',
         'matplotlib', 'scipy', 'pandas', 'notebook', 'jupyter',
-        'tkinter', 'PIL', 'torch', 'accelerate',
+        'tkinter', 'PIL', 'torch', 'torchvision', 'torchgen', 'functorch', 'accelerate',
     ],
     cipher=block_cipher,
     noarchive=False,
@@ -500,7 +520,7 @@ fi
 # 验证 _internal/ 中不包含 mlx 残留（防止 nanobind 双路径双初始化）
 echo "  检查 _internal/ 中 mlx 残留..."
 MLX_LEAK=0
-for mlx_pattern in "mlx" "mlx_lm" "mlx_vlm" "mlx.core" "outlines" "outlines_core"; do
+for mlx_pattern in "mlx" "mlx_lm" "mlx_vlm" "mlx.core" "outlines" "outlines_core" "torch" "torchvision" "functorch" "torchgen"; do
     leaked=$(find "$INTERNAL" -name "${mlx_pattern}*" -maxdepth 2 2>/dev/null | head -5)
     if [[ -n "$leaked" ]]; then
         echo "  ⚠ _internal/ 中发现 mlx 残留: $mlx_pattern"
@@ -511,7 +531,7 @@ for mlx_pattern in "mlx" "mlx_lm" "mlx_vlm" "mlx.core" "outlines" "outlines_core
     fi
 done
 if [[ "$MLX_LEAK" -eq 1 ]]; then
-    echo "  ⚠ 已自动清理 _internal/ 中的 mlx 残留（mlx 应仅存在于 mlx-packages/）"
+    echo "  ⚠ 已自动清理 _internal/ 中的 mlx/torch 残留（mlx 应仅存在于 mlx-packages/，torch 不应存在）"
 else
     echo "  ✓ _internal/ 无 mlx 残留"
 fi
@@ -536,6 +556,8 @@ mkdir -p "$MLX_DIR"
 # 默认自动检测当前 macOS 主版本号。
 
 # PyPI 上 mlx wheel 已知可用的平台标签（主版本_次版本）
+# NOTE: mlx>=0.30 only has wheels for macOS 14.0+. Using 13_x will result in
+#       mlx 0.29.x + mlx-lm 0.30.x which lacks support for newer model architectures.
 KNOWN_MACOS_VERS=("13_5" "14_0" "15_0" "26_0")
 
 # 自动检测当前 macOS 主版本作为默认值
@@ -583,7 +605,7 @@ echo "  产物名称: ${ARTIFACT_NAME}.tar.gz"
 # --platform 强制选择兼容目标 macOS 的 wheel（避免 Metal shader 版本不兼容）。
 # --python-version + --implementation 是 --platform 的必需搭配参数。
 MLX_INSTALL_PKGS=(
-    mlx-lm        # 自动拉取 mlx, transformers, jinja2, safetensors, tokenizers, sentencepiece 等全部依赖
+    "mlx-lm>=0.31.0"  # auto-pulls mlx, transformers, jinja2, safetensors, tokenizers, sentencepiece, etc.
 )
 
 # 可选：mlx-vlm（如果当前 venv 中已安装）
@@ -620,6 +642,15 @@ fi
 # 验证 mlx wheel 的平台标签
 MLX_WHEEL_TAG=$(cat "$MLX_DIR"/mlx-*.dist-info/WHEEL 2>/dev/null | grep "^Tag:" | head -1 || echo "unknown")
 echo "  mlx wheel tag: $MLX_WHEEL_TAG"
+
+# 验证 mlx-lm 版本（macOS 13.x 平台可能导致旧版本，缺少新模型架构支持）
+_MLX_LM_VER=$(cat "$MLX_DIR"/mlx_lm-*.dist-info/METADATA 2>/dev/null | grep "^Version:" | head -1 | awk '{print $2}')
+echo "  mlx-lm version: ${_MLX_LM_VER:-unknown}"
+if [[ -n "$_MLX_LM_VER" && "$_MLX_LM_VER" < "0.31" ]]; then
+    echo "  ⚠ WARNING: mlx-lm $_MLX_LM_VER is outdated and may not support newer model architectures (e.g. gemma4)."
+    echo "    This is likely because TARGET_MACOS_VER=$TARGET_MACOS_VER is too low for mlx>=0.30 wheels."
+    echo "    Consider using TARGET_MACOS_VER=14_0 or higher for full model support."
+fi
 
 # ── 清除 torch 系列（mlx-lm 不使用 torch，但 transformers 依赖链会拉入） ──
 # torch 在 PyInstaller frozen 环境下会触发 pybind11 RpcBackendOptions 重复注册：
@@ -690,30 +721,203 @@ cp "$SCRIPT_DIR/README_STANDALONE.md" "$ONEDIR/README.md"
 
 cat > "$ONEDIR/deepnode-server" << 'WRAPPER_EOF'
 #!/usr/bin/env bash
-# ── DeepNode Server 启动 wrapper ──
-# 隔离系统 Python 和代理设置，启动 PyInstaller 二进制。
+# ── DeepNode Server — launcher with daemon management ──
+#
+# Usage:
+#   ./deepnode-server [--standalone] [...]     Run in foreground (default)
+#   ./deepnode-server --start [...]            Start as background daemon
+#   ./deepnode-server --stop                   Stop the running daemon
+#   ./deepnode-server --status                 Show daemon status
+#   ./deepnode-server --log [-f]               Show log (add -f to follow)
+#
+# Sleep prevention:
+#   Uses macOS caffeinate to prevent system sleep while deepnode is running.
+#   This ensures the inference service stays available even when the screen
+#   is off or the lid is closed (on desktop Macs / clamshell mode).
+#   Caffeinate is automatically managed — it starts with deepnode and stops
+#   when deepnode exits.
+#
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+BIN="$SCRIPT_DIR/deepnode-server-bin"
+CONFIG="$SCRIPT_DIR/config.yaml"
+PID_FILE="$SCRIPT_DIR/.deepnode.pid"
+CAFFEINATE_PID_FILE="$SCRIPT_DIR/.caffeinate.pid"
+LOG_FILE="$HOME/.deeppool/logs/localserver.log"
+PORT=8765
 
-# 隔离系统 Python
-unset PYTHONPATH PYTHONHOME PYTHONSTARTUP PYTHONUSERBASE
-unset VIRTUAL_ENV CONDA_PREFIX CONDA_DEFAULT_ENV
-export PYTHONNOUSERSITE=1
+# ── Environment isolation ──
+_setup_env() {
+    unset PYTHONPATH PYTHONHOME PYTHONSTARTUP PYTHONUSERBASE
+    unset VIRTUAL_ENV CONDA_PREFIX CONDA_DEFAULT_ENV
+    export PYTHONNOUSERSITE=1
+    unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
+    unset all_proxy ALL_PROXY GRPC_PROXY grpc_proxy
+    export no_proxy="localhost,127.0.0.1,::1"
+    export NO_PROXY="localhost,127.0.0.1,::1"
+    export grpc_proxy=""
+    if xattr -l "$BIN" 2>/dev/null | grep -q quarantine; then
+        echo "[DeepNode] Clearing quarantine attributes..."
+        xattr -rd com.apple.quarantine "$SCRIPT_DIR" 2>/dev/null || true
+    fi
+}
 
-# 绕过代理
-unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
-unset all_proxy ALL_PROXY GRPC_PROXY grpc_proxy
-export no_proxy="localhost,127.0.0.1,::1"
-export NO_PROXY="localhost,127.0.0.1,::1"
-export grpc_proxy=""
+# ── Caffeinate helpers ──
+# caffeinate prevents macOS from sleeping while deepnode is running.
+# Flags: -i (prevent idle sleep) -s (prevent system sleep, keeps running
+#        even with lid closed on desktops / clamshell mode)
+# -w PID: automatically exit when the watched process terminates.
 
-# 清除 quarantine
-if xattr -l "$SCRIPT_DIR/deepnode-server-bin" 2>/dev/null | grep -q quarantine; then
-    echo "[DeepNode] Clearing quarantine attributes..."
-    xattr -rd com.apple.quarantine "$SCRIPT_DIR" 2>/dev/null || true
-fi
+_start_caffeinate() {
+    local target_pid="$1"
+    _stop_caffeinate
+    if command -v caffeinate &>/dev/null; then
+        caffeinate -i -s -w "$target_pid" &
+        local caf_pid=$!
+        echo "$caf_pid" > "$CAFFEINATE_PID_FILE"
+        echo "[DeepNode] Sleep prevention enabled (caffeinate pid=$caf_pid, watching pid=$target_pid)"
+    else
+        echo "[DeepNode] Warning: caffeinate not found, system may sleep while running"
+    fi
+}
 
-exec "$SCRIPT_DIR/deepnode-server-bin" "$@"
+_stop_caffeinate() {
+    if [[ -f "$CAFFEINATE_PID_FILE" ]]; then
+        local caf_pid
+        caf_pid="$(cat "$CAFFEINATE_PID_FILE" 2>/dev/null || echo "")"
+        if [[ -n "$caf_pid" ]] && kill -0 "$caf_pid" 2>/dev/null; then
+            kill "$caf_pid" 2>/dev/null || true
+            echo "[DeepNode] Sleep prevention disabled (caffeinate pid=$caf_pid)"
+        fi
+        rm -f "$CAFFEINATE_PID_FILE"
+    fi
+}
+
+# ── PID helpers ──
+_read_pid() {
+    [[ -f "$PID_FILE" ]] && cat "$PID_FILE" 2>/dev/null || echo ""
+}
+
+_is_running() {
+    local pid="$(_read_pid)"
+    [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null
+}
+
+# ── Commands ──
+
+cmd_start() {
+    if _is_running; then
+        echo "[DeepNode] Already running (pid=$(_read_pid))"
+        return 0
+    fi
+    _setup_env
+    mkdir -p "$(dirname "$LOG_FILE")"
+    cd "$SCRIPT_DIR"
+    echo "[DeepNode] Starting daemon..."
+    # Redirect stdout/stderr to /dev/null — Python's internal file handler
+    # already writes to LOG_FILE. Redirecting nohup output to the same file
+    # would cause every log line to appear twice.
+    nohup "$BIN" --config "$CONFIG" "$@" > /dev/null 2>&1 &
+    local pid=$!
+    echo "$pid" > "$PID_FILE"
+    sleep 1
+    if kill -0 "$pid" 2>/dev/null; then
+        _start_caffeinate "$pid"
+        echo "[DeepNode] Started (pid=$pid)"
+        echo "[DeepNode] Log: $LOG_FILE"
+        echo "[DeepNode] Web UI: http://127.0.0.1:${PORT}/"
+        (sleep 2 && open "http://127.0.0.1:${PORT}/" 2>/dev/null || true) &
+    else
+        rm -f "$PID_FILE"
+        echo "[DeepNode] Failed to start. Check log: $LOG_FILE"
+        return 1
+    fi
+}
+
+cmd_stop() {
+    _stop_caffeinate
+    if ! _is_running; then
+        echo "[DeepNode] Not running"
+        rm -f "$PID_FILE"
+        return 0
+    fi
+    local pid="$(_read_pid)"
+    echo "[DeepNode] Stopping (pid=$pid)..."
+    kill "$pid" 2>/dev/null
+    local waited=0
+    while kill -0 "$pid" 2>/dev/null && [[ $waited -lt 10 ]]; do
+        sleep 1
+        waited=$((waited + 1))
+    done
+    if kill -0 "$pid" 2>/dev/null; then
+        echo "[DeepNode] Force killing..."
+        kill -9 "$pid" 2>/dev/null || true
+    fi
+    rm -f "$PID_FILE"
+    echo "[DeepNode] Stopped"
+}
+
+cmd_status() {
+    if _is_running; then
+        local pid="$(_read_pid)"
+        echo "[DeepNode] Running (pid=$pid)"
+        if [[ -f "$CAFFEINATE_PID_FILE" ]]; then
+            local caf_pid
+            caf_pid="$(cat "$CAFFEINATE_PID_FILE" 2>/dev/null || echo "")"
+            if [[ -n "$caf_pid" ]] && kill -0 "$caf_pid" 2>/dev/null; then
+                echo "[DeepNode] Sleep prevention: active (caffeinate pid=$caf_pid)"
+            else
+                echo "[DeepNode] Sleep prevention: inactive"
+            fi
+        fi
+    else
+        echo "[DeepNode] Not running"
+        rm -f "$PID_FILE"
+        _stop_caffeinate
+    fi
+}
+
+cmd_log() {
+    if [[ ! -f "$LOG_FILE" ]]; then
+        echo "[DeepNode] Log file not found: $LOG_FILE"
+        return 1
+    fi
+    if [[ "${1:-}" == "-f" ]]; then
+        tail -100f "$LOG_FILE"
+    else
+        tail -100 "$LOG_FILE"
+    fi
+}
+
+# ── Main dispatcher ──
+case "${1:-}" in
+    --start)
+        shift
+        cmd_start "$@"
+        ;;
+    --stop)
+        cmd_stop
+        ;;
+    --status)
+        cmd_status
+        ;;
+    --log)
+        shift
+        cmd_log "${1:-}"
+        ;;
+    *)
+        # Foreground mode: wrap the server process with caffeinate
+        _setup_env
+        cd "$SCRIPT_DIR"
+        if command -v caffeinate &>/dev/null; then
+            echo "[DeepNode] Sleep prevention enabled (foreground mode)"
+            exec caffeinate -i -s "$BIN" --config "$CONFIG" "$@"
+        else
+            exec "$BIN" --config "$CONFIG" "$@"
+        fi
+        ;;
+esac
 WRAPPER_EOF
 
 chmod +x "$ONEDIR/deepnode-server"

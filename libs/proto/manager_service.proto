@@ -143,6 +143,7 @@ message UpdateDeviceRequest {
   string device_ip = 2;
   string device_config = 3;
   string auth_token = 4;
+  repeated string registered_models = 5; // models actually loaded and serving on the device
 }
 
 message UpdateDeviceResponse {
