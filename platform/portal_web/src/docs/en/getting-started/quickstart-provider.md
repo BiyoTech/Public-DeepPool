@@ -8,6 +8,17 @@ This guide will help you connect your idle device to the DeepPool computing pool
 - Stable network connection
 - At least 8GB available memory (for running small models)
 
+### macOS Version Requirements
+
+DeepPool uses the [MLX](https://github.com/ml-explore/mlx) framework for inference acceleration on Mac. **Different macOS versions support different model architectures**:
+
+| macOS Version | MLX Version | mlx-lm Version | Supported Models |
+|--------------|-------------|----------------|-----------------|
+| **14.0+ (Sonoma)** | 0.30+ | 0.31+ | ✅ All (including Gemma 4, Llama 4, and other latest architectures) |
+| 13.5 (Ventura) | ≤ 0.29 | ≤ 0.30 | ⚠️ Only older model architectures |
+
+> **We strongly recommend upgrading to macOS 14.0 (Sonoma) or later** for full support of the latest models. macOS 13.x users may be unable to load certain newer model architectures (e.g., the Gemma 4 series).
+
 ## Steps
 
 ### 1. Register a Platform Account
@@ -43,10 +54,10 @@ Log in to the portal website, navigate to the "Data" page to view your device co
 
 ## Supported Inference Engines
 
-| Engine | Platform | Acceleration |
-|--------|----------|-------------|
-| MLX | macOS Apple Silicon | Metal GPU |
-| vLLM | Linux + NVIDIA | CUDA |
-| llama.cpp | Universal | CPU / Weak GPU |
+| Engine | Platform | Acceleration | Notes |
+|--------|----------|-------------|-------|
+| MLX | macOS Apple Silicon (M1+) | Metal GPU | macOS 14.0+ recommended; 13.x works but with limited model support |
+| vLLM | Linux + NVIDIA | CUDA | High throughput, ideal for server deployments |
+| llama.cpp | Universal | CPU / Weak GPU | Fallback engine with broadest compatibility |
 
 The system auto-selects the optimal engine based on device hardware — no manual configuration needed.

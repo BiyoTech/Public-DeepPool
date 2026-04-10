@@ -1,14 +1,14 @@
 /**
- * 统一 HTTP 请求封装。
+ * Unified HTTP request wrapper.
  *
- * 所有前端请求均通过 localserver 转发（无论 dev / Tauri / standalone），
- * 不存在跨域问题，统一使用原生 fetch。
+ * All frontend requests go through localserver (dev / Tauri / standalone),
+ * no cross-origin issues — uses native fetch exclusively.
  *
- * isTauri 变量仅用于 Tauri 原生功能检测（如 stop_localserver、菜单监听），
- * 不再影响 HTTP 请求方式。
+ * isTauri is only used for Tauri-native feature detection (e.g. stop_localserver,
+ * menu listeners) and does NOT affect HTTP request routing.
  */
 
-/** 是否运行在 Tauri WebView 环境中（仅用于 Tauri 原生 API 调用，不影响 HTTP 请求） */
+/** Whether running inside a Tauri WebView (for Tauri-native APIs only, not HTTP) */
 export const isTauri: boolean =
   typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
 
@@ -24,17 +24,46 @@ export function setOnUnauthorized(handler: () => void) {
 }
 
 /**
- * 统一 fetch —— 所有请求走 localserver 代理，直接使用原生 fetch。
- * Automatically triggers onUnauthorized callback when response is 401.
+ * Unified fetch — all requests go through localserver proxy via native fetch.
  *
- * @param input  请求 URL 或 Request 对象
- * @param init   可选的 RequestInit 配置
- * @returns      标准 Response 对象
+ * Detects unauthorized state in two ways:
+ *   1. HTTP status 401 (standard)
+ *   2. JSON body with code === 401 (legacy API format, e.g. when platform
+ *      returns token-expired but localserver wraps it in HTTP 200)
+ *
+ * When either is detected, triggers onUnauthorized callback for auto-logout.
+ *
+ * Note: for JSON body detection, the response is cloned so that callers
+ * can still read the original response body normally.
+ *
+ * @param input  Request URL or Request object
+ * @param init   Optional RequestInit configuration
+ * @returns      Standard Response object
  */
 export async function safeFetch(input: string | URL | Request, init?: RequestInit): Promise<Response> {
   const resp = await fetch(input, init)
+
+  // Check 1: standard HTTP 401
   if (resp.status === 401 && onUnauthorized) {
     onUnauthorized()
+    return resp
   }
+
+  // Check 2: JSON body with code === 401 (clone to avoid consuming body)
+  if (onUnauthorized && resp.ok) {
+    try {
+      const cloned = resp.clone()
+      const contentType = cloned.headers.get('content-type') || ''
+      if (contentType.includes('application/json')) {
+        const body = await cloned.json()
+        if (body && body.code === 401) {
+          onUnauthorized()
+        }
+      }
+    } catch {
+      // Ignore JSON parse errors — not all responses are JSON
+    }
+  }
+
   return resp
 }

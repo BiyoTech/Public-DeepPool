@@ -557,10 +557,14 @@ class NodeManagerClient:
 
 
 class _MessageQueue:
-    """线程安全的消息发送队列，实现 gRPC 双向流的 request iterator 接口。"""
+    """Thread-safe message queue implementing gRPC bidirectional stream request iterator.
+
+    Uses collections.deque internally for O(1) popleft instead of list.pop(0).
+    """
 
     def __init__(self):
-        self._queue: list[node_tunnel_pb2.ClientMessage] = []
+        from collections import deque
+        self._queue: deque[node_tunnel_pb2.ClientMessage] = deque()
         self._cond = threading.Condition()
         self._closed = False
 
@@ -569,7 +573,7 @@ class _MessageQueue:
         return self._closed
 
     def send(self, msg: node_tunnel_pb2.ClientMessage) -> None:
-        """向队列推入一条消息。"""
+        """Push a message onto the queue."""
         with self._cond:
             if self._closed:
                 return
@@ -577,7 +581,7 @@ class _MessageQueue:
             self._cond.notify()
 
     def close(self) -> None:
-        """关闭队列，终止迭代。"""
+        """Close the queue, terminating iteration."""
         with self._cond:
             self._closed = True
             self._cond.notify_all()
@@ -590,7 +594,7 @@ class _MessageQueue:
             while not self._queue and not self._closed:
                 self._cond.wait()
             if self._queue:
-                return self._queue.pop(0)
+                return self._queue.popleft()
             raise StopIteration
 
 

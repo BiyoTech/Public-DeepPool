@@ -1,9 +1,9 @@
-"""用户认证与设备查询 API — 通过 gRPC 与 Platform Manager 交互。
+"""User authentication and device query API — via shared gRPC PlatformClient.
 
-替代原 platform_proxy.py 的 HTTP 反向代理，所有与 Manager 的通信
-统一走 gRPC，消除 HTTP 端口依赖和 CORS 问题。
+All communication with Platform Manager goes through gRPC (no HTTP proxy).
+Uses the module-level shared PlatformClient for connection reuse.
 
-端点:
+Endpoints:
   POST /api/auth/login       → gRPC Login
   POST /api/auth/register    → gRPC RegisterUser
   GET  /api/device/check/{simei} → gRPC GetDevice
@@ -13,18 +13,17 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Header
+from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel
 
-from config import get_config
-from rpc.platform_client import PlatformClient
+from rpc.platform_client import PlatformClient, get_shared_platform_client
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["auth"])
 
 
-# ─── 请求/响应模型 ───
+# --- Request / Response models ---
 
 
 class LoginBody(BaseModel):
@@ -41,13 +40,19 @@ class RegisterBody(BaseModel):
     user_type: str = ""
 
 
-# ─── 端点 ───
+# --- Endpoints ---
 
 
 @router.post("/api/auth/login")
 def auth_login(body: LoginBody) -> dict:
-    """用户登录 — 通过 gRPC 调用 Manager Login。"""
+    """User login — gRPC Login via shared PlatformClient.
+
+    Returns HTTP 401 on authentication failure so that the frontend
+    ``safeFetch`` interceptor can trigger automatic logout.
+    """
+    from config import get_config
     cfg = get_config()
+    # Login does not require auth_token; create a lightweight temporary client
     client = PlatformClient(
         grpc_target=cfg.platform.manager_grpc_target, auth_token="",
         **cfg.platform.tls_kwargs,
@@ -57,14 +62,15 @@ def auth_login(body: LoginBody) -> dict:
         return {"code": 0, "message": "ok", "data": result}
     except RuntimeError as exc:
         logger.warning("auth_login failed: %s", exc)
-        return {"code": 401, "message": str(exc)}
+        raise HTTPException(status_code=401, detail=str(exc))
     finally:
         client.close()
 
 
 @router.post("/api/auth/register")
 def auth_register(body: RegisterBody) -> dict:
-    """用户注册 — 通过 gRPC 调用 Manager RegisterUser。"""
+    """User registration — gRPC RegisterUser via shared PlatformClient."""
+    from config import get_config
     cfg = get_config()
     client = PlatformClient(
         grpc_target=cfg.platform.manager_grpc_target, auth_token="",
@@ -89,17 +95,16 @@ def auth_register(body: RegisterBody) -> dict:
 
 @router.get("/api/device/check/{simei}")
 def device_check(simei: str, authorization: str = Header(default="")) -> dict:
-    """查询设备是否已注册 — 通过 gRPC 调用 Manager GetDevice。
+    """Check whether a device is registered — gRPC GetDevice via shared client.
 
-    前端通过 Authorization header 传入 Bearer token。
+    Frontend passes the Bearer token via Authorization header.
+    Returns HTTP 401 when the token is missing or invalid.
     """
-    # 提取 token（去掉 "Bearer " 前缀）
     token = authorization.replace("Bearer ", "").strip() if authorization else ""
     if not token:
-        return {"code": 401, "message": "authorization required"}
+        raise HTTPException(status_code=401, detail="authorization required")
 
-    cfg = get_config()
-    client = PlatformClient(grpc_target=cfg.platform.manager_grpc_target, auth_token=token, **cfg.platform.tls_kwargs)
+    client = get_shared_platform_client(token)
     try:
         device = client.get_device(simei)
         if device is None:
@@ -107,6 +112,8 @@ def device_check(simei: str, authorization: str = Header(default="")) -> dict:
         return {"code": 0, "message": "ok", "data": {"simei": device.simei, "device_id": device.device_id}}
     except RuntimeError as exc:
         logger.warning("device_check failed: %s", exc)
+        # Token-related failures surface as 401 to trigger frontend logout
+        err_msg = str(exc).lower()
+        if "unauthenticated" in err_msg or "permission" in err_msg or "token" in err_msg:
+            raise HTTPException(status_code=401, detail=str(exc))
         return {"code": 500, "message": str(exc)}
-    finally:
-        client.close()

@@ -36,6 +36,19 @@ tar czf "$OUTPUT" \
     --exclude='.DS_Store' \
     --exclude='env' \
     --exclude='*.tar.gz' \
+    --exclude='platform/build' \
+    --exclude='*.exe' \
+    --exclude='*.dll' \
+    --exclude='*.so' \
+    --exclude='*.dylib' \
+    --exclude='*.a' \
+    --exclude='*.o' \
+    --exclude='*.pkg' \
+    --exclude='*.pyz' \
+    --exclude='*.toc' \
+    --exclude='localserver/build' \
+    --exclude='localserver/dist' \
+    --exclude='dist-standalone' \
     "$PROJECT_NAME"
 
 SIZE=$(du -sh "$OUTPUT" | cut -f1)

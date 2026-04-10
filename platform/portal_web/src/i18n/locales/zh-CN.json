@@ -108,10 +108,19 @@
   "auth": {
     "login": {
       "title": "登录 DeepPool",
+      "tab_password": "密码登录",
+      "tab_email": "邮箱登录",
       "account": "账号",
       "account_placeholder": "用户名 / 手机号 / 邮箱",
       "password": "密码",
       "password_placeholder": "请输入密码",
+      "email": "邮箱",
+      "email_placeholder": "请输入邮箱",
+      "code": "验证码",
+      "code_placeholder": "请输入验证码",
+      "send_code": "获取验证码",
+      "code_sent": "{seconds}s",
+      "forgot_password": "忘记密码？",
       "submit": "登录",
       "no_account": "还没有账号？",
       "go_register": "立即注册"
@@ -124,18 +133,46 @@
       "password_placeholder": "至少 8 个字符",
       "confirm_password": "确认密码",
       "confirm_password_placeholder": "请再次输入密码",
-      "phone": "手机号",
-      "phone_placeholder": "请输入手机号",
+      "phone": "手机号（选填）",
+      "phone_placeholder": "请输入手机号（可不填）",
       "email": "邮箱",
       "email_placeholder": "请输入邮箱",
+      "email_code": "邮箱验证码",
+      "email_code_placeholder": "请输入验证码",
+      "send_code": "获取验证码",
+      "code_sent": "{seconds}s",
       "submit": "注册",
       "has_account": "已有账号？",
-      "go_login": "去登录"
+      "go_login": "去登录",
+      "register_success": "注册成功！3 秒后跳转到登录页..."
+    },
+    "forgot": {
+      "title": "找回密码",
+      "step1_title": "验证邮箱",
+      "step2_title": "设置新密码",
+      "email_placeholder": "请输入注册邮箱",
+      "code_placeholder": "请输入验证码",
+      "send_code": "获取验证码",
+      "code_sent": "{seconds}s",
+      "next_step": "下一步",
+      "new_password": "新密码",
+      "new_password_placeholder": "至少 8 个字符",
+      "confirm_password": "确认密码",
+      "confirm_password_placeholder": "请再次输入新密码",
+      "reset_submit": "重置密码",
+      "reset_success": "密码重置成功，即将跳转登录页...",
+      "back_to_login": "返回登录"
     },
     "error": {
       "password_mismatch": "两次输入的密码不一致",
       "login_failed": "登录失败，请检查账号和密码",
-      "register_failed": "注册失败，请稍后重试"
+      "email_login_failed": "登录失败，请检查邮箱和验证码",
+      "register_failed": "注册失败，请稍后重试",
+      "register_duplicate": "用户名、手机号或邮箱已被注册，请更换后重试",
+      "send_code_failed": "发送验证码失败，请稍后重试",
+      "code_rate_limit": "验证码已发送，请稍后再试",
+      "reset_failed": "密码重置失败，请稍后重试",
+      "invalid_code": "验证码无效或已过期"
     }
   },
   "docs": {

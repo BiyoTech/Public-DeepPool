@@ -46,6 +46,18 @@ type AdminConfig struct {
 	InternalToken           string              `yaml:"internal_token"`             // Gateway ↔ NodeManager internal token
 	DefaultHybridPolicyPath string              `yaml:"default_hybrid_policy_path"` // path to default hybrid routing policy YAML
 	APIKeyEncryptionKey     string              `yaml:"api_key_encryption_key"`     // 32-byte hex key for AES-256-GCM encryption of API keys
+	SMTP                    SMTPConfig          `yaml:"smtp"`                       // SMTP mail server for verification codes
+}
+
+// SMTPConfig SMTP mail server configuration for sending verification codes.
+type SMTPConfig struct {
+	Host               string `yaml:"host"`                 // SMTP server host, e.g. "smtp.exmail.qq.com"
+	Port               int    `yaml:"port"`                 // SMTP server port, e.g. 465
+	User               string `yaml:"user"`                 // sender email address
+	Password           string `yaml:"password"`             // SMTP password or app-specific token
+	From               string `yaml:"from"`                 // display name, e.g. "DeepPool <noreply@deeppool.io>"
+	UseTLS             bool   `yaml:"use_tls"`              // true for implicit TLS (port 465), false for STARTTLS (port 587)
+	InsecureSkipVerify bool   `yaml:"insecure_skip_verify"` // skip TLS certificate verification (use only when server cert doesn't match hostname)
 }
 
 // SuperAdminConfig 默认超级管理员账号配置

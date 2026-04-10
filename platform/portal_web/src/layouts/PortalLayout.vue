@@ -172,8 +172,14 @@
       </div>
 
       <!-- 版权 -->
-      <div class="mt-8 pt-8 border-t border-slate-700/50 text-center text-xs text-slate-600">
-        {{ $t('footer.copyright') }}
+      <div class="mt-8 pt-8 border-t border-slate-700/50 text-center text-xs text-slate-600 space-y-1">
+        <div>{{ $t('footer.copyright') }}</div>
+        <div>深圳市必耀科技有限公司</div>
+        <div>
+          <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" class="hover:text-slate-400 transition-colors">
+            粤ICP备2026038232号-1
+          </a>
+        </div>
       </div>
     </div>
   </footer>
