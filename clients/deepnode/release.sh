@@ -11,7 +11,7 @@
 # Prerequisites:
 #   - gh (GitHub CLI) installed and authenticated
 #   - Build artifacts in localserver/dist/
-#   - Run build_standalone.sh first to produce tar.gz
+#   - Run build_standalone_mac.sh first to produce tar.gz
 #
 # Usage:
 #   cd clients/deepnode && bash release.sh [options]

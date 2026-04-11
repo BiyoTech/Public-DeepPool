@@ -180,6 +180,34 @@ def _try_restore_and_connect() -> None:
     try:
         client = get_shared_platform_client(cred.token)
 
+        # Check if device is blocked before proceeding with model loading.
+        # If blocked, submit fresh security status to trigger platform re-evaluation.
+        try:
+            existing = client.get_device(cred.simei)
+            if existing and existing.status != "active":
+                logger.warning(
+                    "auto-restore: device is %s, attempting reactivation simei=%s",
+                    existing.status, cred.simei,
+                )
+                from service.device_info import get_device_hardware_info as _get_hw
+                from api.init import _try_reactivate_blocked_device, set_device_status
+                hw = _get_hw()
+                restored = _try_reactivate_blocked_device(
+                    client=client, simei=cred.simei, hw=hw,
+                )
+                if not restored or restored.status != "active":
+                    final_status = restored.status if restored else existing.status
+                    set_device_status(final_status)
+                    logger.warning(
+                        "auto-restore: device still blocked after reactivation attempt simei=%s status=%s",
+                        cred.simei, final_status,
+                    )
+                    return
+                logger.info("auto-restore: device reactivated simei=%s", cred.simei)
+                set_device_status("active")
+        except Exception as check_exc:
+            logger.warning("auto-restore: device status check failed: %s", check_exc)
+
         # Get deploy configs from platform (device already registered)
         deploy_configs = client.get_multi_model_deploy_configs(
             simei=cred.simei,
@@ -213,6 +241,7 @@ def _try_restore_and_connect() -> None:
         try:
             import json
             from service.device_info import get_device_hardware_info
+            from api.init import _collect_security_status
             hw = get_device_hardware_info()
             device_config = {
                 "init_stage": "ready",
@@ -221,6 +250,7 @@ def _try_restore_and_connect() -> None:
                 "llm_rpc_port": running.rpc_port,
                 "llm_engine": running.engine_type,
                 "hardware": hw.to_dict(),
+                "security": _collect_security_status(),
             }
             if manager.engine_config is not None:
                 device_config["engine_config"] = manager.engine_config.to_dict()
@@ -295,6 +325,58 @@ def _standalone_auto_init() -> None:
     logger.info("standalone: init_device result: %s", result)
 
 
+# ─────────────────────────────────────────────────
+# Periodic integrity re-verification (frozen builds only)
+# ─────────────────────────────────────────────────
+
+_INTEGRITY_CHECK_INTERVAL_SEC = 300  # 5 minutes
+
+
+def _start_periodic_integrity_check() -> None:
+    """Launch a daemon thread that periodically re-verifies file integrity.
+
+    Detects runtime file tampering (e.g. attacker replaces files after the
+    process starts). On failure, logs a critical error and terminates the
+    process to prevent serving with compromised code.
+    """
+    import os
+
+    def _checker():
+        import time as _time
+        from service.integrity import verify_integrity
+
+        logger.info("periodic integrity checker started (interval=%ds)",
+                     _INTEGRITY_CHECK_INTERVAL_SEC)
+        while True:
+            _time.sleep(_INTEGRITY_CHECK_INTERVAL_SEC)
+            try:
+                result = verify_integrity()
+                if result is None:
+                    continue
+                if result.passed:
+                    logger.debug("periodic integrity check passed (%d/%d files, %dms)",
+                                 result.verified_files, result.total_files,
+                                 result.duration_ms)
+                else:
+                    detail = []
+                    if result.mismatched_files:
+                        detail.append(f"mismatched={result.mismatched_files[:5]}")
+                    if result.missing_files:
+                        detail.append(f"missing={result.missing_files[:5]}")
+                    logger.critical(
+                        "PERIODIC INTEGRITY CHECK FAILED: %s — shutting down",
+                        ", ".join(detail),
+                    )
+                    os.environ['_DEEPNODE_INTEGRITY_FAILED'] = '1'
+                    # Force exit — tampered binary must not continue serving
+                    os._exit(78)
+            except Exception as exc:
+                logger.warning("periodic integrity check error: %s", exc)
+
+    thread = threading.Thread(target=_checker, name="integrity-checker", daemon=True)
+    thread.start()
+
+
 @app.on_event("startup")
 def on_startup():
     """FastAPI startup: choose startup strategy based on run mode.
@@ -317,6 +399,10 @@ def on_startup():
         )
     thread.start()
     logger.info("startup thread started (standalone=%s)", cfg.standalone.enabled)
+
+    # Start periodic integrity re-verification in frozen (standalone) builds
+    if getattr(sys, 'frozen', False):
+        _start_periodic_integrity_check()
 
 
 @app.on_event("shutdown")

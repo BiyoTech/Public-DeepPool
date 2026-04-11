@@ -33,6 +33,40 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/init", tags=["init"])
 
+# ─── Device status tracking (shared with stats API for frontend polling) ───
+# Updated during init_device and auto-restore flows.
+_device_status: str = "active"  # "active" / "blocked" / "cheating"
+
+
+def get_device_status() -> str:
+    """Return current device status for frontend display."""
+    return _device_status
+
+
+def set_device_status(status: str) -> None:
+    """Update cached device status (called after registration/query)."""
+    global _device_status
+    _device_status = status
+
+
+# Map device status to user-facing block reason messages.
+_BLOCK_REASONS = {
+    "blocked": (
+        "This device has been blocked by the platform security policy. "
+        "Possible causes: (1) this installation package lacks security hardening — "
+        "please download the latest version; (2) application files have been tampered with — "
+        "please re-download a fresh installation package."
+    ),
+    "cheating": (
+        "This device has been flagged for suspicious activity and is banned from the platform."
+    ),
+}
+
+
+def _blocked_reason(status: str) -> str:
+    """Return a user-facing explanation for a non-active device status."""
+    return _BLOCK_REASONS.get(status, f"Device status is '{status}', not allowed to serve inference.")
+
 
 def _normalize_supported_models(payload: dict) -> list[str]:
     """Extract and normalize the supported-models list from the request payload."""
@@ -40,6 +74,35 @@ def _normalize_supported_models(payload: dict) -> list[str]:
     if isinstance(supported, list):
         return [str(item).strip().lower() for item in supported if str(item).strip()]
     return []
+
+
+def _collect_security_status() -> dict:
+    """Collect runtime security status for platform reporting.
+
+    Gathers integrity verification result and device binding status from
+    environment variables set by the runtime hook and binding module.
+    """
+    import os
+    status: dict = {}
+
+    # Integrity verification (set by runtime hook via env var)
+    integrity_failed = os.environ.get("_DEEPNODE_INTEGRITY_FAILED")
+    if integrity_failed:
+        status["integrity_passed"] = False
+        status["integrity_detail"] = os.environ.get("_DEEPNODE_INTEGRITY_DETAIL", "")
+    else:
+        status["integrity_passed"] = True
+
+    # Device binding status
+    try:
+        from service.device_binding import get_hardware_binding_factors
+        factors = get_hardware_binding_factors()
+        status["device_bound"] = len(factors) > 0
+        status["binding_factors"] = len(factors)
+    except Exception:
+        status["device_bound"] = False
+
+    return status
 
 
 # ─────────── 设备初始化 API ───────────
@@ -86,17 +149,60 @@ def init_device(payload: dict) -> dict:
         }
 
         try:
-            client.register_device(
+            device_info = client.register_device(
                 simei=simei,
                 device_ip="127.0.0.1",
                 device_config=json.dumps(device_config, ensure_ascii=False),
                 registered_models=[],  # no model loaded yet
             )
-            logger.info("device registered to platform simei=%s", simei)
+            logger.info("device registered to platform simei=%s status=%s", simei, device_info.status)
+            set_device_status(device_info.status)
+
+            # Check if the device was blocked by platform security policy.
+            # This happens when the build lacks security hardening or integrity check fails.
+            if device_info.status != "active":
+                reason = _blocked_reason(device_info.status)
+                logger.warning(
+                    "device blocked by platform security policy: simei=%s status=%s reason=%s",
+                    simei, device_info.status, reason,
+                )
+                return {
+                    "code": 403,
+                    "message": reason,
+                    "data": {"status": device_info.status, "simei": simei},
+                }
         except RuntimeError as register_err:
             err_msg = str(register_err).lower()
             if "duplicate resource" in err_msg or "already exists" in err_msg:
-                logger.info("device already registered, will fetch current assignment simei=%s", simei)
+                logger.info("device already registered, checking current status simei=%s", simei)
+                existing = client.get_device(simei)
+                if existing and existing.status != "active":
+                    # Device is blocked — attempt re-evaluation by submitting the
+                    # latest device_config (with security status) via UpdateDevice.
+                    # Platform's evaluateDeviceSecurity will auto-restore to "active"
+                    # if the new build passes integrity checks.
+                    restored = _try_reactivate_blocked_device(
+                        client=client, simei=simei, hw=hw,
+                    )
+                    if restored and restored.status == "active":
+                        logger.info(
+                            "blocked device reactivated after security re-evaluation simei=%s",
+                            simei,
+                        )
+                        set_device_status("active")
+                    else:
+                        final_status = restored.status if restored else existing.status
+                        set_device_status(final_status)
+                        reason = _blocked_reason(final_status)
+                        logger.warning(
+                            "existing device is blocked: simei=%s status=%s reason=%s",
+                            simei, final_status, reason,
+                        )
+                        return {
+                            "code": 403,
+                            "message": reason,
+                            "data": {"status": final_status, "simei": simei},
+                        }
             else:
                 raise
 
@@ -144,6 +250,41 @@ def init_device(payload: dict) -> dict:
             "code": 500,
             "message": f"init failed: {exc}",
         }
+
+
+# ─────────── Blocked device reactivation ───────────
+
+def _try_reactivate_blocked_device(client, simei: str, hw) -> object | None:
+    """Submit latest device_config with security status to trigger platform re-evaluation.
+
+    When a blocked device downloads a new (properly hardened) build, the integrity
+    check will pass. By calling UpdateDevice with the new security status, the
+    platform's evaluateDeviceSecurity will detect integrity_passed=True and restore
+    the device status to active.
+
+    Returns the updated device info, or None on failure.
+    """
+    try:
+        security = _collect_security_status()
+        device_config = {
+            "init_stage": "reactivating",
+            "simei": simei,
+            "hardware": hw.to_dict(),
+            "security": security,
+        }
+        updated = client.update_device(
+            simei=simei,
+            device_config=json.dumps(device_config, ensure_ascii=False),
+        )
+        logger.info(
+            "reactivation attempt: simei=%s updated_status=%s integrity_passed=%s",
+            simei, updated.status if updated else "unknown",
+            security.get("integrity_passed"),
+        )
+        return updated
+    except Exception as exc:
+        logger.warning("reactivation UpdateDevice failed: simei=%s err=%s", simei, exc)
+        return None
 
 
 # ─────────── 异步模型加载 ───────────
@@ -224,6 +365,9 @@ def _update_device_status_to_ready(
         }
         if manager.engine_config is not None:
             device_config["engine_config"] = manager.engine_config.to_dict()
+
+        # Report integrity verification status to platform
+        device_config["security"] = _collect_security_status()
 
         loaded_models = [running.model_name]
 

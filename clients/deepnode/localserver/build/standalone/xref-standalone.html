@@ -20,6 +20,7 @@
 imports:
     <a href="#mlx.core">mlx.core</a>
  &#8226;   <a href="#os">os</a>
+ &#8226;   <a href="#service.integrity">service.integrity</a>
  &#8226;   <a href="#sys">sys</a>
  &#8226;   <a href="#types">types</a>
  &#8226;   <a href="#warnings">warnings</a>
@@ -556,6 +557,16 @@ imports:
  &#8226;   <a href="#frozenlist">frozenlist</a>
  &#8226;   <a href="#frozenlist._frozenlist">frozenlist._frozenlist</a>
  &#8226;   <a href="#functools">functools</a>
+ &#8226;   <a href="#generated">generated</a>
+ &#8226;   <a href="#generated.__init__">generated.__init__</a>
+ &#8226;   <a href="#generated.llm_infer_pb2">generated.llm_infer_pb2</a>
+ &#8226;   <a href="#generated.llm_infer_pb2_grpc">generated.llm_infer_pb2_grpc</a>
+ &#8226;   <a href="#generated.manager_service_pb2">generated.manager_service_pb2</a>
+ &#8226;   <a href="#generated.manager_service_pb2_grpc">generated.manager_service_pb2_grpc</a>
+ &#8226;   <a href="#generated.node_tunnel_pb2">generated.node_tunnel_pb2</a>
+ &#8226;   <a href="#generated.node_tunnel_pb2_grpc">generated.node_tunnel_pb2_grpc</a>
+ &#8226;   <a href="#generated.nodemanager_service_pb2">generated.nodemanager_service_pb2</a>
+ &#8226;   <a href="#generated.nodemanager_service_pb2_grpc">generated.nodemanager_service_pb2_grpc</a>
  &#8226;   <a href="#genericpath">genericpath</a>
  &#8226;   <a href="#google._upb">google._upb</a>
  &#8226;   <a href="#google._upb._message">google._upb._message</a>
@@ -1425,12 +1436,16 @@ imports:
  &#8226;   <a href="#service">service</a>
  &#8226;   <a href="#service.connection_manager">service.connection_manager</a>
  &#8226;   <a href="#service.credential">service.credential</a>
+ &#8226;   <a href="#service.device_binding">service.device_binding</a>
  &#8226;   <a href="#service.device_fingerprint">service.device_fingerprint</a>
  &#8226;   <a href="#service.device_info">service.device_info</a>
+ &#8226;   <a href="#service.integrity">service.integrity</a>
+ &#8226;   <a href="#service.keychain">service.keychain</a>
  &#8226;   <a href="#service.log_reporter">service.log_reporter</a>
  &#8226;   <a href="#service.manager">service.manager</a>
  &#8226;   <a href="#service.memory_guard">service.memory_guard</a>
  &#8226;   <a href="#service.platform_auth">service.platform_auth</a>
+ &#8226;   <a href="#service.pyc_watermark">service.pyc_watermark</a>
  &#8226;   <a href="#service.statistics">service.statistics</a>
  &#8226;   <a href="#sqlite3">sqlite3</a>
  &#8226;   <a href="#sre_compile">sre_compile</a>
@@ -1474,6 +1489,7 @@ imports:
  &#8226;   <a href="#stat">stat</a>
  &#8226;   <a href="#sys">sys</a>
  &#8226;   <a href="#threading">threading</a>
+ &#8226;   <a href="#time">time</a>
  &#8226;   <a href="#tokenizers">tokenizers</a>
  &#8226;   <a href="#tokenizers.decoders">tokenizers.decoders</a>
  &#8226;   <a href="#tokenizers.implementations">tokenizers.implementations</a>
@@ -10975,13 +10991,17 @@ imported by:
  &#8226;   <a href="#sentry_sdk.integrations.asyncpg">sentry_sdk.integrations.asyncpg</a>
  &#8226;   <a href="#service.connection_manager">service.connection_manager</a>
  &#8226;   <a href="#service.credential">service.credential</a>
+ &#8226;   <a href="#service.device_binding">service.device_binding</a>
  &#8226;   <a href="#service.device_fingerprint">service.device_fingerprint</a>
  &#8226;   <a href="#service.device_info">service.device_info</a>
  &#8226;   <a href="#service.error_log_handler">service.error_log_handler</a>
+ &#8226;   <a href="#service.integrity">service.integrity</a>
+ &#8226;   <a href="#service.keychain">service.keychain</a>
  &#8226;   <a href="#service.log_reporter">service.log_reporter</a>
  &#8226;   <a href="#service.manager">service.manager</a>
  &#8226;   <a href="#service.memory_guard">service.memory_guard</a>
  &#8226;   <a href="#service.platform_auth">service.platform_auth</a>
+ &#8226;   <a href="#service.pyc_watermark">service.pyc_watermark</a>
  &#8226;   <a href="#service.statistics">service.statistics</a>
  &#8226;   <a href="#setuptools">setuptools</a>
  &#8226;   <a href="#setuptools._core_metadata">setuptools._core_metadata</a>
@@ -17773,9 +17793,11 @@ imports:
  &#8226;   <a href="#fastapi">fastapi</a>
  &#8226;   <a href="#json">json</a>
  &#8226;   <a href="#logging">logging</a>
+ &#8226;   <a href="#os">os</a>
  &#8226;   <a href="#rpc.platform_client">rpc.platform_client</a>
  &#8226;   <a href="#service.connection_manager">service.connection_manager</a>
  &#8226;   <a href="#service.credential">service.credential</a>
+ &#8226;   <a href="#service.device_binding">service.device_binding</a>
  &#8226;   <a href="#service.device_fingerprint">service.device_fingerprint</a>
  &#8226;   <a href="#service.device_info">service.device_info</a>
  &#8226;   <a href="#service.manager">service.manager</a>
@@ -17785,6 +17807,7 @@ imports:
   <div class="import">
 imported by:
     <a href="#api">api</a>
+ &#8226;   <a href="#api.stats">api.stats</a>
  &#8226;   <a href="#main.py">main.py</a>
 
   </div>
@@ -17798,6 +17821,7 @@ imported by:
 imports:
     <a href="#__future__">__future__</a>
  &#8226;   <a href="#api">api</a>
+ &#8226;   <a href="#api.init">api.init</a>
  &#8226;   <a href="#fastapi">fastapi</a>
  &#8226;   <a href="#logging">logging</a>
  &#8226;   <a href="#platform">platform</a>
@@ -25896,6 +25920,7 @@ imported by:
  &#8226;   <a href="#rpc.platform_client">rpc.platform_client</a>
  &#8226;   <a href="#service.credential">service.credential</a>
  &#8226;   <a href="#service.device_info">service.device_info</a>
+ &#8226;   <a href="#service.integrity">service.integrity</a>
  &#8226;   <a href="#service.manager">service.manager</a>
  &#8226;   <a href="#service.platform_auth">service.platform_auth</a>
  &#8226;   <a href="#service.statistics">service.statistics</a>
@@ -45026,16 +45051,36 @@ imports:
   <div class="import">
 imported by:
     <a href="#generated">generated</a>
+ &#8226;   <a href="#generated.__init__">generated.__init__</a>
  &#8226;   <a href="#generated.llm_infer_pb2">generated.llm_infer_pb2</a>
  &#8226;   <a href="#generated.llm_infer_pb2_grpc">generated.llm_infer_pb2_grpc</a>
  &#8226;   <a href="#generated.manager_service_pb2">generated.manager_service_pb2</a>
  &#8226;   <a href="#generated.manager_service_pb2_grpc">generated.manager_service_pb2_grpc</a>
  &#8226;   <a href="#generated.node_tunnel_pb2">generated.node_tunnel_pb2</a>
  &#8226;   <a href="#generated.node_tunnel_pb2_grpc">generated.node_tunnel_pb2_grpc</a>
+ &#8226;   <a href="#generated.nodemanager_service_pb2">generated.nodemanager_service_pb2</a>
+ &#8226;   <a href="#generated.nodemanager_service_pb2_grpc">generated.nodemanager_service_pb2_grpc</a>
+ &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#rpc.infer_server">rpc.infer_server</a>
  &#8226;   <a href="#rpc.node_manager_client">rpc.node_manager_client</a>
  &#8226;   <a href="#rpc.platform_client">rpc.platform_client</a>
  &#8226;   <a href="#service.error_log_handler">service.error_log_handler</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="generated.__init__"></a>
+  <a target="code" href="/Users/loganhu/Documents/eclipse_workspace/DeepPool/clients/deepnode/localserver/generated/__init__.py" type="text/plain"><tt>generated.__init__</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#generated">generated</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
 
   </div>
 
@@ -45061,6 +45106,9 @@ imported by:
     <a href="#generated">generated</a>
  &#8226;   <a href="#generated.llm_infer_pb2_grpc">generated.llm_infer_pb2_grpc</a>
  &#8226;   <a href="#generated.node_tunnel_pb2">generated.node_tunnel_pb2</a>
+ &#8226;   <a href="#generated.nodemanager_service_pb2">generated.nodemanager_service_pb2</a>
+ &#8226;   <a href="#generated.nodemanager_service_pb2_grpc">generated.nodemanager_service_pb2_grpc</a>
+ &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#rpc.infer_server">rpc.infer_server</a>
  &#8226;   <a href="#rpc.node_manager_client">rpc.node_manager_client</a>
 
@@ -45083,6 +45131,7 @@ imports:
   <div class="import">
 imported by:
     <a href="#generated">generated</a>
+ &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#rpc.infer_server">rpc.infer_server</a>
 
   </div>
@@ -45108,6 +45157,7 @@ imports:
 imported by:
     <a href="#generated">generated</a>
  &#8226;   <a href="#generated.manager_service_pb2_grpc">generated.manager_service_pb2_grpc</a>
+ &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#rpc.platform_client">rpc.platform_client</a>
 
   </div>
@@ -45129,6 +45179,7 @@ imports:
   <div class="import">
 imported by:
     <a href="#generated">generated</a>
+ &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#rpc.platform_client">rpc.platform_client</a>
 
   </div>
@@ -45155,6 +45206,7 @@ imports:
 imported by:
     <a href="#generated">generated</a>
  &#8226;   <a href="#generated.node_tunnel_pb2_grpc">generated.node_tunnel_pb2_grpc</a>
+ &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#rpc.node_manager_client">rpc.node_manager_client</a>
  &#8226;   <a href="#service.error_log_handler">service.error_log_handler</a>
 
@@ -45177,7 +45229,54 @@ imports:
   <div class="import">
 imported by:
     <a href="#generated">generated</a>
+ &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#rpc.node_manager_client">rpc.node_manager_client</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="generated.nodemanager_service_pb2"></a>
+  <a target="code" href="/Users/loganhu/Documents/eclipse_workspace/DeepPool/clients/deepnode/localserver/generated/nodemanager_service_pb2.py" type="text/plain"><tt>generated.nodemanager_service_pb2</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#generated">generated</a>
+ &#8226;   <a href="#generated.llm_infer_pb2">generated.llm_infer_pb2</a>
+ &#8226;   <a href="#google.protobuf">google.protobuf</a>
+ &#8226;   <a href="#google.protobuf.descriptor">google.protobuf.descriptor</a>
+ &#8226;   <a href="#google.protobuf.descriptor_pool">google.protobuf.descriptor_pool</a>
+ &#8226;   <a href="#google.protobuf.internal">google.protobuf.internal</a>
+ &#8226;   <a href="#google.protobuf.internal.builder">google.protobuf.internal.builder</a>
+ &#8226;   <a href="#google.protobuf.runtime_version">google.protobuf.runtime_version</a>
+ &#8226;   <a href="#google.protobuf.symbol_database">google.protobuf.symbol_database</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#generated.nodemanager_service_pb2_grpc">generated.nodemanager_service_pb2_grpc</a>
+ &#8226;   <a href="#main.py">main.py</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="generated.nodemanager_service_pb2_grpc"></a>
+  <a target="code" href="/Users/loganhu/Documents/eclipse_workspace/DeepPool/clients/deepnode/localserver/generated/nodemanager_service_pb2_grpc.py" type="text/plain"><tt>generated.nodemanager_service_pb2_grpc</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#generated">generated</a>
+ &#8226;   <a href="#generated.llm_infer_pb2">generated.llm_infer_pb2</a>
+ &#8226;   <a href="#generated.nodemanager_service_pb2">generated.nodemanager_service_pb2</a>
+ &#8226;   <a href="#grpc">grpc</a>
+ &#8226;   <a href="#grpc._utilities">grpc._utilities</a>
+ &#8226;   <a href="#warnings">warnings</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
 
   </div>
 
@@ -45473,6 +45572,7 @@ imported by:
     <a href="#generated.llm_infer_pb2">generated.llm_infer_pb2</a>
  &#8226;   <a href="#generated.manager_service_pb2">generated.manager_service_pb2</a>
  &#8226;   <a href="#generated.node_tunnel_pb2">generated.node_tunnel_pb2</a>
+ &#8226;   <a href="#generated.nodemanager_service_pb2">generated.nodemanager_service_pb2</a>
  &#8226;   <a href="#google.protobuf.any">google.protobuf.any</a>
  &#8226;   <a href="#google.protobuf.any_pb2">google.protobuf.any_pb2</a>
  &#8226;   <a href="#google.protobuf.api_pb2">google.protobuf.api_pb2</a>
@@ -45660,6 +45760,7 @@ imported by:
     <a href="#generated.llm_infer_pb2">generated.llm_infer_pb2</a>
  &#8226;   <a href="#generated.manager_service_pb2">generated.manager_service_pb2</a>
  &#8226;   <a href="#generated.node_tunnel_pb2">generated.node_tunnel_pb2</a>
+ &#8226;   <a href="#generated.nodemanager_service_pb2">generated.nodemanager_service_pb2</a>
  &#8226;   <a href="#google.protobuf">google.protobuf</a>
  &#8226;   <a href="#google.protobuf.any">google.protobuf.any</a>
  &#8226;   <a href="#google.protobuf.any_pb2">google.protobuf.any_pb2</a>
@@ -45761,6 +45862,7 @@ imported by:
     <a href="#generated.llm_infer_pb2">generated.llm_infer_pb2</a>
  &#8226;   <a href="#generated.manager_service_pb2">generated.manager_service_pb2</a>
  &#8226;   <a href="#generated.node_tunnel_pb2">generated.node_tunnel_pb2</a>
+ &#8226;   <a href="#generated.nodemanager_service_pb2">generated.nodemanager_service_pb2</a>
  &#8226;   <a href="#google.protobuf">google.protobuf</a>
  &#8226;   <a href="#google.protobuf.any_pb2">google.protobuf.any_pb2</a>
  &#8226;   <a href="#google.protobuf.api_pb2">google.protobuf.api_pb2</a>
@@ -45914,6 +46016,7 @@ imported by:
     <a href="#generated.llm_infer_pb2">generated.llm_infer_pb2</a>
  &#8226;   <a href="#generated.manager_service_pb2">generated.manager_service_pb2</a>
  &#8226;   <a href="#generated.node_tunnel_pb2">generated.node_tunnel_pb2</a>
+ &#8226;   <a href="#generated.nodemanager_service_pb2">generated.nodemanager_service_pb2</a>
  &#8226;   <a href="#google.protobuf.any_pb2">google.protobuf.any_pb2</a>
  &#8226;   <a href="#google.protobuf.api_pb2">google.protobuf.api_pb2</a>
  &#8226;   <a href="#google.protobuf.compiler.plugin_pb2">google.protobuf.compiler.plugin_pb2</a>
@@ -46024,6 +46127,7 @@ imported by:
     <a href="#generated.llm_infer_pb2">generated.llm_infer_pb2</a>
  &#8226;   <a href="#generated.manager_service_pb2">generated.manager_service_pb2</a>
  &#8226;   <a href="#generated.node_tunnel_pb2">generated.node_tunnel_pb2</a>
+ &#8226;   <a href="#generated.nodemanager_service_pb2">generated.nodemanager_service_pb2</a>
  &#8226;   <a href="#google.protobuf.any_pb2">google.protobuf.any_pb2</a>
  &#8226;   <a href="#google.protobuf.api_pb2">google.protobuf.api_pb2</a>
  &#8226;   <a href="#google.protobuf.compiler.plugin_pb2">google.protobuf.compiler.plugin_pb2</a>
@@ -46630,6 +46734,7 @@ imported by:
     <a href="#generated.llm_infer_pb2">generated.llm_infer_pb2</a>
  &#8226;   <a href="#generated.manager_service_pb2">generated.manager_service_pb2</a>
  &#8226;   <a href="#generated.node_tunnel_pb2">generated.node_tunnel_pb2</a>
+ &#8226;   <a href="#generated.nodemanager_service_pb2">generated.nodemanager_service_pb2</a>
  &#8226;   <a href="#google.protobuf">google.protobuf</a>
  &#8226;   <a href="#google.protobuf.any_pb2">google.protobuf.any_pb2</a>
  &#8226;   <a href="#google.protobuf.api_pb2">google.protobuf.api_pb2</a>
@@ -46732,6 +46837,7 @@ imported by:
     <a href="#generated.llm_infer_pb2">generated.llm_infer_pb2</a>
  &#8226;   <a href="#generated.manager_service_pb2">generated.manager_service_pb2</a>
  &#8226;   <a href="#generated.node_tunnel_pb2">generated.node_tunnel_pb2</a>
+ &#8226;   <a href="#generated.nodemanager_service_pb2">generated.nodemanager_service_pb2</a>
  &#8226;   <a href="#google.protobuf">google.protobuf</a>
  &#8226;   <a href="#google.protobuf.any_pb2">google.protobuf.any_pb2</a>
  &#8226;   <a href="#google.protobuf.api_pb2">google.protobuf.api_pb2</a>
@@ -52190,6 +52296,7 @@ imported by:
     <a href="#generated.llm_infer_pb2_grpc">generated.llm_infer_pb2_grpc</a>
  &#8226;   <a href="#generated.manager_service_pb2_grpc">generated.manager_service_pb2_grpc</a>
  &#8226;   <a href="#generated.node_tunnel_pb2_grpc">generated.node_tunnel_pb2_grpc</a>
+ &#8226;   <a href="#generated.nodemanager_service_pb2_grpc">generated.nodemanager_service_pb2_grpc</a>
  &#8226;   <a href="#grpc">grpc</a>
  &#8226;   <a href="#grpc._auth">grpc._auth</a>
  &#8226;   <a href="#grpc._channel">grpc._channel</a>
@@ -52652,6 +52759,7 @@ imported by:
     <a href="#generated.llm_infer_pb2_grpc">generated.llm_infer_pb2_grpc</a>
  &#8226;   <a href="#generated.manager_service_pb2_grpc">generated.manager_service_pb2_grpc</a>
  &#8226;   <a href="#generated.node_tunnel_pb2_grpc">generated.node_tunnel_pb2_grpc</a>
+ &#8226;   <a href="#generated.nodemanager_service_pb2_grpc">generated.nodemanager_service_pb2_grpc</a>
  &#8226;   <a href="#grpc">grpc</a>
  &#8226;   <a href="#main.py">main.py</a>
 
@@ -54160,7 +54268,10 @@ imported by:
  &#8226;   <a href="#random">random</a>
  &#8226;   <a href="#requests.auth">requests.auth</a>
  &#8226;   <a href="#sentry_sdk.integrations.strawberry">sentry_sdk.integrations.strawberry</a>
+ &#8226;   <a href="#service.device_binding">service.device_binding</a>
  &#8226;   <a href="#service.device_fingerprint">service.device_fingerprint</a>
+ &#8226;   <a href="#service.integrity">service.integrity</a>
+ &#8226;   <a href="#service.pyc_watermark">service.pyc_watermark</a>
  &#8226;   <a href="#setuptools._vendor.wheel.wheelfile">setuptools._vendor.wheel.wheelfile</a>
  &#8226;   <a href="#starlette.responses">starlette.responses</a>
  &#8226;   <a href="#transformers.dynamic_module_utils">transformers.dynamic_module_utils</a>
@@ -54340,6 +54451,8 @@ imported by:
  &#8226;   <a href="#multiprocessing.connection">multiprocessing.connection</a>
  &#8226;   <a href="#pip._vendor.urllib3.util.ssl_">pip._vendor.urllib3.util.ssl_</a>
  &#8226;   <a href="#secrets">secrets</a>
+ &#8226;   <a href="#service.integrity">service.integrity</a>
+ &#8226;   <a href="#service.pyc_watermark">service.pyc_watermark</a>
  &#8226;   <a href="#smtplib">smtplib</a>
  &#8226;   <a href="#urllib3.util.ssl_">urllib3.util.ssl_</a>
  &#8226;   <a href="#websockets.asyncio.server">websockets.asyncio.server</a>
@@ -64489,6 +64602,8 @@ imported by:
  &#8226;   <a href="#sentry_sdk.integrations.starlette">sentry_sdk.integrations.starlette</a>
  &#8226;   <a href="#sentry_sdk.utils">sentry_sdk.utils</a>
  &#8226;   <a href="#service.credential">service.credential</a>
+ &#8226;   <a href="#service.integrity">service.integrity</a>
+ &#8226;   <a href="#service.keychain">service.keychain</a>
  &#8226;   <a href="#setuptools._vendor.importlib_metadata">setuptools._vendor.importlib_metadata</a>
  &#8226;   <a href="#setuptools.config._validate_pyproject.error_reporting">setuptools.config._validate_pyproject.error_reporting</a>
  &#8226;   <a href="#setuptools.msvc">setuptools.msvc</a>
@@ -65759,13 +65874,17 @@ imported by:
  &#8226;   <a href="#sentry_sdk.utils">sentry_sdk.utils</a>
  &#8226;   <a href="#service.connection_manager">service.connection_manager</a>
  &#8226;   <a href="#service.credential">service.credential</a>
+ &#8226;   <a href="#service.device_binding">service.device_binding</a>
  &#8226;   <a href="#service.device_fingerprint">service.device_fingerprint</a>
  &#8226;   <a href="#service.device_info">service.device_info</a>
  &#8226;   <a href="#service.error_log_handler">service.error_log_handler</a>
+ &#8226;   <a href="#service.integrity">service.integrity</a>
+ &#8226;   <a href="#service.keychain">service.keychain</a>
  &#8226;   <a href="#service.log_reporter">service.log_reporter</a>
  &#8226;   <a href="#service.manager">service.manager</a>
  &#8226;   <a href="#service.memory_guard">service.memory_guard</a>
  &#8226;   <a href="#service.platform_auth">service.platform_auth</a>
+ &#8226;   <a href="#service.pyc_watermark">service.pyc_watermark</a>
  &#8226;   <a href="#service.statistics">service.statistics</a>
  &#8226;   <a href="#setuptools._distutils._log">setuptools._distutils._log</a>
  &#8226;   <a href="#setuptools._distutils.cmd">setuptools._distutils.cmd</a>
@@ -135771,6 +135890,7 @@ imported by:
  &#8226;   <a href="#anyio.streams.file">anyio.streams.file</a>
  &#8226;   <a href="#anyio.to_interpreter">anyio.to_interpreter</a>
  &#8226;   <a href="#anyio.to_process">anyio.to_process</a>
+ &#8226;   <a href="#api.init">api.init</a>
  &#8226;   <a href="#argparse">argparse</a>
  &#8226;   <a href="#asyncio.base_events">asyncio.base_events</a>
  &#8226;   <a href="#asyncio.base_subprocess">asyncio.base_subprocess</a>
@@ -136694,6 +136814,7 @@ imported by:
  &#8226;   <a href="#sentry_sdk.utils">sentry_sdk.utils</a>
  &#8226;   <a href="#sentry_sdk.worker">sentry_sdk.worker</a>
  &#8226;   <a href="#service.device_info">service.device_info</a>
+ &#8226;   <a href="#service.integrity">service.integrity</a>
  &#8226;   <a href="#service.memory_guard">service.memory_guard</a>
  &#8226;   <a href="#service.statistics">service.statistics</a>
  &#8226;   <a href="#setuptools">setuptools</a>
@@ -138180,6 +138301,8 @@ imported by:
  &#8226;   <a href="#rich.syntax">rich.syntax</a>
  &#8226;   <a href="#safehttpx">safehttpx</a>
  &#8226;   <a href="#service.credential">service.credential</a>
+ &#8226;   <a href="#service.integrity">service.integrity</a>
+ &#8226;   <a href="#service.pyc_watermark">service.pyc_watermark</a>
  &#8226;   <a href="#service.statistics">service.statistics</a>
  &#8226;   <a href="#setuptools._distutils.compilers.C.base">setuptools._distutils.compilers.C.base</a>
  &#8226;   <a href="#setuptools._distutils.dir_util">setuptools._distutils.dir_util</a>
@@ -148483,8 +148606,10 @@ imported by:
  &#8226;   <a href="#rich._windows">rich._windows</a>
  &#8226;   <a href="#sentry_sdk.integrations.stdlib">sentry_sdk.integrations.stdlib</a>
  &#8226;   <a href="#sentry_sdk.profiler.transaction_profiler">sentry_sdk.profiler.transaction_profiler</a>
+ &#8226;   <a href="#service.device_binding">service.device_binding</a>
  &#8226;   <a href="#service.device_fingerprint">service.device_fingerprint</a>
  &#8226;   <a href="#service.device_info">service.device_info</a>
+ &#8226;   <a href="#service.keychain">service.keychain</a>
  &#8226;   <a href="#service.memory_guard">service.memory_guard</a>
  &#8226;   <a href="#setuptools._distutils.compat.py39">setuptools._distutils.compat.py39</a>
  &#8226;   <a href="#setuptools._distutils.spawn">setuptools._distutils.spawn</a>
@@ -175599,13 +175724,17 @@ imported by:
     <a href="#main.py">main.py</a>
  &#8226;   <a href="#service.connection_manager">service.connection_manager</a>
  &#8226;   <a href="#service.credential">service.credential</a>
+ &#8226;   <a href="#service.device_binding">service.device_binding</a>
  &#8226;   <a href="#service.device_fingerprint">service.device_fingerprint</a>
  &#8226;   <a href="#service.device_info">service.device_info</a>
  &#8226;   <a href="#service.error_log_handler">service.error_log_handler</a>
+ &#8226;   <a href="#service.integrity">service.integrity</a>
+ &#8226;   <a href="#service.keychain">service.keychain</a>
  &#8226;   <a href="#service.log_reporter">service.log_reporter</a>
  &#8226;   <a href="#service.manager">service.manager</a>
  &#8226;   <a href="#service.memory_guard">service.memory_guard</a>
  &#8226;   <a href="#service.platform_auth">service.platform_auth</a>
+ &#8226;   <a href="#service.pyc_watermark">service.pyc_watermark</a>
  &#8226;   <a href="#service.statistics">service.statistics</a>
 
   </div>
@@ -175651,6 +175780,11 @@ imports:
  &#8226;   <a href="#logging">logging</a>
  &#8226;   <a href="#pathlib">pathlib</a>
  &#8226;   <a href="#service">service</a>
+ &#8226;   <a href="#service.device_binding">service.device_binding</a>
+ &#8226;   <a href="#service.integrity">service.integrity</a>
+ &#8226;   <a href="#service.keychain">service.keychain</a>
+ &#8226;   <a href="#service.pyc_watermark">service.pyc_watermark</a>
+ &#8226;   <a href="#sys">sys</a>
 
   </div>
   <div class="import">
@@ -175658,6 +175792,30 @@ imported by:
     <a href="#api.init">api.init</a>
  &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#service">service</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="service.device_binding"></a>
+  <a target="code" href="/Users/loganhu/Documents/eclipse_workspace/DeepPool/clients/deepnode/localserver/service/device_binding.py" type="text/plain"><tt>service.device_binding</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#__future__">__future__</a>
+ &#8226;   <a href="#hashlib">hashlib</a>
+ &#8226;   <a href="#logging">logging</a>
+ &#8226;   <a href="#platform">platform</a>
+ &#8226;   <a href="#service">service</a>
+ &#8226;   <a href="#subprocess">subprocess</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#api.init">api.init</a>
+ &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#service.credential">service.credential</a>
 
   </div>
 
@@ -175736,6 +175894,58 @@ imports:
   <div class="import">
 imported by:
     <a href="#log_setup">log_setup</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="service.integrity"></a>
+  <a target="code" href="/Users/loganhu/Documents/eclipse_workspace/DeepPool/clients/deepnode/localserver/service/integrity.py" type="text/plain"><tt>service.integrity</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#__future__">__future__</a>
+ &#8226;   <a href="#dataclasses">dataclasses</a>
+ &#8226;   <a href="#hashlib">hashlib</a>
+ &#8226;   <a href="#hmac">hmac</a>
+ &#8226;   <a href="#json">json</a>
+ &#8226;   <a href="#logging">logging</a>
+ &#8226;   <a href="#os">os</a>
+ &#8226;   <a href="#pathlib">pathlib</a>
+ &#8226;   <a href="#service">service</a>
+ &#8226;   <a href="#sys">sys</a>
+ &#8226;   <a href="#time">time</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#_runtime_hook.py">_runtime_hook.py</a>
+ &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#service.credential">service.credential</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="service.keychain"></a>
+  <a target="code" href="/Users/loganhu/Documents/eclipse_workspace/DeepPool/clients/deepnode/localserver/service/keychain.py" type="text/plain"><tt>service.keychain</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#__future__">__future__</a>
+ &#8226;   <a href="#json">json</a>
+ &#8226;   <a href="#logging">logging</a>
+ &#8226;   <a href="#platform">platform</a>
+ &#8226;   <a href="#service">service</a>
+ &#8226;   <a href="#subprocess">subprocess</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
+ &#8226;   <a href="#service.credential">service.credential</a>
 
   </div>
 
@@ -175841,6 +176051,31 @@ imports:
   <div class="import">
 imported by:
     <a href="#main.py">main.py</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="service.pyc_watermark"></a>
+  <a target="code" href="/Users/loganhu/Documents/eclipse_workspace/DeepPool/clients/deepnode/localserver/service/pyc_watermark.py" type="text/plain"><tt>service.pyc_watermark</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#__future__">__future__</a>
+ &#8226;   <a href="#hashlib">hashlib</a>
+ &#8226;   <a href="#hmac">hmac</a>
+ &#8226;   <a href="#logging">logging</a>
+ &#8226;   <a href="#pathlib">pathlib</a>
+ &#8226;   <a href="#service">service</a>
+ &#8226;   <a href="#sys">sys</a>
+ &#8226;   <a href="#time">time</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
+ &#8226;   <a href="#service.credential">service.credential</a>
 
   </div>
 
@@ -182767,8 +183002,10 @@ imported by:
  &#8226;   <a href="#pyi_rth_multiprocessing.py">pyi_rth_multiprocessing.py</a>
  &#8226;   <a href="#sentry_sdk.integrations.stdlib">sentry_sdk.integrations.stdlib</a>
  &#8226;   <a href="#sentry_sdk.utils">sentry_sdk.utils</a>
+ &#8226;   <a href="#service.device_binding">service.device_binding</a>
  &#8226;   <a href="#service.device_fingerprint">service.device_fingerprint</a>
  &#8226;   <a href="#service.device_info">service.device_info</a>
+ &#8226;   <a href="#service.keychain">service.keychain</a>
  &#8226;   <a href="#service.memory_guard">service.memory_guard</a>
  &#8226;   <a href="#setuptools._distutils.command._framework_compat">setuptools._distutils.command._framework_compat</a>
  &#8226;   <a href="#setuptools._distutils.compilers.C.msvc">setuptools._distutils.compilers.C.msvc</a>
@@ -183717,6 +183954,9 @@ imported by:
  &#8226;   <a href="#sentry_sdk.spotlight">sentry_sdk.spotlight</a>
  &#8226;   <a href="#sentry_sdk.tracing_utils">sentry_sdk.tracing_utils</a>
  &#8226;   <a href="#sentry_sdk.utils">sentry_sdk.utils</a>
+ &#8226;   <a href="#service.credential">service.credential</a>
+ &#8226;   <a href="#service.integrity">service.integrity</a>
+ &#8226;   <a href="#service.pyc_watermark">service.pyc_watermark</a>
  &#8226;   <a href="#setuptools">setuptools</a>
  &#8226;   <a href="#setuptools._distutils">setuptools._distutils</a>
  &#8226;   <a href="#setuptools._distutils.cmd">setuptools._distutils.cmd</a>
@@ -185466,6 +185706,7 @@ imported by:
  &#8226;   <a href="#logging">logging</a>
  &#8226;   <a href="#logging.handlers">logging.handlers</a>
  &#8226;   <a href="#macholib.mach_o">macholib.mach_o</a>
+ &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#mcp.server.auth.handlers.register">mcp.server.auth.handlers.register</a>
  &#8226;   <a href="#mcp.server.auth.handlers.token">mcp.server.auth.handlers.token</a>
  &#8226;   <a href="#mcp.server.auth.middleware.bearer_auth">mcp.server.auth.middleware.bearer_auth</a>
@@ -185608,8 +185849,10 @@ imported by:
  &#8226;   <a href="#sentry_sdk.utils">sentry_sdk.utils</a>
  &#8226;   <a href="#sentry_sdk.worker">sentry_sdk.worker</a>
  &#8226;   <a href="#service.error_log_handler">service.error_log_handler</a>
+ &#8226;   <a href="#service.integrity">service.integrity</a>
  &#8226;   <a href="#service.log_reporter">service.log_reporter</a>
  &#8226;   <a href="#service.manager">service.manager</a>
+ &#8226;   <a href="#service.pyc_watermark">service.pyc_watermark</a>
  &#8226;   <a href="#service.statistics">service.statistics</a>
  &#8226;   <a href="#setuptools._vendor.backports.tarfile">setuptools._vendor.backports.tarfile</a>
  &#8226;   <a href="#setuptools._vendor.jaraco.functools">setuptools._vendor.jaraco.functools</a>
@@ -256244,8 +256487,12 @@ imported by:
  &#8226;   <a href="#sentry_sdk.utils">sentry_sdk.utils</a>
  &#8226;   <a href="#sentry_sdk.worker">sentry_sdk.worker</a>
  &#8226;   <a href="#service.connection_manager">service.connection_manager</a>
+ &#8226;   <a href="#service.device_binding">service.device_binding</a>
  &#8226;   <a href="#service.device_fingerprint">service.device_fingerprint</a>
  &#8226;   <a href="#service.error_log_handler">service.error_log_handler</a>
+ &#8226;   <a href="#service.integrity">service.integrity</a>
+ &#8226;   <a href="#service.keychain">service.keychain</a>
+ &#8226;   <a href="#service.pyc_watermark">service.pyc_watermark</a>
  &#8226;   <a href="#setuptools">setuptools</a>
  &#8226;   <a href="#setuptools._distutils._modified">setuptools._distutils._modified</a>
  &#8226;   <a href="#setuptools._distutils.archive_util">setuptools._distutils.archive_util</a>
@@ -261335,6 +261582,7 @@ imported by:
  &#8226;   <a href="#generated.llm_infer_pb2_grpc">generated.llm_infer_pb2_grpc</a>
  &#8226;   <a href="#generated.manager_service_pb2_grpc">generated.manager_service_pb2_grpc</a>
  &#8226;   <a href="#generated.node_tunnel_pb2_grpc">generated.node_tunnel_pb2_grpc</a>
+ &#8226;   <a href="#generated.nodemanager_service_pb2_grpc">generated.nodemanager_service_pb2_grpc</a>
  &#8226;   <a href="#getpass">getpass</a>
  &#8226;   <a href="#gettext">gettext</a>
  &#8226;   <a href="#glob">glob</a>
