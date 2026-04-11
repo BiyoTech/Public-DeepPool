@@ -18,8 +18,9 @@ type SupportedLocales = {
 
 type UnlistenFn = () => void
 
-/** localserver /api/stats/snapshot 响应结构 */
+/** localserver /api/stats/snapshot response structure */
 type StatsData = {
+  device_status: string  // "active" / "blocked" / "cheating"
   service: {
     running: boolean
     model_name: string
@@ -94,6 +95,10 @@ const gpuTemp = computed(() => {
 const modelName = computed(() => stats.value?.service.model_name || '--')
 const engineType = computed(() => stats.value?.service.engine_type || '--')
 const serviceRunning = computed(() => stats.value?.service.running ?? false)
+const deviceBlocked = computed(() => {
+  const status = stats.value?.device_status
+  return status === 'blocked' || status === 'cheating'
+})
 
 // 格式化大数字
 function fmtNum(n: number): string {
@@ -236,8 +241,8 @@ onBeforeUnmount(() => {
             <span class="version">v1.2.4</span>
           </div>
           <p class="status">
-            <span class="dot" :class="{ offline: !serviceRunning }" />
-            {{ userDisplayName }} {{ serviceRunning ? t('device.statusSuffix') : t('device.statusOffline') }}
+            <span class="dot" :class="{ offline: !serviceRunning || deviceBlocked, blocked: deviceBlocked }" />
+            {{ deviceBlocked ? t('device.statusBlocked') : (userDisplayName + ' ' + (serviceRunning ? t('device.statusSuffix') : t('device.statusOffline'))) }}
           </p>
         </div>
       </div>
@@ -313,8 +318,8 @@ onBeforeUnmount(() => {
       <section class="right-panel glass">
         <div class="panel-title-row">
           <h2>{{ t('device.realtimeTitle') }}</h2>
-          <span class="chip" :class="{ active: serviceRunning }">
-            {{ serviceRunning ? t('device.grpcConnected') : t('device.grpcDisconnected') }}
+          <span class="chip" :class="{ active: serviceRunning && !deviceBlocked, blocked: deviceBlocked }">
+            {{ deviceBlocked ? t('device.statusBlocked') : (serviceRunning ? t('device.grpcConnected') : t('device.grpcDisconnected')) }}
           </span>
         </div>
 
@@ -384,9 +389,9 @@ onBeforeUnmount(() => {
       </section>
     </main>
 
-    <footer class="notice glass">
-      <strong>{{ t('device.safeNoticeTitle') }}</strong>
-      {{ t('device.safeNoticeBody') }}
+    <footer class="notice glass" :class="{ 'notice-blocked': deviceBlocked }">
+      <strong>{{ deviceBlocked ? t('device.blockedNoticeTitle') : t('device.safeNoticeTitle') }}</strong>
+      {{ deviceBlocked ? t('device.blockedNoticeBody') : t('device.safeNoticeBody') }}
     </footer>
 
     <!-- 设置弹窗 -->
@@ -502,6 +507,12 @@ h1 {
 .dot.offline {
   background: #ff6075;
   box-shadow: 0 0 10px #ff6075;
+}
+
+.dot.blocked {
+  background: #ff6075;
+  box-shadow: 0 0 10px #ff6075;
+  animation: blocked-pulse 2s ease-in-out infinite;
 }
 
 .toolbar-actions {
@@ -681,6 +692,18 @@ h2 {
   background: rgba(44, 246, 166, 0.1);
 }
 
+.chip.blocked {
+  color: #ff6075;
+  background: rgba(255, 96, 117, 0.15);
+  border: 1px solid rgba(255, 96, 117, 0.3);
+  animation: blocked-pulse 2s ease-in-out infinite;
+}
+
+@keyframes blocked-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
 .section-label {
   color: #95a9d6;
   font-size: clamp(12px, 1vw, 14px);
@@ -843,6 +866,14 @@ h2 {
 }
 
 .notice strong { color: #ffb347; }
+
+.notice-blocked {
+  border-color: rgba(255, 96, 117, 0.35);
+  background: linear-gradient(135deg, rgba(60, 15, 20, 0.9), rgba(35, 10, 15, 0.88));
+  color: #ffb0b8;
+}
+
+.notice-blocked strong { color: #ff6075; }
 
 .settings-mask {
   position: fixed;

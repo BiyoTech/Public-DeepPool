@@ -110,7 +110,9 @@ def _get_hardware_info() -> dict:
 
 @router.get("/snapshot")
 def get_stats_snapshot() -> dict:
-    """返回推理统计快照 + 硬件信息 + 服务状态。"""
+    """Return inference stats snapshot + hardware info + service status + device status."""
+    from api.init import get_device_status
+
     stats_db = get_statistics_db()
     snapshot = stats_db.get_snapshot(recent_seconds=60)
 
@@ -123,13 +125,15 @@ def get_stats_snapshot() -> dict:
         "code": 0,
         "message": "ok",
         "data": {
-            # 服务状态
+            # Service status
             "service": {
                 "running": running is not None,
                 "model_name": running.model_name if running else "",
                 "engine_type": running.engine_type if running else "",
                 "uptime_seconds": int(__import__("time").time() - running.started_at) if running else 0,
             },
+            # Device security status from platform ("active" / "blocked" / "cheating")
+            "device_status": get_device_status(),
             # 硬件信息
             "hardware": hardware,
             # 全量统计

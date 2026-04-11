@@ -114,7 +114,7 @@ class ModelDeployConfig:
 
 @dataclass
 class DeviceInfo:
-    """设备信息。"""
+    """Device info returned from platform after registration/query."""
     device_id: int
     user_id: int
     simei: str
@@ -122,6 +122,7 @@ class DeviceInfo:
     device_config: str
     created_at: str
     updated_at: str
+    status: str = "active"  # "active" / "blocked" / "cheating"
 
 
 class PlatformClient:
@@ -267,7 +268,7 @@ class PlatformClient:
             raise RuntimeError(f"RegisterDevice failed: {detail}") from exc
 
         d = resp.device
-        logger.info("device registered simei=%s device_id=%d", d.simei, d.device_id)
+        logger.info("device registered simei=%s device_id=%d status=%s", d.simei, d.device_id, d.status)
         return DeviceInfo(
             device_id=d.device_id,
             user_id=d.user_id,
@@ -276,6 +277,7 @@ class PlatformClient:
             device_config=d.device_config,
             created_at=d.created_at,
             updated_at=d.updated_at,
+            status=d.status or "active",
         )
 
     def report_infer_logs(
@@ -383,7 +385,7 @@ class PlatformClient:
             raise RuntimeError(f"UpdateDevice failed: {detail}") from exc
 
         d = resp.device
-        logger.info("device updated simei=%s device_id=%d", d.simei, d.device_id)
+        logger.info("device updated simei=%s device_id=%d status=%s", d.simei, d.device_id, d.status)
         return DeviceInfo(
             device_id=d.device_id,
             user_id=d.user_id,
@@ -392,6 +394,7 @@ class PlatformClient:
             device_config=d.device_config,
             created_at=d.created_at,
             updated_at=d.updated_at,
+            status=d.status or "active",
         )
 
     def login(self, account: str, password: str) -> dict:
@@ -487,7 +490,7 @@ class PlatformClient:
             raise RuntimeError(f"GetDevice failed: {detail}") from exc
 
         d = resp.device
-        logger.info("grpc GetDevice simei=%s device_id=%d", d.simei, d.device_id)
+        logger.info("grpc GetDevice simei=%s device_id=%d status=%s", d.simei, d.device_id, d.status)
         return DeviceInfo(
             device_id=d.device_id,
             user_id=d.user_id,
@@ -496,6 +499,7 @@ class PlatformClient:
             device_config=d.device_config,
             created_at=d.created_at,
             updated_at=d.updated_at,
+            status=d.status or "active",
         )
 
     def update_token(self, new_token: str) -> None:

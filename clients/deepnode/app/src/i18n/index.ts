@@ -92,7 +92,11 @@ const messages = {
       smartIdleDesc: '检测到 CPU 高占用时自动暂停任务',
       safeNoticeTitle: '⚠ 安全提示：',
       safeNoticeBody:
-        'DeepPool 正在受保护的沙箱环境中运行推理任务。个人文件和隐私数据不会被访问，通信已通过双向 mTLS 加密。若感知系统卡顿，请开启"智能休眠模式"。'
+        'DeepPool 正在受保护的沙箱环境中运行推理任务。个人文件和隐私数据不会被访问，通信已通过双向 mTLS 加密。若感知系统卡顿，请开启"智能休眠模式"。',
+      blockedNoticeTitle: '🚫 安全警告：',
+      blockedNoticeBody:
+        '当前设备已被平台安全策略屏蔽，无法接收推理任务。可能原因：(1) 当前安装包未通过安全加固，请下载最新版本；(2) 应用文件已被篡改，请重新下载全新安装包。',
+      statusBlocked: '已被屏蔽'
     },
     deviceInit: {
       title: '设备初始化',
@@ -114,7 +118,9 @@ const messages = {
       deviceRegistered: '设备注册成功，开始加载模型...',
       waitingModelLoad: '正在下载并加载模型，请稍候...',
       modelLoading: '正在加载模型: {name}',
-      modelLoadFailed: '模型加载失败'
+      modelLoadFailed: '模型加载失败',
+      macosUpgradeTitle: '⚠️ 强烈建议升级 macOS',
+      macosUpgradeBody: '当前系统版本较低，部分最新模型（如 Gemma 4 系列）可能无法正常加载，导致推理服务异常或无法正常提供算力。强烈建议升级到 macOS 15 (Sequoia) 或更高版本，以获得完整的模型支持和最佳性能。'
     },
     settings: {
       menu: '系统设置',
@@ -205,7 +211,11 @@ const messages = {
       smartIdleDesc: 'Automatically pause tasks when high CPU usage is detected',
       safeNoticeTitle: '⚠ Security Notice:',
       safeNoticeBody:
-        'DeepPool runs inference tasks in a protected sandbox. Personal files and private data are not accessed, and communication is secured with mutual mTLS. Enable Smart Idle Mode if your system feels sluggish.'
+        'DeepPool runs inference tasks in a protected sandbox. Personal files and private data are not accessed, and communication is secured with mutual mTLS. Enable Smart Idle Mode if your system feels sluggish.',
+      blockedNoticeTitle: '🚫 Security Warning:',
+      blockedNoticeBody:
+        'This device has been blocked by the platform security policy and cannot receive inference tasks. Possible causes: (1) this installation package lacks security hardening — please download the latest version; (2) application files have been tampered with — please re-download a fresh installation package.',
+      statusBlocked: 'Blocked'
     },
     deviceInit: {
       title: 'Device Initialization',
@@ -227,7 +237,9 @@ const messages = {
       deviceRegistered: 'Device registered, loading model...',
       waitingModelLoad: 'Downloading and loading model, please wait...',
       modelLoading: 'Loading model: {name}',
-      modelLoadFailed: 'Model loading failed'
+      modelLoadFailed: 'Model loading failed',
+      macosUpgradeTitle: '⚠️ macOS Upgrade Strongly Recommended',
+      macosUpgradeBody: 'Your current macOS version is outdated. Some latest models (e.g. Gemma 4 series) may fail to load properly, causing inference errors or inability to provide compute. We strongly recommend upgrading to macOS 15 (Sequoia) or later for full model support and best performance.'
     },
     settings: {
       menu: 'Settings',

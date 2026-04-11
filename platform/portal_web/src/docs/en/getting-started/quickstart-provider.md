@@ -10,14 +10,23 @@ This guide will help you connect your idle device to the DeepPool computing pool
 
 ### macOS Version Requirements
 
-DeepPool uses the [MLX](https://github.com/ml-explore/mlx) framework for inference acceleration on Mac. **Different macOS versions support different model architectures**:
+> **⚠️ We strongly recommend upgrading to macOS 15 (Sequoia) or later.**
+>
+> Users on older macOS versions may experience: model loading failures, abnormal inference output (e.g. thinking content leaking into responses), and inability to provide compute reliably. **These issues are resolved automatically after upgrading.**
 
-| macOS Version | MLX Version | mlx-lm Version | Supported Models |
-|--------------|-------------|----------------|-----------------|
-| **14.0+ (Sonoma)** | 0.30+ | 0.31+ | ✅ All (including Gemma 4, Llama 4, and other latest architectures) |
-| 13.5 (Ventura) | ≤ 0.29 | ≤ 0.30 | ⚠️ Only older model architectures |
+DeepPool uses the [MLX](https://github.com/ml-explore/mlx) framework for inference acceleration on Mac. **Different macOS versions vary significantly in model support and stability**:
 
-> **We strongly recommend upgrading to macOS 14.0 (Sonoma) or later** for full support of the latest models. macOS 13.x users may be unable to load certain newer model architectures (e.g., the Gemma 4 series).
+| macOS Version | Recommendation | Model Support | Known Issues |
+|--------------|---------------|---------------|-------------|
+| **15.0+ (Sequoia)** | ✅ **Strongly Recommended** | Full support for all models (including Gemma 4, Llama 4, etc.) | None |
+| 14.0 (Sonoma) | ⚠️ Usable but limited | Most models work, some latest architectures may run in degraded mode | Gemma 4 series may fall back to text-only mode; inference output may contain unexpected content |
+| 13.5 (Ventura) | ❌ Not recommended | Only older models supported | Cannot load most new architecture models; device may be unable to provide compute |
+
+#### Why do older macOS versions cause problems?
+
+1. **Model architecture incompatibility**: Newer models like Gemma 4 require the latest `mlx-vlm` / `transformers` libraries. On older macOS versions, these libraries are version-constrained, potentially causing model loading failures or degraded text-only mode
+2. **Abnormal inference output**: In degraded mode, the model may mix internal thinking content into responses, causing API output that doesn't match expectations
+3. **Security hardening dependencies**: Some security features (e.g. Hardened Runtime) perform better on newer macOS versions
 
 ## Steps
 
@@ -56,7 +65,7 @@ Log in to the portal website, navigate to the "Data" page to view your device co
 
 | Engine | Platform | Acceleration | Notes |
 |--------|----------|-------------|-------|
-| MLX | macOS Apple Silicon (M1+) | Metal GPU | macOS 14.0+ recommended; 13.x works but with limited model support |
+| MLX | macOS Apple Silicon (M1+) | Metal GPU | **macOS 15.0+ strongly recommended**; 14.x works but with limited model support; 13.x not recommended |
 | vLLM | Linux + NVIDIA | CUDA | High throughput, ideal for server deployments |
 | llama.cpp | Universal | CPU / Weak GPU | Fallback engine with broadest compatibility |
 

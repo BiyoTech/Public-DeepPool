@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { LOCAL_API_BASE } from '../config'
 import { safeFetch } from '../http'
@@ -27,6 +27,24 @@ const initializing = ref(false)
 const progress = ref(0)
 const initError = ref('')
 const statusText = ref('')
+
+// macOS version detection: show upgrade warning for versions below 15.0
+const showMacosWarning = ref(false)
+
+onMounted(() => {
+  // Detect macOS version from navigator.userAgent
+  // macOS UA format: "Mac OS X 10_15_7" or "Mac OS X 15_0_1"
+  const ua = navigator.userAgent
+  const match = ua.match(/Mac OS X (\d+)[_.](\d+)/)
+  if (match) {
+    const major = parseInt(match[1], 10)
+    // macOS 10.x = old numbering (Catalina and earlier)
+    // macOS 11+ = Big Sur, 12 = Monterey, 13 = Ventura, 14 = Sonoma, 15 = Sequoia
+    if (major < 15) {
+      showMacosWarning.value = true
+    }
+  }
+})
 
 type ApiResponse<T> = {
   code: number
@@ -194,6 +212,13 @@ async function startInit() {
     <section class="init-card glass">
       <h1>{{ t('deviceInit.title') }}</h1>
       <p class="subtitle">{{ t('deviceInit.subtitle') }}</p>
+
+      <!-- macOS upgrade warning for versions below 15.0 -->
+      <div v-if="showMacosWarning" class="macos-warning">
+        <strong>{{ t('deviceInit.macosUpgradeTitle') }}</strong>
+        <p>{{ t('deviceInit.macosUpgradeBody') }}</p>
+      </div>
+
       <p v-if="reasonHint" class="reason-text" :class="{ 'error-hint': isBlockingError }">{{ reasonHint }}</p>
 
       <!-- localserver 未就绪或网络异常：仅显示重试按钮 -->
@@ -370,6 +395,27 @@ async function startInit() {
   margin: 10px 0 0;
   color: #ff8b9a;
   font-size: 13px;
+}
+
+.macos-warning {
+  margin: 16px 0 0;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: rgba(255, 170, 50, 0.1);
+  border: 1px solid rgba(255, 170, 50, 0.3);
+  text-align: left;
+}
+
+.macos-warning strong {
+  color: #ffb74d;
+  font-size: 14px;
+}
+
+.macos-warning p {
+  margin: 6px 0 0;
+  color: #e8c98a;
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .glass {

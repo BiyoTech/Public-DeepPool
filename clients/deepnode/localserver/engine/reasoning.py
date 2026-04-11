@@ -302,7 +302,13 @@ class Gemma4ChannelParser(ReasoningParser):
       1. <|channel>thought\n{reasoning}\n<channel|>{content}
       2. Implicit: {reasoning}<channel|>{content} (if <|channel> was in prompt)
       3. Only <|channel>thought (reasoning not finished)
-      4. No channel tags → pure content
+      4. No channel tags but untagged thinking detected (fallback heuristic)
+      5. No channel tags → pure content
+
+    Fallback heuristic (Case 4):
+      When mlx_vlm is unavailable and Gemma4 falls back to mlx_lm, the model
+      may output unstructured thinking content without channel tags. This parser
+      detects known thinking text patterns and separates them from actual content.
     """
 
     START_TOKEN = "<|channel>thought"
@@ -312,6 +318,18 @@ class Gemma4ChannelParser(ReasoningParser):
     _CHANNEL_RE = re.compile(
         r"<\|channel>thought\s*\n?(.*?)\n?\s*<channel\|>",
         re.DOTALL,
+    )
+
+    # Heuristic: detect untagged thinking content in Gemma4 output.
+    # When the model outputs without channel tags, it often starts with
+    # "Thinking Process:" or similar headers followed by reasoning, then
+    # a blank-line-separated actual response. This regex captures that pattern.
+    _UNTAGGED_THINKING_RE = re.compile(
+        r"^\s*(?:Thinking Process|Thinking|思考过程|Internal Thoughts?|Reasoning)\s*:?\s*\n"
+        r"(.*?)"
+        r"\n\s*\n"       # double newline separates thinking from content
+        r"(.*)",
+        re.DOTALL | re.IGNORECASE,
     )
 
     # ─── Non-streaming ───
@@ -338,7 +356,22 @@ class Gemma4ChannelParser(ReasoningParser):
             reasoning = reasoning.lstrip("\n")
             return reasoning.strip() or None, None
 
-        # Case 4: no channel tags → pure content
+        # Case 4: no channel tags — try heuristic for untagged thinking.
+        # Gemma4 E4B may output "Thinking Process:\n...\n\n{actual content}"
+        # without channel markers when loaded via mlx_lm fallback.
+        m = self._UNTAGGED_THINKING_RE.match(text)
+        if m:
+            reasoning = m.group(1).strip() or None
+            content = m.group(2).strip() or None
+            if content:
+                logger.debug(
+                    "gemma4: detected untagged thinking content (len=%d), "
+                    "separated reasoning (len=%d) from content (len=%d)",
+                    len(text), len(reasoning or ""), len(content),
+                )
+                return reasoning, content
+
+        # Case 5: no channel tags → pure content
         return None, model_output
 
     # ─── Streaming ───
@@ -406,9 +439,31 @@ class Gemma4ChannelParser(ReasoningParser):
             else:
                 return ReasoningDelta(reasoning=delta_text)
 
-        # Default: no channel tags seen at all → pure content.
+        # Default: no channel tags seen at all.
         # Gemma4 thinking is opt-in (activated by <|think|> in system prompt).
-        # If the model doesn't use thinking mode, all output is content.
+        # However, when loaded via mlx_lm fallback (mlx_vlm unavailable), the
+        # model may output untagged thinking like "Thinking Process:\n...\n\n{content}".
+        # Detect the "Thinking Process:" header to enter untagged-thinking mode,
+        # then use double-newline as the reasoning→content boundary.
+        if self._UNTAGGED_THINKING_RE.match(current_text):
+            # We're in untagged thinking mode — check if boundary has been reached
+            if "\n\n" in previous_text:
+                # Already past the boundary → content phase
+                return ReasoningDelta(content=delta_text)
+            elif "\n\n" in delta_text:
+                # Boundary in this delta → split
+                idx = delta_text.find("\n\n")
+                r = delta_text[:idx]
+                c = delta_text[idx + 2:]
+                return ReasoningDelta(
+                    reasoning=r if r else None,
+                    content=c if c else None,
+                )
+            else:
+                # Still in reasoning phase
+                return ReasoningDelta(reasoning=delta_text)
+
+        # Truly no thinking markers → pure content
         return ReasoningDelta(content=delta_text)
 
 

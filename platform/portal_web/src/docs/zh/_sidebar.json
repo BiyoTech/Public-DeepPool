@@ -11,7 +11,8 @@
     "title": "架构设计",
     "children": [
       { "title": "系统架构概览", "path": "architecture/overview" },
-      { "title": "模型路由与 Hybrid 调度", "path": "architecture/model-routing" }
+      { "title": "模型路由与 Hybrid 调度", "path": "architecture/model-routing" },
+      { "title": "DeepNode 安全保障", "path": "architecture/security" }
     ]
   },
   {
