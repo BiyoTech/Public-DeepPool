@@ -38,6 +38,21 @@ admin:
     from: "DeepPool <postmaster@deeppool.com>"
     use_tls: true
     insecure_skip_verify: true  # smtp.deeppool.tech TLS cert doesn't include this hostname
+  payment:
+    notify_base_url: "https://api.deeppool.tech"  # production public HTTPS URL
+    wechat:
+      mch_id: "1744006558"
+      mch_serial_no: "369B4635C7C5A555B5433B50C866779125415B8E"
+      mch_api_key_v3: "sadjflsdHdjfhdsjhfsdjsjdfsdjDHue"
+      mch_private_key_path: "wechat_pay_cert/apiclient_key.pem"
+      wx_pub_key_id: "PUB_KEY_ID_0117440065582026041200111585000600"      # WeChat Pay public key ID, obtain from merchant dashboard
+      wx_pub_key_path: "wechat_pay_cert/pub_key.pem"
+      app_id: ""
+    alipay:
+      app_id: "2021006146632346"
+      private_key_path: "alipay_cert/alipay_app_private_key.pem"
+      alipay_public_key_path: "alipay_cert/alipay_public_key.pem"
+      is_sandbox: false
   node_managers:
     - name: "node-prod"
       addr: "deeppool.tech:9092"

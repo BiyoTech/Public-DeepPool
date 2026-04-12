@@ -142,9 +142,11 @@ def init_device(payload: dict) -> dict:
         # ── Step 1: Collect hardware and register device to platform ──
         # Triggers AutoAssignModels on the server side.
         hw = get_device_hardware_info()
+        from version import get_version as _get_version
         device_config = {
             "init_stage": "registering",
             "simei": simei,
+            "deepnode_version": _get_version(),
             "hardware": hw.to_dict(),
         }
 
@@ -266,9 +268,11 @@ def _try_reactivate_blocked_device(client, simei: str, hw) -> object | None:
     """
     try:
         security = _collect_security_status()
+        from version import get_version as _get_version
         device_config = {
             "init_stage": "reactivating",
             "simei": simei,
+            "deepnode_version": _get_version(),
             "hardware": hw.to_dict(),
             "security": security,
         }
@@ -355,9 +359,11 @@ def _update_device_status_to_ready(
     try:
         client = get_shared_platform_client(token)
         hw = get_device_hardware_info()
+        from version import get_version as _get_version
         device_config = {
             "init_stage": "ready",
             "simei": simei,
+            "deepnode_version": _get_version(),
             "llm_rpc_host": running.rpc_host,
             "llm_rpc_port": running.rpc_port,
             "llm_engine": running.engine_type,

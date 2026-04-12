@@ -1,12 +1,13 @@
 /**
- * Axios HTTP 实例封装。
- * 统一添加 Authorization 头和错误处理。
+ * Axios HTTP client with unified Authorization header and error handling.
+ * In production, VITE_API_BASE_URL points to the dedicated API domain;
+ * in development, requests are proxied via Vite dev server.
  */
 import axios from 'axios'
 import router from '@/router'
 
 const http = axios.create({
-  baseURL: '/api/v1',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 })

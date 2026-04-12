@@ -2,11 +2,9 @@
   <div class="admin-layout min-h-screen flex bg-dp-bg-1">
     <!-- 左侧菜单 -->
     <aside class="w-56 bg-dp-bg-2 border-r border-white/5 flex flex-col shrink-0">
-      <!-- Logo 区域 -->
+      <!-- Logo -->
       <div class="h-16 flex items-center gap-3 px-5 border-b border-white/5">
-        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-dp-blue to-dp-blue-active flex items-center justify-center">
-          <ServerIcon class="w-5 h-5 text-white" />
-        </div>
+        <DeepPoolLogo :size="32" />
         <span class="text-lg font-semibold text-dp-text-1">DeepPool</span>
       </div>
 

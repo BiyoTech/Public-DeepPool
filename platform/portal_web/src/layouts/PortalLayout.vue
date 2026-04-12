@@ -7,11 +7,7 @@
     <div class="max-w-7xl mx-auto h-full px-6 flex items-center justify-between">
       <!-- Logo -->
       <router-link to="/" class="flex items-center gap-2.5 group">
-        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-dp-blue to-dp-blue-dark flex items-center justify-center">
-          <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-          </svg>
-        </div>
+        <DeepPoolLogo :size="32" />
         <span class="text-xl font-bold text-dp-title group-hover:text-dp-blue transition-colors">DeepPool</span>
       </router-link>
 
@@ -92,14 +88,15 @@
                 </div>
               </div>
 
-              <!-- 操作按钮（试运营期间置灰） -->
+              <!-- Recharge & Withdraw buttons -->
               <div class="flex gap-2 mb-3">
-                <div
-                  class="flex-1 py-2 text-center rounded-lg bg-slate-200 text-slate-400 text-sm font-medium cursor-not-allowed"
-                  :title="$t('wallet.free_trial_tip')"
+                <router-link
+                  to="/wallet/recharge"
+                  class="flex-1 py-2 text-center rounded-lg bg-gradient-to-r from-dp-blue to-dp-blue-dark text-white text-sm font-medium
+                         hover:from-dp-blue-dark hover:to-dp-blue-deeper transition-all shadow-sm hover:shadow-md"
                 >
                   {{ $t('wallet.recharge') }}
-                </div>
+                </router-link>
                 <div
                   class="flex-1 py-2 text-center rounded-lg border border-slate-200 text-slate-400 text-sm font-medium cursor-not-allowed"
                   :title="$t('wallet.free_trial_tip')"
@@ -136,14 +133,10 @@
   <footer class="bg-dp-footer text-slate-400">
     <div class="max-w-7xl mx-auto px-6 py-12">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <!-- Logo & 简介 -->
+        <!-- Logo & brief -->
         <div>
           <div class="flex items-center gap-2.5 mb-4">
-            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-dp-blue to-dp-blue-dark flex items-center justify-center">
-              <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-              </svg>
-            </div>
+            <DeepPoolLogo :size="32" />
             <span class="text-lg font-bold text-white">DeepPool</span>
           </div>
           <p class="text-sm text-slate-500 leading-relaxed">{{ $t('footer.desc') }}</p>
@@ -193,6 +186,7 @@ import { useAuthStore } from '@/stores/auth'
 import { getWallet } from '@/api/wallet'
 import { getUsageSummary } from '@/api/usage'
 import LangSwitch from '@/components/LangSwitch.vue'
+import DeepPoolLogo from '@/components/DeepPoolLogo.vue'
 
 const { t } = useI18n()
 const route = useRoute()

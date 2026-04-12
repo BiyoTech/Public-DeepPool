@@ -33,6 +33,11 @@ class PlatformDefaults:
     nodemanager_grpc_target: str
     grpc_tls: bool
     grpc_tls_ca_cert: str  # PEM path; empty = use system root certificates
+    # Local HTTP server bind address — baked into binary to prevent proxy attacks.
+    # If server.host/port were in config.yaml, an attacker could change the port,
+    # run a proxy on the original port, and intercept login credentials/tokens.
+    server_host: str = "127.0.0.1"
+    server_port: int = 8765
 
 
 # ── Profile definitions ──
@@ -43,6 +48,8 @@ _DEV = PlatformDefaults(
     nodemanager_grpc_target="101.33.255.185:9092",
     grpc_tls=False,
     grpc_tls_ca_cert="",
+    server_host="127.0.0.1",
+    server_port=8765,
 )
 
 _PROD = PlatformDefaults(
@@ -51,6 +58,8 @@ _PROD = PlatformDefaults(
     nodemanager_grpc_target="deeppool.tech:9092",
     grpc_tls=True,
     grpc_tls_ca_cert="",
+    server_host="127.0.0.1",
+    server_port=8765,
 )
 
 _PROFILES: dict[str, PlatformDefaults] = {

@@ -1,8 +1,6 @@
-# DeepNode localserver 配置
-
-server:
-  host: "127.0.0.1"
-  port: 8765
+# DeepNode localserver configuration
+# NOTE: server host/port are baked into the binary (platform_defaults.py)
+#       and cannot be overridden here, to prevent proxy-based attacks.
 
 log:
   level: "debug"

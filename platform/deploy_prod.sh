@@ -60,6 +60,9 @@ if [ -z "$PUBLIC_HOST" ]; then
   PUBLIC_HOST="$DOMAIN"
 fi
 
+# API subdomain for dedicated backend access (e.g. deeppool.tech → api.deeppool.tech)
+API_DOMAIN="api.${DOMAIN}"
+
 CERT_DIR="/etc/letsencrypt/live/${DOMAIN}"
 CERT_FILE="${CERT_DIR}/fullchain.pem"
 KEY_FILE="${CERT_DIR}/privkey.pem"
@@ -84,6 +87,7 @@ echo "  Ingress mode: ${DEPLOY_MODE_DISPLAY}"
 echo "  Target:       ${REMOTE_HOST}"
 echo "  Public host:  ${PUBLIC_HOST}"
 echo "  Domain:       ${DOMAIN}"
+echo "  API domain:   ${API_DOMAIN}"
 echo "  Cert email:   ${ADMIN_EMAIL}"
 echo "============================================================"
 echo ""
@@ -111,7 +115,10 @@ cp -r "$PLATFORM_DIR/config_prod" "$BUILD_DIR/config"
 echo "==> Building control_web (base=/admin/)..."
 cd "$PLATFORM_DIR/$CONTROL_WEB_DIR"
 npm install --silent
-VITE_BASE=/admin/ npm run build
+VITE_BASE=/admin/ \
+  VITE_API_BASE_URL="https://${API_DOMAIN}/api/v1" \
+  VITE_GATEWAY_BASE_URL="https://${API_DOMAIN}/v1" \
+  npm run build
 cp -r "$PLATFORM_DIR/$CONTROL_WEB_DIR/dist" "$BUILD_DIR/control_web"
 echo "    control_web build completed"
 cd "$PLATFORM_DIR"
@@ -122,7 +129,9 @@ cd "$PLATFORM_DIR"
 echo "==> Building portal_web..."
 cd "$PLATFORM_DIR/$PORTAL_WEB_DIR"
 npm install --silent
-npm run build
+VITE_API_BASE_URL="https://${API_DOMAIN}/api/v1" \
+  VITE_GATEWAY_BASE_URL="https://${API_DOMAIN}/v1" \
+  npm run build
 cp -r "$PLATFORM_DIR/$PORTAL_WEB_DIR/dist" "$BUILD_DIR/portal_web"
 echo "    portal_web build completed"
 cd "$PLATFORM_DIR"
@@ -170,7 +179,7 @@ STOP_SCRIPT
 # Upload files
 # ============================================================
 echo "==> Uploading artifacts to $REMOTE_HOST:$REMOTE_DIR ..."
-ssh "$REMOTE_HOST" "mkdir -p $REMOTE_DIR/config $CONTROL_WEB_REMOTE_DIR $PORTAL_WEB_REMOTE_DIR"
+ssh "$REMOTE_HOST" "mkdir -p $REMOTE_DIR/config $REMOTE_DIR/alipay_cert $REMOTE_DIR/wechat_pay_cert $CONTROL_WEB_REMOTE_DIR $PORTAL_WEB_REMOTE_DIR"
 
 scp "${BUILD_DIR}/manager" \
     "${BUILD_DIR}/scheduler" \
@@ -179,6 +188,12 @@ scp "${BUILD_DIR}/manager" \
 
 scp "${BUILD_DIR}/config/"*.yaml \
     "$REMOTE_HOST:$REMOTE_DIR/config/"
+
+# Upload payment certificate files
+scp "${PLATFORM_DIR}/alipay_cert/"*.pem \
+    "$REMOTE_HOST:$REMOTE_DIR/alipay_cert/"
+scp "${PLATFORM_DIR}/wechat_pay_cert/"* \
+    "$REMOTE_HOST:$REMOTE_DIR/wechat_pay_cert/"
 
 ssh "$REMOTE_HOST" "rm -rf $CONTROL_WEB_REMOTE_DIR/*"
 scp -r "${BUILD_DIR}/control_web/"* "$REMOTE_HOST:$CONTROL_WEB_REMOTE_DIR/"
@@ -199,12 +214,13 @@ echo ""
 # ============================================================
 echo "==> Installing Certbot and provisioning Let's Encrypt certificate..."
 set +e
-ssh "$REMOTE_HOST" bash -s -- "$DOMAIN" "$ADMIN_EMAIL" "$CERT_FILE" "$KEY_FILE" <<'CERT_SCRIPT'
+ssh "$REMOTE_HOST" bash -s -- "$DOMAIN" "$API_DOMAIN" "$ADMIN_EMAIL" "$CERT_FILE" "$KEY_FILE" <<'CERT_SCRIPT'
 set -euo pipefail
 DOMAIN="$1"
-ADMIN_EMAIL="$2"
-CERT_FILE="$3"
-KEY_FILE="$4"
+API_DOMAIN="$2"
+ADMIN_EMAIL="$3"
+CERT_FILE="$4"
+KEY_FILE="$5"
 
 if ! command -v certbot &>/dev/null; then
   echo "    Installing Certbot..."
@@ -257,6 +273,7 @@ else
     --agree-tos \
     --email "$ADMIN_EMAIL" \
     -d "$DOMAIN" \
+    -d "$API_DOMAIN" \
     --preferred-challenges http
 
   if [ ! -f "$CERT_FILE" ] || [ ! -f "$KEY_FILE" ]; then
@@ -344,7 +361,7 @@ done
 echo "==> Writing Nginx ingress configuration for HTTPS mode..."
 ssh "$REMOTE_HOST" bash -s -- \
   "$CONTROL_WEB_REMOTE_DIR" "$PORTAL_WEB_REMOTE_DIR" "$NGINX_CONF" \
-  "$PUBLIC_HOST" "$INTERNAL_SCHEME" "$CERT_DIR" <<'NGINX_SCRIPT'
+  "$PUBLIC_HOST" "$INTERNAL_SCHEME" "$CERT_DIR" "$API_DOMAIN" <<'NGINX_SCRIPT'
 set -euo pipefail
 CW_DIR="$1"
 PW_DIR="$2"
@@ -352,6 +369,7 @@ CONF="$3"
 SERVER_NAME="$4"
 UPSTREAM_SCHEME="$5"
 CERT_DIR="$6"
+API_SERVER_NAME="$7"
 
 if [ -z "$SERVER_NAME" ]; then
   SERVER_NAME="_"
@@ -390,10 +408,10 @@ cat > "$CONF" <<NGINX_EOF
 # DeepPool ingress — PRODUCTION (HTTP redirect + HTTPS routing)
 # ============================================================
 
-# Redirect all HTTP traffic to HTTPS
+# Redirect all HTTP traffic to HTTPS (both main and API domains)
 server {
     listen 80;
-    server_name ${SERVER_NAME};
+    server_name ${SERVER_NAME} ${API_SERVER_NAME};
 
     location /.well-known/acme-challenge/ {
         root /var/www/html;
@@ -404,7 +422,7 @@ server {
     }
 }
 
-# HTTPS server
+# Main site: portal_web + control_web + API proxy
 server {
     listen 443 ssl;
     server_name ${SERVER_NAME};
@@ -455,6 +473,52 @@ server {
         try_files \$uri \$uri/ /index.html;
     }
 }
+
+# Dedicated API domain: handles cross-origin requests from frontend
+# NOTE: CORS headers are set by the Go backend (WithCORS middleware),
+# do NOT add them here to avoid duplicate header values.
+server {
+    listen 443 ssl;
+    server_name ${API_SERVER_NAME};
+
+    ssl_certificate     ${CERT_DIR}/fullchain.pem;
+    ssl_certificate_key ${CERT_DIR}/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers         HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+    ssl_session_cache   shared:SSL:10m;
+    ssl_session_timeout 10m;
+
+    # Security headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Content-Type-Options nosniff always;
+
+    location /api/ {
+        proxy_pass ${UPSTREAM_SCHEME}://127.0.0.1:8080;
+        proxy_ssl_verify off;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+
+    location /v1/ {
+        proxy_pass ${UPSTREAM_SCHEME}://127.0.0.1:8080;
+        proxy_ssl_verify off;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 300s;
+    }
+
+    # Reject all other paths on the API domain
+    location / {
+        return 404;
+    }
+}
 NGINX_EOF
 
 echo "    Nginx config written to $CONF"
@@ -463,10 +527,12 @@ echo "    Nginx reloaded"
 NGINX_SCRIPT
 
 echo "    Ingress routes:"
-echo "      /        -> portal_web"
-echo "      /admin/  -> control_web"
-echo "      /api/    -> manager :8080 (${INTERNAL_SCHEME})"
-echo "      /v1/     -> manager :8080 (${INTERNAL_SCHEME})"
+echo "      ${PUBLIC_HOST} /        -> portal_web"
+echo "      ${PUBLIC_HOST} /admin/  -> control_web"
+echo "      ${PUBLIC_HOST} /api/    -> manager :8080 (${INTERNAL_SCHEME})"
+echo "      ${PUBLIC_HOST} /v1/     -> manager :8080 (${INTERNAL_SCHEME})"
+echo "      ${API_DOMAIN}  /api/    -> manager :8080 (${INTERNAL_SCHEME}, CORS)"
+echo "      ${API_DOMAIN}  /v1/     -> manager :8080 (${INTERNAL_SCHEME}, CORS)"
 
 # ============================================================
 # Health checks
@@ -505,8 +571,8 @@ echo ""
 echo "  Public endpoints:"
 echo "    Portal:     ${PUBLIC_SCHEME}://${PUBLIC_HOST}/"
 echo "    Admin:      ${PUBLIC_SCHEME}://${PUBLIC_HOST}/admin/"
-echo "    API:        ${PUBLIC_SCHEME}://${PUBLIC_HOST}/api/"
-echo "    Gateway:    ${PUBLIC_SCHEME}://${PUBLIC_HOST}/v1/"
+echo "    API:        ${PUBLIC_SCHEME}://${API_DOMAIN}/api/"
+echo "    Gateway:    ${PUBLIC_SCHEME}://${API_DOMAIN}/v1/"
 echo ""
 
 echo "  Direct service endpoints (${INTERNAL_SCHEME}):"

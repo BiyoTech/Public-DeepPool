@@ -9,9 +9,7 @@
       <!-- 左侧品牌区域 -->
       <div class="hidden lg:flex flex-col gap-6 flex-1">
         <div class="flex items-center gap-3">
-          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-dp-blue to-dp-blue-active flex items-center justify-center">
-            <ServerIcon class="w-7 h-7 text-white" />
-          </div>
+          <DeepPoolLogo :size="48" />
           <span class="text-3xl font-bold text-dp-text-1">DeepPool</span>
         </div>
         <h2 class="text-xl text-dp-text-2 leading-relaxed">

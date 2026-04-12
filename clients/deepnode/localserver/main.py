@@ -242,10 +242,12 @@ def _try_restore_and_connect() -> None:
             import json
             from service.device_info import get_device_hardware_info
             from api.init import _collect_security_status
+            from version import get_version as _get_version
             hw = get_device_hardware_info()
             device_config = {
                 "init_stage": "ready",
                 "simei": cred.simei,
+                "deepnode_version": _get_version(),
                 "llm_rpc_host": running.rpc_host,
                 "llm_rpc_port": running.rpc_port,
                 "llm_engine": running.engine_type,
@@ -430,9 +432,11 @@ def on_shutdown():
 
 if __name__ == "__main__":
     import uvicorn
+    from version import get_version
 
     logger.info(
-        "Starting local server on %s:%d (standalone=%s, manager_grpc=%s, nodemanager_grpc=%s)",
+        "Starting local server v%s on %s:%d (standalone=%s, manager_grpc=%s, nodemanager_grpc=%s)",
+        get_version(),
         cfg.server.host,
         cfg.server.port,
         cfg.standalone.enabled,

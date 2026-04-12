@@ -39,7 +39,7 @@ type NodeManagerConfig struct {
 	Addr string `yaml:"addr"`
 }
 
-// Admin 管控平台相关配置
+// AdminConfig holds management platform configuration.
 type AdminConfig struct {
 	NodeManagers            []NodeManagerConfig `yaml:"node_managers"`
 	SuperAdmin              SuperAdminConfig    `yaml:"super_admin"`
@@ -47,6 +47,33 @@ type AdminConfig struct {
 	DefaultHybridPolicyPath string              `yaml:"default_hybrid_policy_path"` // path to default hybrid routing policy YAML
 	APIKeyEncryptionKey     string              `yaml:"api_key_encryption_key"`     // 32-byte hex key for AES-256-GCM encryption of API keys
 	SMTP                    SMTPConfig          `yaml:"smtp"`                       // SMTP mail server for verification codes
+	Payment                 PaymentConfig       `yaml:"payment"`                    // third-party payment gateway configuration
+}
+
+// PaymentConfig holds third-party payment gateway credentials.
+type PaymentConfig struct {
+	NotifyBaseURL string          `yaml:"notify_base_url"` // public base URL for async callbacks, e.g. "https://api.deeppool.tech"
+	Wechat        WechatPayConfig `yaml:"wechat"`
+	Alipay        AlipayConfig    `yaml:"alipay"`
+}
+
+// WechatPayConfig holds WeChat Pay V3 API credentials.
+type WechatPayConfig struct {
+	MchID             string `yaml:"mch_id"`               // merchant ID
+	MchSerialNo       string `yaml:"mch_serial_no"`        // merchant API certificate serial number
+	MchAPIKeyV3       string `yaml:"mch_api_key_v3"`       // API v3 secret key (for callback decryption)
+	MchPrivateKeyPath string `yaml:"mch_private_key_path"` // path to apiclient_key.pem
+	WxPubKeyID        string `yaml:"wx_pub_key_id"`        // WeChat Pay public key ID (e.g. PUB_KEY_ID_xxxx)
+	WxPubKeyPath      string `yaml:"wx_pub_key_path"`      // path to WeChat Pay public key PEM file
+	AppID             string `yaml:"app_id"`               // WeChat app ID (optional, for JSAPI)
+}
+
+// AlipayConfig holds Alipay API credentials.
+type AlipayConfig struct {
+	AppID             string `yaml:"app_id"`               // Alipay application ID
+	PrivateKeyPath    string `yaml:"private_key_path"`     // path to app private key PEM file
+	AlipayPublicKeyPath string `yaml:"alipay_public_key_path"` // path to Alipay public key PEM file
+	IsSandbox         bool   `yaml:"is_sandbox"`           // true to use sandbox environment
 }
 
 // SMTPConfig SMTP mail server configuration for sending verification codes.

@@ -760,8 +760,12 @@ function scrollToBottom() {
   })
 }
 
-/** Gateway base URL exposed to end users (origin + API version prefix). */
-const apiBaseUrl = window.location.origin + '/v1'
+/** Gateway base URL for inference API calls.
+ *  Production: VITE_GATEWAY_BASE_URL → https://api.deeppool.tech/v1
+ *  Development: falls back to current origin + /v1 (proxied by Vite).
+ *  Also used in the curl example snippet in the template.
+ */
+const apiBaseUrl = import.meta.env.VITE_GATEWAY_BASE_URL || (window.location.origin + '/v1')
 
 /** Fetch API Key list and sync selection. */
 async function fetchKeys() {

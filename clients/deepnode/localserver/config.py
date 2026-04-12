@@ -23,9 +23,22 @@ _DEFAULT_CONFIG_PATH = _CONFIG_DIR / "config.yaml"
 
 @dataclass
 class ServerConfig:
-    """本地 HTTP 服务配置。"""
+    """Local HTTP service configuration.
+
+    host and port are always sourced from platform_defaults (baked into the
+    frozen binary), NOT from config.yaml. This prevents proxy-based credential
+    interception attacks where an attacker modifies server.port in config.yaml,
+    then runs a proxy on the original port to capture login tokens.
+    """
     host: str = "127.0.0.1"
     port: int = 8765
+
+    def __post_init__(self):
+        """Always source host/port from platform_defaults — the single source of truth."""
+        from platform_defaults import get_platform_defaults
+        _pd = get_platform_defaults()
+        self.host = _pd.server_host
+        self.port = _pd.server_port
 
 
 @dataclass
@@ -272,7 +285,6 @@ class AppConfig:
 
 def _build_config(raw: dict[str, Any]) -> AppConfig:
     """Build AppConfig from raw dict, using platform_defaults for gRPC targets."""
-    server_raw = raw.get("server") or {}
     log_raw = raw.get("log") or {}
     engine_raw = raw.get("engine") or {}
     multi_model_raw = raw.get("multi_model") or {}
@@ -302,10 +314,7 @@ def _build_config(raw: dict[str, Any]) -> AppConfig:
     _pd = get_platform_defaults()
 
     return AppConfig(
-        server=ServerConfig(
-            host=str(server_raw.get("host", "127.0.0.1")),
-            port=int(server_raw.get("port", 8765)),
-        ),
+        server=ServerConfig(),  # host/port sourced from platform_defaults (anti-proxy)
         platform=PlatformConfig(
             manager_grpc_target=_pd.manager_grpc_target,
             scheduler_grpc_target=_pd.scheduler_grpc_target,

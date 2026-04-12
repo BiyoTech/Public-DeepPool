@@ -1,9 +1,11 @@
 import axios from 'axios'
 import router from '@/router'
 
-// axios 实例，统一 baseURL 和拦截器
+// Axios instance with unified baseURL and interceptors.
+// In production, VITE_API_BASE_URL points to the dedicated API domain;
+// in development, requests are proxied via Vite dev server.
 const http = axios.create({
-  baseURL: '/api/v1',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 })

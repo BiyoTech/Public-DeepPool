@@ -47,8 +47,8 @@ logger = logging.getLogger(__name__)
 # Manifest file name (placed in _internal/ by build script)
 _MANIFEST_FILENAME = "integrity_manifest.json"
 
-# File extensions to verify
-_CRITICAL_EXTENSIONS = frozenset({".pyc", ".so", ".dylib"})
+# File extensions to verify (includes .py for transformers sources kept uncompiled)
+_CRITICAL_EXTENSIONS = frozenset({".pyc", ".so", ".dylib", ".py"})
 
 # HMAC signing key — injected at build time by build_standalone_mac.sh.
 # The placeholder below is replaced with a random 64-char hex string during
