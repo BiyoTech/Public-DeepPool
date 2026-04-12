@@ -6,7 +6,7 @@ bin/
 
 # Node
 **/node_modules/
-
+**/dist-standalone/
 # Frontend build output (keep source, ignore compiled assets)
 platform/portal_web/dist/
 platform/control_web/dist/

@@ -199,7 +199,7 @@ STOP_SCRIPT
 # Upload files
 # ============================================================
 echo "==> Uploading artifacts to $REMOTE_HOST:$REMOTE_DIR ..."
-ssh "$REMOTE_HOST" "mkdir -p $REMOTE_DIR/config $CONTROL_WEB_REMOTE_DIR $PORTAL_WEB_REMOTE_DIR"
+ssh "$REMOTE_HOST" "mkdir -p $REMOTE_DIR/config $REMOTE_DIR/alipay_cert $REMOTE_DIR/wechat_pay_cert $CONTROL_WEB_REMOTE_DIR $PORTAL_WEB_REMOTE_DIR"
 
 scp "${BUILD_DIR}/manager" \
     "${BUILD_DIR}/scheduler" \
@@ -208,6 +208,12 @@ scp "${BUILD_DIR}/manager" \
 
 scp "${BUILD_DIR}/config/"*.yaml \
     "$REMOTE_HOST:$REMOTE_DIR/config/"
+
+# Upload payment certificate files
+scp "${PLATFORM_DIR}/alipay_cert/"*.pem \
+    "$REMOTE_HOST:$REMOTE_DIR/alipay_cert/"
+scp "${PLATFORM_DIR}/wechat_pay_cert/"* \
+    "$REMOTE_HOST:$REMOTE_DIR/wechat_pay_cert/"
 
 ssh "$REMOTE_HOST" "rm -rf $CONTROL_WEB_REMOTE_DIR/*"
 scp -r "${BUILD_DIR}/control_web/"* "$REMOTE_HOST:$CONTROL_WEB_REMOTE_DIR/"

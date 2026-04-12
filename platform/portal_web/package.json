@@ -15,6 +15,7 @@
     "markdown-it": "^14.1.0",
     "pinia": "^3.0.4",
     "postcss": "^8.5.8",
+    "qrcode": "^1.5.4",
     "tailwind-merge": "^2.6.1",
     "tailwindcss": "^3.4.17",
     "tailwindcss-animate": "^1.0.7",
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@types/markdown-it": "^14.1.2",
+    "@types/qrcode": "^1.5.6",
     "@vitejs/plugin-vue": "^5.2.1",
     "typescript": "^5.7.2",
     "vite": "^6.0.3"

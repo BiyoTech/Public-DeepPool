@@ -11,11 +11,7 @@
       <!-- Logo -->
       <div class="flex justify-center mb-8">
         <router-link to="/" class="flex items-center gap-2.5">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-dp-blue to-dp-blue-dark flex items-center justify-center">
-            <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-            </svg>
-          </div>
+          <DeepPoolLogo :size="40" />
           <span class="text-2xl font-bold text-dp-title">DeepPool</span>
         </router-link>
       </div>
@@ -167,6 +163,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { sendEmailCodeApi, resetPasswordApi } from '@/api/auth'
 import LangSwitch from '@/components/LangSwitch.vue'
+import DeepPoolLogo from '@/components/DeepPoolLogo.vue'
 
 const { t } = useI18n()
 const router = useRouter()

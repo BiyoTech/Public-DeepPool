@@ -1,6 +1,6 @@
 # DeepNode Security Technical Design
 
-> **Version**: v1.2 &nbsp;|&nbsp; **Updated**: 2026-04-11
+> **Version**: v1.3 &nbsp;|&nbsp; **Updated**: 2026-04-11
 
 ## 1. Threat Model
 
@@ -26,8 +26,10 @@ deepnode-server/
 │   └── integrity_manifest.json  # Build-time hash manifest
 ├── mlx-packages/            # ⚠ PRIMARY ATTACK SURFACE
 │   ├── mlx/                 # .pyc compiled (was plain .py)
-│   ├── mlx_lm/              # .pyc compiled
-│   ├── transformers/        # .pyc compiled
+│   ├── mlx_lm/              # .pyc compiled (server.py/cli.py/chat.py purged)
+│   ├── mlx_vlm/             # .pyc compiled (server.py/chat*.py purged)
+│   ├── transformers/        # .py kept (LazyModule requires it); cli/ purged
+│   ├── huggingface_hub/     # .pyc compiled; cli/inference/webhooks purged
 │   └── _stdlib/             # .pyc compiled
 └── config.yaml              # User-editable config
 ```
@@ -130,8 +132,10 @@ mlx-packages/**/*.py  ──compileall──▸  __pycache__/*.cpython-3xx.pyc
 - Python `compileall.compile_dir()` with `force=True`, `quiet=1`
 - `.pyc` files moved from `__pycache__/` to parent directories (flat layout)
 - All `__pycache__/` directories removed
-- All `.py` source files deleted
+- All `.py` source files deleted (**exception**: `transformers/` keeps `.py` for `_LazyModule` compatibility)
 - Applied to both `mlx-packages/` and `mlx-packages/_stdlib/`
+- **High-risk modules purged before compilation**: `mlx_lm/server.py`, `mlx_vlm/server.py`, `huggingface_hub/cli/`, etc. (see §13)
+- All remaining `.py` files (transformers) are covered by integrity manifest (`.py` extension included in hash verification)
 
 **Effectiveness**:
 - Prevents trivial `vim`/`sed` modification of source files
@@ -213,7 +217,7 @@ if _integrity_result is not None and not _integrity_result.passed:
 
 | Directory | Extensions Hashed | Rationale |
 |-----------|-------------------|-----------|
-| `mlx-packages/` | `.pyc`, `.so`, `.dylib` | Primary attack surface — inference code |
+| `mlx-packages/` | `.pyc`, `.so`, `.dylib`, `.py` | Primary attack surface — inference code + transformers sources |
 | `_internal/` | `.so`, `.dylib` | Runtime native libraries |
 | Root | `deepnode-server-bin` | Main frozen binary |
 
@@ -581,8 +585,10 @@ deepnode-server/                         # Final distributed artifact
 │   └── (frozen .pyc modules)            # Business code + generated/ stubs
 └── mlx-packages/                        # External Python packages
     ├── mlx/**/*.pyc                     # ★ Compiled, no .py sources
-    ├── mlx_lm/**/*.pyc                  # ★ Compiled
-    ├── transformers/**/*.pyc            # ★ Compiled
+    ├── mlx_lm/**/*.pyc                  # ★ Compiled (server.py/cli.py purged)
+    ├── mlx_vlm/**/*.pyc                 # ★ Compiled (server.py/chat*.py purged)
+    ├── transformers/**/*.py             # ★ .py kept (_LazyModule); cli/ purged; hashed
+    ├── huggingface_hub/**/*.pyc         # ★ Compiled; cli/inference/webhooks purged
     └── _stdlib/**/*.pyc                 # ★ Compiled stdlib
 ```
 
@@ -607,7 +613,66 @@ The following items were implemented in the security hardening pass:
 
 ---
 
-## 13. Remaining Future Enhancements
+## 13. Security Enhancements (v1.3) — Full Dependency Audit
+
+### 13.1 Audit Scope
+
+A comprehensive security audit of ALL transitive dependencies installed into `mlx-packages/` via `pip install mlx-lm mlx-vlm outlines`.
+
+### 13.2 Discovered High-Risk Modules
+
+#### 🔴 Critical: Can directly intercept prompt/response data
+
+| Package | Module | Risk | Action |
+|---------|--------|------|--------|
+| **mlx_lm** | `server.py` (71KB) | Full HTTP server with `/v1/chat/completions` — all prompts pass through | **Deleted** |
+| **mlx_vlm** | `server.py` (50KB) | FastAPI server with `/v1/chat/completions`, `/v1/responses` — all prompts pass through | **Deleted** |
+| **huggingface_hub** | `inference/_client.py` (155KB) | Remote inference client — sends prompts to external APIs | **Deleted** (entire `inference/` dir) |
+| **huggingface_hub** | `_webhooks_server.py` | Built-in FastAPI webhook server — can create HTTP endpoints | **Deleted** |
+| **huggingface_hub** | `cli/` (25 files) | Full CLI toolkit including webhook management | **Deleted** |
+
+#### 🟡 Medium: Can be used as data exfiltration channels
+
+| Package | Module | Risk | Action |
+|---------|--------|------|--------|
+| **tqdm** | `contrib/discord.py` | Sends messages via Discord Bot API | **Deleted** |
+| **tqdm** | `contrib/telegram.py` | Sends messages via Telegram Bot API | **Deleted** |
+| **tqdm** | `contrib/slack.py` | Sends messages via Slack SDK | **Deleted** |
+| **huggingface_hub** | `_hot_reload/` | SSE client connecting to external servers | **Deleted** |
+| **huggingface_hub** | `inference/_mcp/` | MCP Agent framework with external tool connections | **Deleted** |
+| **huggingface_hub** | `_oauth.py`, `_login.py` | Authentication flows handling sensitive credentials | **Deleted** |
+| **gradio** | Entire package | Full web framework with analytics/telemetry/tunneling | **Deleted** |
+
+#### 🟢 Low: Unnecessary modules increasing attack surface
+
+| Package | Module | Action |
+|---------|--------|--------|
+| **mlx_lm** | `cli.py`, `chat.py`, `share.py`, `lora.py`, `evaluate.py`, `fuse.py`, `upload.py`, `benchmark.py`, `perplexity.py`, `tuner/` | **Deleted** |
+| **mlx_vlm** | `chat.py`, `chat_ui.py`, `lora.py`, `evals/`, `trainer/` | **Deleted** |
+| **numpy** | `f2py/` (Fortran converter), `tests/`, `testing/tests/`, `_pyinstaller/`, `conftest.py`, `doc/` | **Deleted** |
+| **outlines** | Remote API models (`anthropic.py`, `openai.py`, `gemini.py`, etc.) — only `mlxlm.py` needed | **Deleted** |
+| **datasets** | Entire HF datasets library (not used in inference) | **Deleted** |
+| **accelerate** | Training acceleration (not used in inference) | **Deleted** |
+| **tokenizers** | `tools/visualizer.py` (HTML visualization, not needed) | **Deleted** |
+
+### 13.3 Modules Retained (Justified)
+
+| Package | Retained Module | Reason |
+|---------|-----------------|--------|
+| **transformers** | `models/`, `tokenization_*`, `processing_*`, `configuration_utils`, `utils/` | Required for model loading and tokenizer initialization |
+| **mlx_lm** | `generate.py`, `tokenizer_utils.py`, `sample_utils.py`, `models/`, `convert.py`, `utils.py` | Core inference engine |
+| **mlx_vlm** | `generate.py`, `prompt_utils.py`, `models/`, `utils.py`, `convert.py` | VLM model loading and generation |
+| **huggingface_hub** | `file_download.py`, `_snapshot_download.py`, `hf_api.py`, `utils/`, `constants.py` | Model downloading from HuggingFace Hub |
+| **outlines** | `models/mlxlm.py`, `generator.py`, `processors/`, `backends/`, `types/` | Constrained decoding for function calling |
+| **tqdm** | `std.py`, `auto.py`, `utils.py`, `asyncio.py` | Progress bar for model downloads |
+
+### 13.4 Key Insight
+
+The previous security hardening (v1.2) only addressed `transformers/cli/serving/`. This audit revealed that **mlx_lm** and **mlx_vlm** each ship their own complete HTTP servers (`server.py`) that directly handle `/v1/chat/completions` endpoints — the exact same attack vector as `transformers/cli/serving/`, but with even more direct access to the prompt/response pipeline. These were the most critical findings.
+
+---
+
+## 14. Remaining Future Enhancements
 
 | Priority | Enhancement | Benefit |
 |----------|-------------|---------|

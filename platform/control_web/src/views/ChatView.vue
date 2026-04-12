@@ -298,7 +298,8 @@ async function sendMessage() {
   const startTime = performance.now()
   let firstTokenTime = 0
 
-  const response = await fetch('/v1/chat/completions', {
+  const gatewayBase = import.meta.env.VITE_GATEWAY_BASE_URL || '/v1'
+  const response = await fetch(`${gatewayBase}/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

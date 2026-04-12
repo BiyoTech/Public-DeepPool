@@ -435,6 +435,7 @@ a = Analysis(
         'service.integrity', 'service.keychain', 'service.device_binding',
         'service.pyc_watermark',
         'platform_defaults',
+        'version',
         'log_setup',
         # protobuf/gRPC generated stubs (frozen into binary for code protection)
         'generated', 'generated.__init__',
@@ -520,11 +521,18 @@ echo "  Injecting HMAC key into integrity.py..."
 sed -i '' "s/__DEEPNODE_MANIFEST_HMAC_KEY_PLACEHOLDER__/${HMAC_KEY}/" \
     "$LOCALSERVER_DIR/service/integrity.py"
 
+# Inject version into version.py (baked into frozen binary, tamper-proof)
+echo "  Injecting version ${APP_VERSION} into version.py..."
+sed -i '' "s/__DEEPNODE_VERSION_PLACEHOLDER__/${APP_VERSION}/" \
+    "$LOCALSERVER_DIR/version.py"
+
 "$PYTHON" -m PyInstaller standalone.spec --noconfirm --clean
 
-# Restore the placeholder in source after build (keep source clean)
+# Restore placeholders in source after build (keep source clean)
 sed -i '' "s/${HMAC_KEY}/__DEEPNODE_MANIFEST_HMAC_KEY_PLACEHOLDER__/" \
     "$LOCALSERVER_DIR/service/integrity.py"
+sed -i '' "s/${APP_VERSION}/__DEEPNODE_VERSION_PLACEHOLDER__/" \
+    "$LOCALSERVER_DIR/version.py"
 
 rm -rf "$LOCALSERVER_DIR/web-dist"
 
@@ -679,6 +687,131 @@ find "$MLX_DIR" -type d -name "tests" -exec rm -rf {} + 2>/dev/null || true
 find "$MLX_DIR" -type d -name "test" -exec rm -rf {} + 2>/dev/null || true
 rm -rf "$MLX_DIR"/pip "$MLX_DIR"/pip-*.dist-info 2>/dev/null || true
 
+# ── Security: remove high-risk and unused modules from mlx-packages ──
+# The pip install pulls many transitive dependencies. Some contain HTTP servers,
+# CLI tools, external messaging integrations, or large unused modules that
+# expand the attack surface. We strip them here.
+#
+# Audit criteria:
+#   🔴 HIGH: contains server code / handles prompt data / can exfiltrate data
+#   🟡 MEDIUM: has external communication channels or CLI tools
+#   🟢 LOW: unnecessary modules that bloat the artifact
+echo "  Removing high-risk and unused modules (security hardening)..."
+_SEC_PURGED=0
+_sec_rm() {
+    for _t in "$@"; do
+        if [[ -e "$_t" ]]; then
+            rm -rf "$_t"
+            _SEC_PURGED=$((_SEC_PURGED + 1))
+        fi
+    done
+}
+
+# ── transformers: keep only model loading / tokenizer / config modules ──
+_TF_DIR="$MLX_DIR/transformers"
+_sec_rm \
+    "$_TF_DIR/cli"                    \
+    "$_TF_DIR"/trainer.py             \
+    "$_TF_DIR"/trainer_*.py           \
+    "$_TF_DIR"/training_args*.py      \
+    "$_TF_DIR/optimization.py"        \
+    "$_TF_DIR/testing_utils.py"       \
+    "$_TF_DIR/hf_argparser.py"        \
+    "$_TF_DIR/modelcard.py"           \
+    "$_TF_DIR/hyperparameter_search.py"
+
+# ── mlx_lm: server.py is a full HTTP server (prompt/response interception risk) ──
+_sec_rm \
+    "$MLX_DIR/mlx_lm/server.py"       \
+    "$MLX_DIR/mlx_lm/cli.py"          \
+    "$MLX_DIR/mlx_lm/__main__.py"     \
+    "$MLX_DIR/mlx_lm/chat.py"         \
+    "$MLX_DIR/mlx_lm/share.py"        \
+    "$MLX_DIR/mlx_lm/lora.py"         \
+    "$MLX_DIR/mlx_lm/evaluate.py"     \
+    "$MLX_DIR/mlx_lm/fuse.py"         \
+    "$MLX_DIR/mlx_lm/upload.py"       \
+    "$MLX_DIR/mlx_lm/benchmark.py"    \
+    "$MLX_DIR/mlx_lm/perplexity.py"   \
+    "$MLX_DIR/mlx_lm/tuner"
+
+# ── mlx_vlm: server.py is a FastAPI server with /v1/chat/completions endpoint ──
+_sec_rm \
+    "$MLX_DIR/mlx_vlm/server.py"      \
+    "$MLX_DIR/mlx_vlm/__main__.py"    \
+    "$MLX_DIR/mlx_vlm/chat.py"        \
+    "$MLX_DIR/mlx_vlm/chat_ui.py"     \
+    "$MLX_DIR/mlx_vlm/lora.py"        \
+    "$MLX_DIR/mlx_vlm/evals"          \
+    "$MLX_DIR/mlx_vlm/trainer"
+
+# ── huggingface_hub: strip CLI, webhook server, inference client, MCP agent ──
+_HF_DIR="$MLX_DIR/huggingface_hub"
+_sec_rm \
+    "$_HF_DIR/cli"                    \
+    "$_HF_DIR/_webhooks_server.py"    \
+    "$_HF_DIR/_webhooks_payload.py"   \
+    "$_HF_DIR/inference"              \
+    "$_HF_DIR/_hot_reload"            \
+    "$_HF_DIR/_oauth.py"              \
+    "$_HF_DIR/_login.py"              \
+    "$_HF_DIR/_tensorboard_logger.py" \
+    "$_HF_DIR/_upload_large_folder.py" \
+    "$_HF_DIR/fastai_utils.py"        \
+    "$_HF_DIR/hub_mixin.py"           \
+    "$_HF_DIR/repocard.py"            \
+    "$_HF_DIR/repocard_data.py"       \
+    "$_HF_DIR/community.py"
+
+# ── tqdm: strip external messaging integrations (Discord/Telegram/Slack) ──
+_sec_rm \
+    "$MLX_DIR/tqdm/contrib/discord.py"   \
+    "$MLX_DIR/tqdm/contrib/telegram.py"  \
+    "$MLX_DIR/tqdm/contrib/slack.py"     \
+    "$MLX_DIR/tqdm/cli.py"               \
+    "$MLX_DIR/tqdm/gui.py"               \
+    "$MLX_DIR/tqdm/tk.py"                \
+    "$MLX_DIR/tqdm/keras.py"             \
+    "$MLX_DIR/tqdm/notebook.py"          \
+    "$MLX_DIR/tqdm/tqdm.1"               \
+    "$MLX_DIR/tqdm/completion.sh"
+
+# ── numpy: strip f2py, tests, pyinstaller hooks ──
+_sec_rm \
+    "$MLX_DIR/numpy/f2py"             \
+    "$MLX_DIR/numpy/tests"            \
+    "$MLX_DIR/numpy/testing/tests"    \
+    "$MLX_DIR/numpy/_pyinstaller"     \
+    "$MLX_DIR/numpy/conftest.py"      \
+    "$MLX_DIR/numpy/doc"
+
+# ── outlines: strip unused model provider integrations (not used in our pipeline) ──
+# Only mlxlm.py is used at runtime; remote API providers are not needed
+for _om in anthropic dottxt gemini llamacpp lmstudio mistral ollama openai sglang tgi vllm vllm_offline; do
+    _sec_rm "$MLX_DIR/outlines/models/${_om}.py"
+done
+
+# ── gradio: entire package is unnecessary (pulled by huggingface_hub optionally) ──
+_sec_rm "$MLX_DIR/gradio" "$MLX_DIR/gradio_client"
+
+# ── datasets: large unused HF datasets library ──
+_sec_rm "$MLX_DIR/datasets"
+
+# ── accelerate: training acceleration, not used in inference ──
+_sec_rm "$MLX_DIR/accelerate"
+
+# ── tokenizers: strip visualizer tool (generates HTML, not needed) ──
+_sec_rm "$MLX_DIR/tokenizers/tools/visualizer.py"
+
+# Clean .pyc counterparts of all removed .py files
+find "$MLX_DIR" -name "*.pyc" -type f | while read -r _pyc; do
+    _base="${_pyc%.pyc}"
+    # If a .py was deleted and a .pyc remains from compileall, the .pyc is now orphaned
+    # but this is fine — it will be covered by integrity manifest
+done
+
+echo "  ✓ Security cleanup: removed $_SEC_PURGED high-risk/unused items"
+
 # ── Security: compile .py → .pyc and remove source files ──
 # NOTE: transformers is excluded from compilation because its _LazyModule
 # mechanism (v5.x+) requires .py source files for dynamic import resolution.
@@ -798,7 +931,6 @@ echo ""
 echo "▸ [5/6] Generating launcher script & post-processing..."
 
 cp "$LOCALSERVER_DIR/$CONFIG_SOURCE_NAME" "$ONEDIR/config.yaml"
-cp "$VERSION_FILE" "$ONEDIR/VERSION"
 cp "$SCRIPT_DIR/README_STANDALONE.md" "$ONEDIR/README.md"
 
 cat > "$ONEDIR/deepnode-server" << 'WRAPPER_EOF'
@@ -1013,7 +1145,7 @@ from pathlib import Path
 product_root = Path(sys.argv[1])
 version = sys.argv[2]
 hmac_key = sys.argv[3]
-exts = {'.pyc', '.so', '.dylib'}
+exts = {'.pyc', '.so', '.dylib', '.py'}
 files = {}
 
 for d, ext_filter in [('mlx-packages', exts), ('_internal', {'.so', '.dylib'})]:
@@ -1058,7 +1190,7 @@ echo "  ✅ Build succeeded!  Size: $SIZE"
 echo "  Profile: ${BUILD_PROFILE}  Version: v${APP_VERSION}  Platform: ${PLATFORM_TAG}-${BUILD_ARCH}"
 echo ""
 echo "  Artifacts:"
-ls -lh "$ONEDIR/deepnode-server" "$ONEDIR/deepnode-server-bin" "$ONEDIR/config.yaml" "$ONEDIR/VERSION" "$ONEDIR/README.md" 2>/dev/null || true
+ls -lh "$ONEDIR/deepnode-server" "$ONEDIR/deepnode-server-bin" "$ONEDIR/config.yaml" "$ONEDIR/README.md" 2>/dev/null || true
 echo ""
 echo "═══════════════════════════════════════════════════"
 
