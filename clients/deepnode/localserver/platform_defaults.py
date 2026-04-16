@@ -1,15 +1,15 @@
 """Platform gRPC connection defaults — baked into the binary at build time.
 
 This module provides the canonical platform gRPC targets and TLS settings
-for each build profile (dev / prod).  The active profile is determined by
-the environment variable DEEPPOOL_PROFILE (set by the build script), with
+for each build profile (dev / test / prod).  The active profile is determined
+by the environment variable DEEPPOOL_PROFILE (set by the build script), with
 a fallback to "dev" for local development.
 
 Design rationale:
   - Platform gRPC addresses are infrastructure constants, not user settings.
   - Embedding them in code prevents end-users from seeing or tampering with
     server IPs in the shipped config.yaml.
-  - TLS is always enabled for prod and always disabled for dev.
+  - TLS is always enabled for test/prod and always disabled for dev.
 """
 
 from __future__ import annotations
@@ -52,10 +52,20 @@ _DEV = PlatformDefaults(
     server_port=8765,
 )
 
+_TEST = PlatformDefaults(
+    manager_grpc_target="test.deeppool.tech:9090",
+    scheduler_grpc_target="test.deeppool.tech:9091",
+    nodemanager_grpc_target="nodemanager.test.deeppool.tech:9092",
+    grpc_tls=True,
+    grpc_tls_ca_cert="",
+    server_host="127.0.0.1",
+    server_port=8765,
+)
+
 _PROD = PlatformDefaults(
     manager_grpc_target="deeppool.tech:9090",
     scheduler_grpc_target="deeppool.tech:9091",
-    nodemanager_grpc_target="deeppool.tech:9092",
+    nodemanager_grpc_target="nodemanager.deeppool.tech:9092",
     grpc_tls=True,
     grpc_tls_ca_cert="",
     server_host="127.0.0.1",
@@ -64,6 +74,7 @@ _PROD = PlatformDefaults(
 
 _PROFILES: dict[str, PlatformDefaults] = {
     "dev": _DEV,
+    "test": _TEST,
     "prod": _PROD,
 }
 

@@ -87,6 +87,8 @@ def _find_manifest() -> Optional[Path]:
     """Locate the integrity manifest file.
 
     In frozen mode, the manifest is inside _internal/ (sys._MEIPASS).
+    In onefile (--binary-only) mode, no manifest exists — verification is skipped
+    because all code is embedded in the signed binary itself.
     In development mode, skip verification (no manifest expected).
     """
     if not getattr(sys, "frozen", False):

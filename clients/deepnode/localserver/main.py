@@ -333,6 +333,106 @@ def _standalone_auto_init() -> None:
 
 _INTEGRITY_CHECK_INTERVAL_SEC = 300  # 5 minutes
 
+# ─────────────────────────────────────────────────
+# Platform health watchdog — detect backend outage and auto-recover
+# ─────────────────────────────────────────────────
+
+_WATCHDOG_INTERVAL_SEC = 30          # health probe every 30s
+_WATCHDOG_RECOVER_DELAY_SEC = 5      # wait before re-init after recovery
+_platform_connected: bool = True     # shared flag for stats API / frontend
+
+
+def is_platform_connected() -> bool:
+    """Return current platform connectivity status (consumed by stats API)."""
+    return _platform_connected
+
+
+def _start_platform_watchdog() -> None:
+    """Launch a daemon thread that periodically probes platform manager.
+
+    When the backend becomes unreachable the flag flips to False so the
+    frontend can show a disconnected banner.  Once connectivity resumes
+    the watchdog automatically re-runs the full init flow (re-register
+    device + re-fetch model configs + restart tunnel) to bring the node
+    back online without manual intervention.
+    """
+    import time as _time
+
+    def _watchdog():
+        global _platform_connected
+
+        from service.credential import load_credential
+        from rpc.platform_client import get_shared_platform_client
+        from service.manager import get_service_manager
+
+        logger.info("platform watchdog started (interval=%ds)", _WATCHDOG_INTERVAL_SEC)
+
+        # Track consecutive failures to avoid log spam
+        consecutive_failures = 0
+
+        while True:
+            _time.sleep(_WATCHDOG_INTERVAL_SEC)
+
+            cred = load_credential()
+            if cred is None:
+                # No credential yet — nothing to watch
+                continue
+
+            # Probe: lightweight GetDevice call
+            try:
+                client = get_shared_platform_client(cred.token)
+                client.get_device(cred.simei)
+
+                if not _platform_connected:
+                    # Backend just recovered — trigger re-init
+                    logger.info("platform watchdog: backend recovered, triggering auto-recovery")
+                    _platform_connected = True
+                    consecutive_failures = 0
+
+                    _time.sleep(_WATCHDOG_RECOVER_DELAY_SEC)
+                    _auto_recover(cred)
+                else:
+                    if consecutive_failures > 0:
+                        logger.info("platform watchdog: connectivity restored after %d failures", consecutive_failures)
+                    consecutive_failures = 0
+
+            except Exception as exc:
+                consecutive_failures += 1
+                was_connected = _platform_connected
+                _platform_connected = False
+
+                if was_connected:
+                    logger.warning("platform watchdog: backend unreachable — %s", exc)
+                elif consecutive_failures % 10 == 0:
+                    # Log every 10th failure to avoid spam (every ~5 min at 30s interval)
+                    logger.warning(
+                        "platform watchdog: still unreachable (failures=%d) — %s",
+                        consecutive_failures, exc,
+                    )
+
+    thread = threading.Thread(target=_watchdog, name="platform-watchdog", daemon=True)
+    thread.start()
+
+
+def _auto_recover(cred) -> None:
+    """Re-run init flow after backend recovery.
+
+    Reuses the persisted credential to re-register device, fetch model
+    configs, and restart the tunnel — same as _try_restore_and_connect
+    but invoked mid-flight after detecting recovery.
+    """
+    try:
+        if cfg.standalone.enabled:
+            token = cred.token or _resolve_standalone_token()
+            if token:
+                from api.init import init_device
+                result = init_device({"token": token, "supported_models": []})
+                logger.info("platform watchdog: auto-recovery init_device result=%s", result)
+        else:
+            _try_restore_and_connect()
+    except Exception as exc:
+        logger.warning("platform watchdog: auto-recovery failed: %s", exc)
+
 
 def _start_periodic_integrity_check() -> None:
     """Launch a daemon thread that periodically re-verifies file integrity.
@@ -401,6 +501,9 @@ def on_startup():
         )
     thread.start()
     logger.info("startup thread started (standalone=%s)", cfg.standalone.enabled)
+
+    # Start platform health watchdog for auto-recovery after backend outage
+    _start_platform_watchdog()
 
     # Start periodic integrity re-verification in frozen (standalone) builds
     if getattr(sys, 'frozen', False):

@@ -95,30 +95,24 @@ def _verify_or_import_mlx() -> None:
     base = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
     mlx_pkgs = os.path.normpath(os.path.join(base, '..', 'mlx-packages'))
 
-    if not os.path.isdir(mlx_pkgs):
-        logger.warning("mlx-packages dir not found: %s — mlx 功能不可用", mlx_pkgs)
-        return
-
-    # 检查 mlx.core 是否已经在 sys.modules（应由 runtime hook 预加载）
+    # Check if mlx.core is already loaded (by runtime hook or onefile bundling)
     existing = sys.modules.get('mlx.core')
     if existing is not None:
         mlx_file = getattr(existing, '__file__', '') or ''
-        if mlx_pkgs in mlx_file:
-            logger.info(
-                "mlx.core already loaded from mlx-packages (path: %s)", mlx_file,
-            )
-        else:
-            # 已加载但来源不在 mlx-packages — 可能来自 _internal 或其他路径。
-            # 绝不删除已加载的 nanobind 模块（会导致 abort），仅记录警告。
-            logger.warning(
-                "mlx.core already loaded from UNEXPECTED path: %s "
-                "(expected prefix: %s). "
-                "Reusing existing module to avoid nanobind duplicate key abort.",
-                mlx_file, mlx_pkgs,
-            )
+        logger.info("mlx.core already loaded (path: %s)", mlx_file)
         return
 
-    # mlx.core 尚未加载 — 确保 mlx-packages 在 sys.path 最前面后首次导入
+    # Onefile mode: mlx is bundled inside _MEIPASS, no external mlx-packages
+    if not os.path.isdir(mlx_pkgs):
+        logger.info("mlx-packages dir not found, trying direct import (onefile mode)")
+        try:
+            import mlx.core  # noqa: F401
+            logger.info("mlx.core imported successfully (onefile, path: %s)", mlx.core.__file__)
+        except ImportError as exc:
+            logger.warning("mlx.core import failed in onefile mode: %s", exc)
+        return
+
+    # Standard mode: ensure mlx-packages is at the front of sys.path
     if mlx_pkgs in sys.path:
         sys.path.remove(mlx_pkgs)
     sys.path.insert(0, mlx_pkgs)

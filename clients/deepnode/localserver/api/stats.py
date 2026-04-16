@@ -89,10 +89,11 @@ def _get_gpu_info_linux() -> dict:
 
 
 def _get_hardware_info() -> dict:
-    """采集当前设备硬件信息（CPU 负载、内存、GPU 利用率等）。"""
+    """Collect current device hardware info (CPU load, memory, GPU utilization, OS version)."""
     info: dict = {
         "cpu_percent": psutil.cpu_percent(interval=0.1),
         "memory_percent": psutil.virtual_memory().percent,
+        "os_version": platform.mac_ver()[0] if platform.system() == "Darwin" else platform.platform(),
         "gpu_name": "",
         "gpu_load_percent": 0.0,
         "gpu_temp_celsius": 0.0,
@@ -112,6 +113,7 @@ def _get_hardware_info() -> dict:
 def get_stats_snapshot() -> dict:
     """Return inference stats snapshot + hardware info + service status + device status."""
     from api.init import get_device_status
+    from main import is_platform_connected
 
     stats_db = get_statistics_db()
     snapshot = stats_db.get_snapshot(recent_seconds=60)
@@ -132,6 +134,8 @@ def get_stats_snapshot() -> dict:
                 "engine_type": running.engine_type if running else "",
                 "uptime_seconds": int(__import__("time").time() - running.started_at) if running else 0,
             },
+            # Platform backend connectivity (False = backend outage detected)
+            "platform_connected": is_platform_connected(),
             # Device security status from platform ("active" / "blocked" / "cheating")
             "device_status": get_device_status(),
             # 硬件信息

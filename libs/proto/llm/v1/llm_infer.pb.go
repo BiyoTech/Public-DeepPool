@@ -157,8 +157,13 @@ type ChatCompletionRequest struct {
 	// 是否启用思考/推理模式（enable_thinking）
 	// 部分模型（如 Qwen3）可通过此字段在 chat template 中控制是否进入 thinking 模式
 	EnableThinking *bool `protobuf:"varint,18,opt,name=enable_thinking,json=enableThinking,proto3,oneof" json:"enable_thinking,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// OpenAI-standard reasoning effort level for thinking/reasoning models.
+	// Values: "none", "minimal", "low", "medium", "high", "xhigh".
+	// Takes priority over enable_thinking when both are set.
+	// DeepNode engines use this for fine-grained thinking control.
+	ReasoningEffort *string `protobuf:"bytes,19,opt,name=reasoning_effort,json=reasoningEffort,proto3,oneof" json:"reasoning_effort,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *ChatCompletionRequest) Reset() {
@@ -315,6 +320,13 @@ func (x *ChatCompletionRequest) GetEnableThinking() bool {
 		return *x.EnableThinking
 	}
 	return false
+}
+
+func (x *ChatCompletionRequest) GetReasoningEffort() string {
+	if x != nil && x.ReasoningEffort != nil {
+		return *x.ReasoningEffort
+	}
+	return ""
 }
 
 type ChatMessage struct {
@@ -1383,7 +1395,7 @@ const file_llm_infer_proto_rawDesc = "" +
 	"\x05ready\x18\x01 \x01(\bR\x05ready\x12\x1d\n" +
 	"\n" +
 	"model_name\x18\x02 \x01(\tR\tmodelName\x12\x18\n" +
-	"\amessage\x18\x03 \x01(\tR\amessage\"\xbb\x05\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\"\x80\x06\n" +
 	"\x15ChatCompletionRequest\x12\x14\n" +
 	"\x05model\x18\x01 \x01(\tR\x05model\x128\n" +
 	"\bmessages\x18\x02 \x03(\v2\x1c.deeppool.llm.v1.ChatMessageR\bmessages\x12 \n" +
@@ -1406,10 +1418,12 @@ const file_llm_infer_proto_rawDesc = "" +
 	"\ftop_logprobs\x18\x10 \x01(\x05H\x01R\vtopLogprobs\x88\x01\x01\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x11 \x01(\tR\trequestId\x12,\n" +
-	"\x0fenable_thinking\x18\x12 \x01(\bH\x02R\x0eenableThinking\x88\x01\x01B\a\n" +
+	"\x0fenable_thinking\x18\x12 \x01(\bH\x02R\x0eenableThinking\x88\x01\x01\x12.\n" +
+	"\x10reasoning_effort\x18\x13 \x01(\tH\x03R\x0freasoningEffort\x88\x01\x01B\a\n" +
 	"\x05_seedB\x0f\n" +
 	"\r_top_logprobsB\x12\n" +
-	"\x10_enable_thinking\"\xa8\x02\n" +
+	"\x10_enable_thinkingB\x13\n" +
+	"\x11_reasoning_effort\"\xa8\x02\n" +
 	"\vChatMessage\x12\x12\n" +
 	"\x04role\x18\x01 \x01(\tR\x04role\x12\x1d\n" +
 	"\acontent\x18\x02 \x01(\tH\x00R\acontent\x88\x01\x01\x12\x17\n" +

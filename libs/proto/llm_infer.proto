@@ -88,6 +88,12 @@ message ChatCompletionRequest {
   // 是否启用思考/推理模式（enable_thinking）
   // 部分模型（如 Qwen3）可通过此字段在 chat template 中控制是否进入 thinking 模式
   optional bool enable_thinking = 18;
+
+  // OpenAI-standard reasoning effort level for thinking/reasoning models.
+  // Values: "none", "minimal", "low", "medium", "high", "xhigh".
+  // Takes priority over enable_thinking when both are set.
+  // DeepNode engines use this for fine-grained thinking control.
+  optional string reasoning_effort = 19;
 }
 
 // ─────────── Message ───────────

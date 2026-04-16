@@ -28,21 +28,26 @@ const progress = ref(0)
 const initError = ref('')
 const statusText = ref('')
 
-// macOS version detection: show upgrade warning for versions below 15.0
+// macOS version detection: show upgrade warning for versions below 26.0
+// NOTE: Browser UA string freezes macOS version at "10_15_7" (Chromium policy),
+// so we query the real OS version from localserver's /api/stats/snapshot endpoint.
 const showMacosWarning = ref(false)
 
-onMounted(() => {
-  // Detect macOS version from navigator.userAgent
-  // macOS UA format: "Mac OS X 10_15_7" or "Mac OS X 15_0_1"
-  const ua = navigator.userAgent
-  const match = ua.match(/Mac OS X (\d+)[_.](\d+)/)
-  if (match) {
-    const major = parseInt(match[1], 10)
-    // macOS 10.x = old numbering (Catalina and earlier)
-    // macOS 11+ = Big Sur, 12 = Monterey, 13 = Ventura, 14 = Sonoma, 15 = Sequoia
-    if (major < 15) {
-      showMacosWarning.value = true
+onMounted(async () => {
+  try {
+    const resp = await safeFetch(`${LOCAL_API_BASE}/api/stats/snapshot`, {
+      signal: AbortSignal.timeout(3000)
+    })
+    const json = await resp.json()
+    const osVersion = json.data?.hardware?.os_version || ''
+    if (osVersion) {
+      const major = parseInt(osVersion.split('.')[0], 10)
+      if (!isNaN(major) && major < 26) {
+        showMacosWarning.value = true
+      }
     }
+  } catch {
+    // localserver not ready yet, skip version check (will be checked on next page load)
   }
 })
 
@@ -213,7 +218,7 @@ async function startInit() {
       <h1>{{ t('deviceInit.title') }}</h1>
       <p class="subtitle">{{ t('deviceInit.subtitle') }}</p>
 
-      <!-- macOS upgrade warning for versions below 15.0 -->
+      <!-- macOS upgrade warning for versions below 26.0 -->
       <div v-if="showMacosWarning" class="macos-warning">
         <strong>{{ t('deviceInit.macosUpgradeTitle') }}</strong>
         <p>{{ t('deviceInit.macosUpgradeBody') }}</p>
