@@ -122,15 +122,27 @@
               </div>
             </div>
 
-            <!-- QR Code -->
-            <div class="flex justify-center mb-6">
+            <!-- QR Code (wechat only) -->
+            <div v-if="selectedChannel === 'wechat'" class="flex justify-center mb-6">
               <div class="p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
                 <canvas ref="qrCanvas" />
               </div>
             </div>
 
+            <!-- Alipay redirect hint -->
+            <div v-if="selectedChannel === 'alipay'" class="flex justify-center mb-6">
+              <div class="p-6 text-center">
+                <svg class="w-12 h-12 mx-auto mb-3 text-blue-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                <div class="text-sm text-dp-muted">Payment page opened in a new window</div>
+              </div>
+            </div>
+
             <div class="text-center text-sm text-dp-muted mb-4">
-              请使用{{ selectedChannel === 'wechat' ? '微信' : '支付宝' }}扫描二维码完成支付
+              {{ selectedChannel === 'wechat'
+                ? 'Scan the QR code with WeChat to pay'
+                : 'Complete payment on the Alipay page' }}
             </div>
 
             <!-- Countdown timer -->
@@ -226,10 +238,6 @@ async function handleRecharge() {
   try {
     const res = await createPaymentOrder(amountYuan.value, selectedChannel.value)
     const order = res.data?.data
-    if (!order?.qr_url) {
-      errorMsg.value = '创建订单失败：未返回支付二维码'
-      return
-    }
 
     currentOrderNo.value = order.order_no
     orderStatus.value = 'pending'
@@ -238,23 +246,31 @@ async function handleRecharge() {
     const expiresAt = new Date(order.expires_at).getTime()
     countdownSeconds.value = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000))
 
-    showQRModal.value = true
-
-    // Render QR code after modal is visible
-    await nextTick()
-    if (qrCanvas.value) {
-      await QRCode.toCanvas(qrCanvas.value, order.qr_url, {
-        width: 200,
-        margin: 1,
-        color: { dark: '#1E293B', light: '#FFFFFF' },
-      })
+    if (selectedChannel.value === 'alipay' && order.pay_url) {
+      // Alipay PC web pay: open Alipay cashier page in new window
+      showQRModal.value = true
+      window.open(order.pay_url, '_blank')
+      // Start polling — payment completes on Alipay's page
+      startPolling()
+      startCountdown()
+    } else if (order.qr_url) {
+      // WeChat Native Pay: render QR code in modal
+      showQRModal.value = true
+      await nextTick()
+      if (qrCanvas.value) {
+        await QRCode.toCanvas(qrCanvas.value, order.qr_url, {
+          width: 200,
+          margin: 1,
+          color: { dark: '#1E293B', light: '#FFFFFF' },
+        })
+      }
+      startPolling()
+      startCountdown()
+    } else {
+      errorMsg.value = 'Failed to create order: no payment URL returned'
     }
-
-    // Start polling order status
-    startPolling()
-    startCountdown()
   } catch (e: any) {
-    errorMsg.value = e?.response?.data?.message || '创建订单失败，请稍后重试'
+    errorMsg.value = e?.response?.data?.message || 'Failed to create order, please try again later'
   } finally {
     loading.value = false
   }

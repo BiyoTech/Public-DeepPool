@@ -231,6 +231,13 @@
           </div>
         </t-form-item>
 
+        <t-form-item v-if="requiresDeepNode" label="模型族">
+          <div class="w-full space-y-2">
+            <t-select v-model="formData.provider_type" :options="modelFamilyOptions" clearable placeholder="选择模型族（影响 thinking/stop 参数适配）" />
+            <div class="text-xs text-dp-text-3">模型族决定 Gateway 如何适配 thinking、stop 等参数格式。留空则使用默认行为。</div>
+          </div>
+        </t-form-item>
+
         <t-form-item v-if="requiresDeepNode" label="HuggingFace Repo ID" :required="requiresDeepNode">
           <t-input v-model="formData.repo_id" placeholder="如 Qwen/Qwen3-0.6B-MLX-8bit" />
         </t-form-item>
@@ -288,8 +295,8 @@
           <t-switch v-model="formData.supports_function_call" />
         </t-form-item>
 
-        <t-form-item v-if="!isHybrid" label="最大上下文长度">
-          <t-input-number v-model="formData.max_context_length" :min="0" :step="1024" />
+        <t-form-item v-if="!isHybrid" label="最大上下文 (K tokens)">
+          <t-input-number v-model="formData.max_context_length" :min="0" :step="1" suffix="K" />
         </t-form-item>
 
         <t-form-item v-if="!isHybrid" label="模型参数量级 (B)">
@@ -333,8 +340,9 @@
               <t-input-number
                 v-model="tier.max_input_tokens"
                 :min="0"
-                :step="1024"
-                placeholder="输入Token上限"
+                :step="1"
+                placeholder="Token上限(K)"
+                suffix="K"
                 class="w-40"
               />
               <span class="text-xs text-dp-text-3 shrink-0">输入:</span>
@@ -359,7 +367,7 @@
             </div>
             <t-button theme="default" variant="dashed" size="small" @click="addPricingTier">+ 添加价格区间</t-button>
             <div class="text-xs text-dp-text-3">
-              按输入Token长度分段定价（元/百万Token）。输入Token上限填 0 表示无上限（兜底区间）。留空表示免费。
+              按输入Token长度分段定价（元/百万Token）。Token上限单位为K（如填 4 表示 4K tokens）。填 0 表示无上限（兜底区间）。留空表示免费。
               <a class="text-blue-400 hover:text-blue-300 cursor-pointer ml-1" @click.prevent="helpVisible = true; helpScrollTo = 'billing'">查看计费文档 →</a>
             </div>
           </div>
@@ -375,8 +383,9 @@
               <t-input-number
                 v-model="tier.max_input_tokens"
                 :min="0"
-                :step="1024"
-                placeholder="输入Token上限"
+                :step="1"
+                placeholder="Token上限(K)"
+                suffix="K"
                 class="w-40"
               />
               <span class="text-xs text-dp-text-3 shrink-0">输入:</span>
@@ -401,7 +410,7 @@
             </div>
             <t-button theme="default" variant="dashed" size="small" @click="addContributorTier">+ 添加收益区间</t-button>
             <div class="text-xs text-dp-text-3">
-              按输入Token长度分段设置贡献者收益（元/百万Token）。交互与消费者计费一致。留空表示无收益。
+              按输入Token长度分段设置贡献者收益（元/百万Token）。Token上限单位为K。留空表示无收益。
             </div>
           </div>
         </t-form-item>
@@ -475,11 +484,28 @@ const vendorOptions = [
 
 const providerOptions = [
   { label: 'OpenAI Compatible', value: 'openai' },
-  { label: 'Anthropic Proxy', value: 'anthropic' },
-  { label: 'Gemini Proxy', value: 'gemini' },
-  { label: 'Qianfan Proxy', value: 'qianfan' },
-  { label: 'Qwen Proxy', value: 'qwen' },
+  { label: 'Anthropic (Claude)', value: 'anthropic' },
+  { label: 'Gemini (Google)', value: 'gemini' },
+  { label: 'DeepSeek', value: 'deepseek' },
+  { label: 'Qwen (通义千问)', value: 'qwen' },
+  { label: 'Kimi (Moonshot)', value: 'kimi' },
+  { label: 'GLM (智谱)', value: 'glm' },
+  { label: 'Qianfan (百度)', value: 'qianfan' },
+  { label: 'MiniMax', value: 'minimax' },
   { label: 'Custom', value: 'custom' },
+]
+
+// Model family options for DeepNode models — determines thinking/stop parameter adaptation.
+const modelFamilyOptions = [
+  { label: 'Qwen (通义千问)', value: 'qwen' },
+  { label: 'DeepSeek', value: 'deepseek' },
+  { label: 'GLM (智谱)', value: 'glm' },
+  { label: 'Gemma (Google)', value: 'gemma' },
+  { label: 'Kimi (Moonshot)', value: 'kimi' },
+  { label: 'LLaMA (Meta)', value: 'llama' },
+  { label: 'Mistral', value: 'mistral' },
+  { label: 'OpenAI Compatible', value: 'openai' },
+  { label: 'Other', value: '' },
 ]
 
 const loading = ref(true)
@@ -548,7 +574,7 @@ const editingId = ref(0)
 const defaultForm = {
   model_name: '',
   vendor_type: 'deepnode',
-  provider_type: 'openai',
+  provider_type: '',
   repo_id: '',
   model_base_dir: '',
   engine: '',
@@ -659,10 +685,10 @@ default_targets:
 </ul>
 
 <h3>Tiered Pricing</h3>
-<p>Tiers are matched by input token count (first match wins):</p>
-<pre><code>Tier 1: ≤4K tokens  → input ¥1.00/M, output ¥2.00/M
-Tier 2: ≤32K tokens → input ¥2.00/M, output ¥4.00/M
-Tier 3: unlimited   → input ¥4.00/M, output ¥8.00/M</code></pre>
+<p>Tiers are matched by input token count (first match wins). Input in K-token units:</p>
+<pre><code>Tier 1: ≤4K tokens  (fill 4)  → input ¥1.00/M, output ¥2.00/M
+Tier 2: ≤32K tokens (fill 32) → input ¥2.00/M, output ¥4.00/M
+Tier 3: unlimited   (fill 0)  → input ¥4.00/M, output ¥8.00/M</code></pre>
 <p><code>max_input_tokens = 0</code> means unlimited (catch-all tier, should be last). Leave empty = free model.</p>
 
 <h3>Cost Formula</h3>
@@ -739,7 +765,7 @@ function openEditDialog(row: ModelRow) {
   editingId.value = row.id
   formData.model_name = row.model_name || ''
   formData.vendor_type = row.vendor_type || 'deepnode'
-  formData.provider_type = row.provider_type || 'openai'
+  formData.provider_type = row.provider_type || ''
   formData.repo_id = row.repo_id || ''
   formData.model_base_dir = row.model_base_dir || ''
   formData.engine = row.engine || ''
@@ -749,7 +775,7 @@ function openEditDialog(row: ModelRow) {
   formData.priority = row.priority || 0
   formData.supports_reasoning = row.supports_reasoning || false
   formData.supports_function_call = row.supports_function_call || false
-  formData.max_context_length = row.max_context_length || 0
+  formData.max_context_length = Math.round((row.max_context_length || 0) / 1000)
   formData.param_scale = row.param_scale || 0
   formData.allow_external_call = row.allow_external_call !== false
   formData.endpoint = row.endpoint || ''
@@ -758,8 +784,15 @@ function openEditDialog(row: ModelRow) {
   formData.api_key_masked = row.api_key_masked || ''
   formData.child_models = row.child_models || []
   formData.routing_policy = row.routing_policy || ''
-  formData.pricing_tiers = (row.pricing_tiers || []).map((t) => ({ ...t }))
-  formData.contributor_tiers = (row.contributor_tiers || []).map((t) => ({ ...t }))
+  // Convert max_input_tokens from raw token count to K unit for display
+  formData.pricing_tiers = (row.pricing_tiers || []).map((t) => ({
+    ...t,
+    max_input_tokens: t.max_input_tokens ? Math.round(t.max_input_tokens / 1000) : 0,
+  }))
+  formData.contributor_tiers = (row.contributor_tiers || []).map((t) => ({
+    ...t,
+    max_input_tokens: t.max_input_tokens ? Math.round(t.max_input_tokens / 1000) : 0,
+  }))
   formData.options = row.options ? JSON.stringify(row.options, null, 2) : ''
   formData.tags = row.tags || []
   fetchChildModelOptions()
@@ -777,14 +810,24 @@ function buildPayload() {
     .map((item) => item.trim())
     .filter(Boolean)
 
+  // Convert K-unit values back to raw token counts for backend storage
+  const pricingTiersRaw = formData.pricing_tiers.map((t) => ({
+    ...t,
+    max_input_tokens: t.max_input_tokens ? t.max_input_tokens * 1000 : 0,
+  }))
+  const contributorTiersRaw = formData.contributor_tiers.map((t) => ({
+    ...t,
+    max_input_tokens: t.max_input_tokens ? t.max_input_tokens * 1000 : 0,
+  }))
+
   const payload: Record<string, any> = {
     model_name: formData.model_name.trim(),
     vendor_type: formData.vendor_type,
     supports_reasoning: formData.supports_reasoning,
     supports_function_call: formData.supports_function_call,
-    max_context_length: formData.max_context_length,
+    max_context_length: formData.max_context_length * 1000,
     param_scale: formData.param_scale,
-    pricing_tiers: formData.pricing_tiers.length ? formData.pricing_tiers : [],
+    pricing_tiers: pricingTiersRaw.length ? pricingTiersRaw : [],
     tags: formData.tags.length ? formData.tags : [],
     allow_external_call: formData.allow_external_call,
     options: parseOptions(),
@@ -796,6 +839,7 @@ function buildPayload() {
       payload.routing_policy = formData.routing_policy.trim()
     }
   } else if (requiresDeepNode.value) {
+    payload.provider_type = formData.provider_type.trim() || ''
     payload.repo_id = formData.repo_id.trim()
     payload.model_base_dir = formData.model_base_dir.trim()
     payload.engine = formData.engine.trim()
@@ -803,7 +847,7 @@ function buildPayload() {
     payload.min_memory_gb = formData.min_memory_gb
     payload.min_gpu_memory_gb = formData.min_gpu_memory_gb
     payload.priority = formData.priority
-    payload.contributor_tiers = formData.contributor_tiers.length ? formData.contributor_tiers : []
+    payload.contributor_tiers = contributorTiersRaw.length ? contributorTiersRaw : []
   } else if (requiresProvider.value) {
     payload.provider_type = formData.provider_type.trim() || 'custom'
     payload.endpoint = formData.endpoint.trim()

@@ -17,7 +17,7 @@
     "recharge": "Top Up",
     "selectAmount": "Select Amount",
     "withdraw": "Withdraw",
-    "free_trial_tip": "Free trial across all platforms",
+    "free_trial_tip": "Not Ready",
     "view_data": "View Data Details"
   },
   "home": {
@@ -101,7 +101,7 @@
     }
   },
   "footer": {
-    "desc": "Open-source Distributed LLM Inference Platform",
+    "desc": "LLM inference computing power fusion scheduling platform",
     "nav_title": "Navigation",
     "contact_title": "Contact Us",
     "copyright": "© 2025 DeepPool. All rights reserved."
@@ -228,6 +228,9 @@
       "system_placeholder": "Define AI role or behavior guidelines...",
       "stop": "Stop Sequences",
       "stop_placeholder": "Type and press Enter to add",
+      "reasoning_effort": "Reasoning Effort",
+      "reasoning_effort_desc": "Controls the thinking depth of reasoning models",
+      "reasoning_effort_default": "Default (model decides)",
       "reset": "Reset to Defaults"
     }
   },

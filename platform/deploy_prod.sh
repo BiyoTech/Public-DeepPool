@@ -1,75 +1,55 @@
 #!/bin/bash
-# deploy_prod.sh — build and deploy all platform components to the production server.
+# deploy_prod.sh — Build and deploy all platform components to production ECS server.
 #
-# HTTPS is mandatory for production; there is no HTTP-only mode.
+# This script handles:
+#   1. Cross-compile Go services for linux/amd64
+#   2. Build frontend assets (control_web + portal_web)
+#   3. Upload all artifacts + SSL certificate to the remote ECS server
+#   4. Configure Nginx as reverse proxy / ingress (SSL termination)
+#   5. Start all services and run health checks
 #
-# Required environment variables:
-#   DEEPPOOL_DOMAIN       — resolvable domain for TLS certificate (e.g. deeppool.tech)
-#
-# Optional environment variables:
-#   DEEPPOOL_PUBLIC_HOST  — public host shown in the final output (defaults to DOMAIN)
-#   DEEPPOOL_ADMIN_EMAIL  — email used for Let's Encrypt registration (defaults to admin@deeppool.tech)
+# SSL certificate:
+#   Uses Alibaba Cloud wildcard certificate (*.deeppool.tech).
+#   Download the Nginx-format cert from Alibaba Cloud console and place them in:
+#     platform/ssl_cert/deeppool.tech.pem   (certificate + intermediate chain)
+#     platform/ssl_cert/deeppool.tech.key   (private key)
 #
 # Ingress routing:
 #   /        -> portal_web
 #   /admin/  -> control_web
 #   /api/    -> manager :8080
 #   /v1/     -> manager :8080
+#
+# Usage:
+#   DEEPPOOL_DOMAIN=deeppool.tech ./deploy_prod.sh
+#
+# Prerequisites:
+#   - sshpass installed locally (brew install hudochenkov/sshpass/sshpass)
+#   - Go, Node.js, npm available locally
+#   - SSL certificate files in platform/ssl_cert/ directory
 set -euo pipefail
 
 # ============================================================
-# Configuration
+# Remote server configuration
 # ============================================================
-REMOTE_HOST="root@8.135.66.7"
+REMOTE_USER="root"
+REMOTE_IP="47.121.115.80"
+REMOTE_PASS="AliRoot@123"
+REMOTE_HOST="${REMOTE_USER}@${REMOTE_IP}"
 REMOTE_DIR="/opt/deeppool"
-COMPONENTS=(manager scheduler nodemanager)
 
-CONTROL_WEB_DIR="control_web"
-CONTROL_WEB_REMOTE_DIR="$REMOTE_DIR/control_web"
-PORTAL_WEB_DIR="portal_web"
-PORTAL_WEB_REMOTE_DIR="$REMOTE_DIR/portal_web"
-NGINX_CONF="/etc/nginx/conf.d/deeppool.conf"
+# SSH/SCP wrapper using sshpass for password-based authentication.
+# Use SSHPASS env var + sshpass -e to avoid stdin conflicts with heredoc.
+SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+export SSHPASS="${REMOTE_PASS}"
 
-# Production always uses HTTPS
-DEPLOY_MODE="https"
-DEPLOY_MODE_DISPLAY="HTTPS"
-PUBLIC_SCHEME="https"
-PUBLIC_PORT="443"
-INTERNAL_SCHEME="https"
-TLS_ENABLED="true"
+do_ssh() {
+  sshpass -e ssh ${SSH_OPTS} "${REMOTE_HOST}" "$@"
+}
 
-DOMAIN="${DEEPPOOL_DOMAIN:-}"
-ADMIN_EMAIL="${DEEPPOOL_ADMIN_EMAIL:-admin@deeppool.tech}"
-PUBLIC_HOST="${DEEPPOOL_PUBLIC_HOST:-}"
-
-if [ -z "$DOMAIN" ]; then
-  echo "============================================================"
-  echo "[ERROR] Production deployment requires DEEPPOOL_DOMAIN to be set"
-  echo ""
-  echo "Usage:"
-  echo "  DEEPPOOL_DOMAIN=deeppool.tech ./deploy_prod.sh"
-  echo ""
-  echo "Optional environment variables:"
-  echo "  DEEPPOOL_PUBLIC_HOST   Public host shown in the final output"
-  echo "  DEEPPOOL_ADMIN_EMAIL   Certificate registration email (default: admin@deeppool.tech)"
-  echo "============================================================"
-  exit 1
-fi
-
-if [ -z "$PUBLIC_HOST" ]; then
-  PUBLIC_HOST="$DOMAIN"
-fi
-
-# API subdomain for dedicated backend access (e.g. deeppool.tech → api.deeppool.tech)
-API_DOMAIN="api.${DOMAIN}"
-
-CERT_DIR="/etc/letsencrypt/live/${DOMAIN}"
-CERT_FILE="${CERT_DIR}/fullchain.pem"
-KEY_FILE="${CERT_DIR}/privkey.pem"
-
-export GOOS=linux
-export GOARCH=amd64
-export CGO_ENABLED=0
+do_scp() {
+  sshpass -e scp ${SSH_OPTS} "$@"
+}
 
 # ============================================================
 # Runtime paths
@@ -77,76 +57,152 @@ export CGO_ENABLED=0
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLATFORM_DIR="$SCRIPT_DIR"
 BUILD_DIR="$PLATFORM_DIR/build"
+CONFIG_PROD_DIR="$PLATFORM_DIR/config_prod"
 
 # ============================================================
-# Banner
+# Domain & certificate configuration
+# ============================================================
+DOMAIN="${DEEPPOOL_DOMAIN:-deeppool.tech}"
+API_DOMAIN="api.${DOMAIN}"
+PUBLIC_HOST="${DEEPPOOL_PUBLIC_HOST:-${DOMAIN}}"
+
+# SSL certificate: Alibaba Cloud wildcard cert (*.deeppool.tech)
+# Remote path on ECS where cert files will be uploaded
+REMOTE_CERT_DIR="/etc/ssl/deeppool"
+REMOTE_CERT_FILE="${REMOTE_CERT_DIR}/${DOMAIN}.pem"
+REMOTE_KEY_FILE="${REMOTE_CERT_DIR}/${DOMAIN}.key"
+# Local path: download from Alibaba Cloud console (Nginx format)
+LOCAL_CERT_DIR="${PLATFORM_DIR}/ssl_cert"
+LOCAL_CERT_FILE="${LOCAL_CERT_DIR}/${DOMAIN}.pem"
+LOCAL_KEY_FILE="${LOCAL_CERT_DIR}/${DOMAIN}.key"
+
+# ============================================================
+# Component definitions
+# ============================================================
+COMPONENTS=(manager scheduler nodemanager)
+
+CONTROL_WEB_DIR="control_web"
+CONTROL_WEB_REMOTE_DIR="${REMOTE_DIR}/control_web"
+PORTAL_WEB_DIR="portal_web"
+PORTAL_WEB_REMOTE_DIR="${REMOTE_DIR}/portal_web"
+NGINX_CONF="/etc/nginx/conf.d/deeppool.conf"
+
+# ============================================================
+# Cross-compile settings
+# ============================================================
+export GOOS=linux
+export GOARCH=amd64
+export CGO_ENABLED=0
+
+# ============================================================
+# Pre-flight checks
 # ============================================================
 echo "============================================================"
-echo "  DeepPool PRODUCTION deployment"
-echo "  Ingress mode: ${DEPLOY_MODE_DISPLAY}"
-echo "  Target:       ${REMOTE_HOST}"
-echo "  Public host:  ${PUBLIC_HOST}"
+echo "  DeepPool PRODUCTION Deployment"
+echo "  Target:       ${REMOTE_HOST} (${REMOTE_IP})"
+echo "  Remote dir:   ${REMOTE_DIR}"
 echo "  Domain:       ${DOMAIN}"
 echo "  API domain:   ${API_DOMAIN}"
-echo "  Cert email:   ${ADMIN_EMAIL}"
+echo "  Public host:  ${PUBLIC_HOST}"
+echo "  SSL cert:     ${LOCAL_CERT_DIR}/"
+echo "  Config dir:   ${CONFIG_PROD_DIR}"
 echo "============================================================"
 echo ""
 
+# Check sshpass availability
+if ! command -v sshpass &>/dev/null; then
+  echo "[ERROR] sshpass is required but not installed."
+  echo "  macOS:  brew install hudochenkov/sshpass/sshpass"
+  echo "  Linux:  apt-get install sshpass / yum install sshpass"
+  exit 1
+fi
+
+# Check SSL certificate files exist locally
+if [ ! -f "${LOCAL_CERT_FILE}" ] || [ ! -f "${LOCAL_KEY_FILE}" ]; then
+  echo "============================================================"
+  echo "[ERROR] SSL certificate files not found!"
+  echo ""
+  echo "  Expected files:"
+  echo "    ${LOCAL_CERT_FILE}  (certificate + chain)"
+  echo "    ${LOCAL_KEY_FILE}   (private key)"
+  echo ""
+  echo "  How to prepare:"
+  echo "    1. Go to Alibaba Cloud Console -> SSL Certificates"
+  echo "    2. Download cert in Nginx format"
+  echo "    3. Place .pem and .key files in: ${LOCAL_CERT_DIR}/"
+  echo "============================================================"
+  exit 1
+fi
+echo "==> SSL certificate files found."
+
+# Verify SSH connectivity
+echo "==> Verifying SSH connectivity..."
+if ! do_ssh "echo 'SSH connection OK'"; then
+  echo "[ERROR] Cannot connect to ${REMOTE_HOST}"
+  exit 1
+fi
+
 # ============================================================
-# Build Go components
+# Step 1: Build Go services
 # ============================================================
 echo "==> Cleaning previous build artifacts..."
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
-echo "==> Cross compiling Go services (GOOS=$GOOS GOARCH=$GOARCH)..."
+echo "==> Cross-compiling Go services (GOOS=${GOOS} GOARCH=${GOARCH})..."
 cd "$PLATFORM_DIR"
 for comp in "${COMPONENTS[@]}"; do
-  echo "    Building $comp ..."
-  go build -trimpath -ldflags="-s -w" -o "$BUILD_DIR/$comp" "./cmd/$comp"
+  echo "    Building ${comp} ..."
+  go build -trimpath -ldflags="-s -w" -o "${BUILD_DIR}/${comp}" "./cmd/${comp}"
 done
-echo "    Go services built successfully"
+echo "    All Go services built successfully."
 
-cp -r "$PLATFORM_DIR/config_prod" "$BUILD_DIR/config"
+# Copy production config files
+echo "==> Copying production config from ${CONFIG_PROD_DIR}..."
+cp -r "${CONFIG_PROD_DIR}" "${BUILD_DIR}/config"
+echo "    Config files copied."
 
 # ============================================================
-# Build control_web
+# Step 2: Build control_web
 # ============================================================
 echo "==> Building control_web (base=/admin/)..."
-cd "$PLATFORM_DIR/$CONTROL_WEB_DIR"
+cd "${PLATFORM_DIR}/${CONTROL_WEB_DIR}"
 npm install --silent
 VITE_BASE=/admin/ \
   VITE_API_BASE_URL="https://${API_DOMAIN}/api/v1" \
   VITE_GATEWAY_BASE_URL="https://${API_DOMAIN}/v1" \
   npm run build
-cp -r "$PLATFORM_DIR/$CONTROL_WEB_DIR/dist" "$BUILD_DIR/control_web"
-echo "    control_web build completed"
+cp -r "${PLATFORM_DIR}/${CONTROL_WEB_DIR}/dist" "${BUILD_DIR}/control_web"
+echo "    control_web build completed."
 cd "$PLATFORM_DIR"
 
 # ============================================================
-# Build portal_web
+# Step 3: Build portal_web
 # ============================================================
 echo "==> Building portal_web..."
-cd "$PLATFORM_DIR/$PORTAL_WEB_DIR"
+cd "${PLATFORM_DIR}/${PORTAL_WEB_DIR}"
 npm install --silent
 VITE_API_BASE_URL="https://${API_DOMAIN}/api/v1" \
   VITE_GATEWAY_BASE_URL="https://${API_DOMAIN}/v1" \
   npm run build
-cp -r "$PLATFORM_DIR/$PORTAL_WEB_DIR/dist" "$BUILD_DIR/portal_web"
-echo "    portal_web build completed"
+cp -r "${PLATFORM_DIR}/${PORTAL_WEB_DIR}/dist" "${BUILD_DIR}/portal_web"
+echo "    portal_web build completed."
 cd "$PLATFORM_DIR"
 
+# ============================================================
+# Build summary
+# ============================================================
 echo "==> Build artifacts summary:"
-ls -lh "$BUILD_DIR"/manager "$BUILD_DIR"/scheduler "$BUILD_DIR"/nodemanager
-echo "    control_web: $(du -sh "$BUILD_DIR/control_web" | awk '{print $1}')"
-echo "    portal_web:  $(du -sh "$BUILD_DIR/portal_web" | awk '{print $1}')"
+ls -lh "${BUILD_DIR}"/manager "${BUILD_DIR}"/scheduler "${BUILD_DIR}"/nodemanager
+echo "    control_web: $(du -sh "${BUILD_DIR}/control_web" | awk '{print $1}')"
+echo "    portal_web:  $(du -sh "${BUILD_DIR}/portal_web" | awk '{print $1}')"
 echo ""
 
 # ============================================================
-# Stop previous services
+# Step 4: Stop existing remote services
 # ============================================================
 echo "==> Stopping existing remote services..."
-ssh "$REMOTE_HOST" bash -s -- "$REMOTE_DIR" <<'STOP_SCRIPT'
+do_ssh bash -s -- "$REMOTE_DIR" <<'STOP_SCRIPT'
 set -euo pipefail
 REMOTE_DIR="$1"
 
@@ -160,8 +216,9 @@ for comp in manager scheduler nodemanager; do
   fi
 done
 
-echo "    Waiting for old processes to exit..."
+echo "    Waiting for processes to exit..."
 sleep 2
+
 for comp in manager scheduler nodemanager; do
   pid=$(ps -eo pid,args | grep -E "(\./${comp}|${REMOTE_DIR}/${comp})" | grep -v -E "grep|bash|scp" | awk '{print $1}' || true)
   if [ -n "$pid" ]; then
@@ -172,158 +229,68 @@ done
 
 sleep 1
 rm -f "${REMOTE_DIR}/manager" "${REMOTE_DIR}/scheduler" "${REMOTE_DIR}/nodemanager"
-echo "    Previous binaries removed"
+echo "    Previous binaries removed."
 STOP_SCRIPT
 
 # ============================================================
-# Upload files
+# Step 5: Upload artifacts
 # ============================================================
-echo "==> Uploading artifacts to $REMOTE_HOST:$REMOTE_DIR ..."
-ssh "$REMOTE_HOST" "mkdir -p $REMOTE_DIR/config $REMOTE_DIR/alipay_cert $REMOTE_DIR/wechat_pay_cert $CONTROL_WEB_REMOTE_DIR $PORTAL_WEB_REMOTE_DIR"
+echo "==> Creating remote directories..."
+do_ssh "mkdir -p ${REMOTE_DIR}/config ${REMOTE_DIR}/alipay_cert ${REMOTE_DIR}/wechat_pay_cert ${REMOTE_CERT_DIR} ${CONTROL_WEB_REMOTE_DIR} ${PORTAL_WEB_REMOTE_DIR}"
 
-scp "${BUILD_DIR}/manager" \
-    "${BUILD_DIR}/scheduler" \
-    "${BUILD_DIR}/nodemanager" \
-    "$REMOTE_HOST:$REMOTE_DIR/"
+echo "==> Uploading Go binaries..."
+do_scp "${BUILD_DIR}/manager" \
+       "${BUILD_DIR}/scheduler" \
+       "${BUILD_DIR}/nodemanager" \
+       "${REMOTE_HOST}:${REMOTE_DIR}/"
 
-scp "${BUILD_DIR}/config/"*.yaml \
-    "$REMOTE_HOST:$REMOTE_DIR/config/"
+echo "==> Uploading config files..."
+do_scp "${BUILD_DIR}/config/"*.yaml \
+       "${REMOTE_HOST}:${REMOTE_DIR}/config/"
 
-# Upload payment certificate files
-scp "${PLATFORM_DIR}/alipay_cert/"*.pem \
-    "$REMOTE_HOST:$REMOTE_DIR/alipay_cert/"
-scp "${PLATFORM_DIR}/wechat_pay_cert/"* \
-    "$REMOTE_HOST:$REMOTE_DIR/wechat_pay_cert/"
+echo "==> Uploading payment certificates..."
+do_scp "${PLATFORM_DIR}/alipay_cert/"*.pem \
+       "${REMOTE_HOST}:${REMOTE_DIR}/alipay_cert/"
+do_scp "${PLATFORM_DIR}/wechat_pay_cert/"* \
+       "${REMOTE_HOST}:${REMOTE_DIR}/wechat_pay_cert/"
 
-ssh "$REMOTE_HOST" "rm -rf $CONTROL_WEB_REMOTE_DIR/*"
-scp -r "${BUILD_DIR}/control_web/"* "$REMOTE_HOST:$CONTROL_WEB_REMOTE_DIR/"
+echo "==> Uploading SSL certificate (Alibaba Cloud wildcard)..."
+do_scp "${LOCAL_CERT_FILE}" "${REMOTE_HOST}:${REMOTE_CERT_FILE}"
+do_scp "${LOCAL_KEY_FILE}"  "${REMOTE_HOST}:${REMOTE_KEY_FILE}"
+do_ssh "chmod 600 ${REMOTE_CERT_DIR}/*.pem"
+echo "    SSL cert uploaded to ${REMOTE_CERT_DIR}/"
 
-ssh "$REMOTE_HOST" "rm -rf $PORTAL_WEB_REMOTE_DIR/*"
-scp -r "${BUILD_DIR}/portal_web/"* "$REMOTE_HOST:$PORTAL_WEB_REMOTE_DIR/"
+echo "==> Uploading control_web..."
+do_ssh "rm -rf ${CONTROL_WEB_REMOTE_DIR}/*"
+do_scp -r "${BUILD_DIR}/control_web/"* "${REMOTE_HOST}:${CONTROL_WEB_REMOTE_DIR}/"
 
-ssh "$REMOTE_HOST" "chmod +x $REMOTE_DIR/manager $REMOTE_DIR/scheduler $REMOTE_DIR/nodemanager"
+echo "==> Uploading portal_web..."
+do_ssh "rm -rf ${PORTAL_WEB_REMOTE_DIR}/*"
+do_scp -r "${BUILD_DIR}/portal_web/"* "${REMOTE_HOST}:${PORTAL_WEB_REMOTE_DIR}/"
 
-echo "==> Upload completed"
+echo "==> Setting executable permissions..."
+do_ssh "chmod +x ${REMOTE_DIR}/manager ${REMOTE_DIR}/scheduler ${REMOTE_DIR}/nodemanager"
+
+echo "==> Upload completed."
 echo ""
-echo "Remote tree:"
-ssh "$REMOTE_HOST" "tree $REMOTE_DIR 2>/dev/null || find $REMOTE_DIR -type f | sort"
+echo "    Remote file tree:"
+do_ssh "tree ${REMOTE_DIR} 2>/dev/null || find ${REMOTE_DIR} -type f | head -50 | sort"
 echo ""
 
 # ============================================================
-# Provision HTTPS certificate
+# Step 6: Enable TLS for gRPC services
 # ============================================================
-echo "==> Installing Certbot and provisioning Let's Encrypt certificate..."
-set +e
-ssh "$REMOTE_HOST" bash -s -- "$DOMAIN" "$API_DOMAIN" "$ADMIN_EMAIL" "$CERT_FILE" "$KEY_FILE" <<'CERT_SCRIPT'
-set -euo pipefail
-DOMAIN="$1"
-API_DOMAIN="$2"
-ADMIN_EMAIL="$3"
-CERT_FILE="$4"
-KEY_FILE="$5"
-
-if ! command -v certbot &>/dev/null; then
-  echo "    Installing Certbot..."
-  if command -v dnf &>/dev/null; then
-    dnf install -y -q epel-release >/dev/null 2>&1 || true
-    dnf install -y -q certbot python3-certbot-nginx >/dev/null 2>&1
-  elif command -v yum &>/dev/null; then
-    yum install -y -q epel-release >/dev/null 2>&1 || true
-    yum install -y -q certbot python3-certbot-nginx >/dev/null 2>&1
-  elif command -v apt-get &>/dev/null; then
-    apt-get update -qq >/dev/null 2>&1
-    apt-get install -y -qq certbot python3-certbot-nginx >/dev/null 2>&1
-  else
-    echo "    [ERROR] Unable to detect a supported package manager for Certbot" >&2
-    exit 1
-  fi
-  echo "    Certbot installed"
-else
-  echo "    Certbot already present: $(certbot --version 2>&1)"
-fi
-
-if [ -f "$CERT_FILE" ]; then
-  echo "    Existing certificate found, running renew check..."
-  certbot renew --quiet --no-random-sleep-on-renew 2>/dev/null || true
-  echo "    Renew check completed"
-else
-  echo "    Requesting a new certificate..."
-  echo "    Releasing port 80 for ACME challenge..."
-  systemctl stop nginx 2>/dev/null || nginx -s stop 2>/dev/null || true
-  sleep 1
-
-  PORT80_PIDS=$(ss -tlnp 'sport = :80' 2>/dev/null | grep -oP 'pid=\K[0-9]+' | sort -u || true)
-  if [ -n "$PORT80_PIDS" ]; then
-    echo "    Found remaining listeners on port 80: ${PORT80_PIDS}"
-    for p in $PORT80_PIDS; do
-      kill -9 "$p" 2>/dev/null || true
-    done
-    sleep 2
-  fi
-
-  if ss -tlnp 'sport = :80' 2>/dev/null | grep -q LISTEN; then
-    echo "    [ERROR] Port 80 is still occupied, cannot request certificate"
-    ss -tlnp 'sport = :80'
-    exit 1
-  fi
-
-  certbot certonly \
-    --standalone \
-    --non-interactive \
-    --agree-tos \
-    --email "$ADMIN_EMAIL" \
-    -d "$DOMAIN" \
-    -d "$API_DOMAIN" \
-    --preferred-challenges http
-
-  if [ ! -f "$CERT_FILE" ] || [ ! -f "$KEY_FILE" ]; then
-    echo "    [ERROR] Certificate files were not created after Certbot finished"
-    echo "    Expected certificate: $CERT_FILE"
-    echo "    Check: /var/log/letsencrypt/letsencrypt.log"
-    exit 1
-  fi
-  echo "    Certificate request succeeded"
-fi
-
-if ! crontab -l 2>/dev/null | grep -q 'certbot renew'; then
-  echo "    Installing certificate renew cron job..."
-  (crontab -l 2>/dev/null || true; echo "0 3 * * * certbot renew --quiet --deploy-hook 'systemctl reload nginx' >> /var/log/certbot-renew.log 2>&1") | crontab -
-  echo "    Renew cron job added"
-fi
-
-echo "    Certificate files:"
-echo "      cert: $CERT_FILE"
-echo "      key:  $KEY_FILE"
-CERT_SCRIPT
-CERT_RC=$?
-set -e
-
-if [ $CERT_RC -ne 0 ]; then
-  echo ""
-  echo "============================================================"
-  echo "[FATAL] Certificate provisioning failed (exit code=${CERT_RC})"
-  echo "Check the following items:"
-  echo "  1. ${DOMAIN} resolves to ${REMOTE_HOST#*@}"
-  echo "  2. Inbound port 80 is open for ACME challenge"
-  echo "  3. ssh ${REMOTE_HOST} 'cat /var/log/letsencrypt/letsencrypt.log'"
-  echo "============================================================"
-  exit 1
-fi
-
-# ============================================================
-# Sync TLS settings in YAML files
-# ============================================================
-echo "==> Synchronizing service TLS settings..."
-ssh "$REMOTE_HOST" bash -s -- "$REMOTE_DIR" "$TLS_ENABLED" "$CERT_FILE" "$KEY_FILE" <<'TLS_SYNC_SCRIPT'
+echo "==> Synchronizing gRPC TLS settings (using Alibaba Cloud SSL cert)..."
+do_ssh bash -s -- "$REMOTE_DIR" "$REMOTE_CERT_FILE" "$REMOTE_KEY_FILE" <<'TLS_SYNC_SCRIPT'
 set -euo pipefail
 REMOTE_DIR="$1"
-TLS_ENABLED="$2"
-CERT_FILE="${3:-}"
-KEY_FILE="${4:-}"
+CERT_FILE="$2"
+KEY_FILE="$3"
 
 for comp in manager scheduler nodemanager; do
   cfg="${REMOTE_DIR}/config/${comp}.yaml"
   if [ ! -f "$cfg" ]; then
+    echo "    [SKIP] $cfg not found"
     continue
   fi
 
@@ -333,48 +300,46 @@ for comp in manager scheduler nodemanager; do
     -e "s|cert_file: \".*\"|cert_file: \"${CERT_FILE}\"|" \
     -e "s|key_file: \".*\"|key_file: \"${KEY_FILE}\"|" \
     "$cfg"
-  echo "    $comp TLS enabled"
+  echo "    ${comp}: gRPC TLS enabled (cert=${CERT_FILE})"
 done
 TLS_SYNC_SCRIPT
 
 # ============================================================
-# Start services
+# Step 7: Start services
 # ============================================================
 echo "==> Starting services..."
-ssh "$REMOTE_HOST" bash -s -- "$REMOTE_DIR" <<'START_SCRIPT'
+do_ssh bash -s -- "$REMOTE_DIR" <<'START_SCRIPT'
 set -euo pipefail
 REMOTE_DIR="$1"
 cd "$REMOTE_DIR"
 
 for comp in manager scheduler nodemanager; do
   nohup "${REMOTE_DIR}/${comp}" > "${REMOTE_DIR}/${comp}.log" 2>&1 &
-  echo "    Started $comp pid=$!"
+  echo "    Started ${comp} (pid=$!)"
 done
 START_SCRIPT
+
 for comp in "${COMPONENTS[@]}"; do
-  echo "    Log file: $REMOTE_DIR/${comp}.log"
+  echo "    Log: ${REMOTE_DIR}/${comp}.log"
 done
 
 # ============================================================
-# Configure Nginx ingress (HTTPS only)
+# Step 8: Configure Nginx ingress
 # ============================================================
-echo "==> Writing Nginx ingress configuration for HTTPS mode..."
-ssh "$REMOTE_HOST" bash -s -- \
+echo "==> Configuring Nginx reverse proxy..."
+do_ssh bash -s -- \
   "$CONTROL_WEB_REMOTE_DIR" "$PORTAL_WEB_REMOTE_DIR" "$NGINX_CONF" \
-  "$PUBLIC_HOST" "$INTERNAL_SCHEME" "$CERT_DIR" "$API_DOMAIN" <<'NGINX_SCRIPT'
+  "$PUBLIC_HOST" "$REMOTE_CERT_DIR" "$API_DOMAIN" "$DOMAIN" <<'NGINX_SCRIPT'
 set -euo pipefail
 CW_DIR="$1"
 PW_DIR="$2"
 CONF="$3"
 SERVER_NAME="$4"
-UPSTREAM_SCHEME="$5"
-CERT_DIR="$6"
-API_SERVER_NAME="$7"
+CERT_DIR="$5"
+API_SERVER_NAME="$6"
+DOMAIN="$7"
 
-if [ -z "$SERVER_NAME" ]; then
-  SERVER_NAME="_"
-fi
-
+# Install Nginx if not present
 if ! command -v nginx &>/dev/null; then
   echo "    Installing Nginx..."
   if command -v dnf &>/dev/null; then
@@ -384,31 +349,25 @@ if ! command -v nginx &>/dev/null; then
   elif command -v apt-get &>/dev/null; then
     apt-get update -qq >/dev/null 2>&1
     apt-get install -y -qq nginx >/dev/null 2>&1
-  else
-    echo "    [ERROR] Unable to detect a supported package manager for Nginx" >&2
-    exit 1
   fi
 fi
 
 # Disable default inline server block if present
 if grep -q '^    server {' /etc/nginx/nginx.conf 2>/dev/null; then
   sed -i '/^    server {$/,/^    }$/s/^/#/' /etc/nginx/nginx.conf
-  echo "    Disabled the default inline server block"
+  echo "    Disabled default inline server block."
 fi
 
-# Clean up legacy configuration fragments
-rm -f /etc/nginx/conf.d/deeppool_control_web.conf \
-      /etc/nginx/conf.d/deeppool_portal_web.conf \
-      /etc/nginx/conf.d/deeppool_grpc.conf 2>/dev/null
-
-echo "    Removed legacy DeepPool Nginx fragments"
+# Clean up legacy config fragments
+rm -f /etc/nginx/conf.d/deeppool_*.conf 2>/dev/null
 
 cat > "$CONF" <<NGINX_EOF
 # ============================================================
-# DeepPool ingress — PRODUCTION (HTTP redirect + HTTPS routing)
+# DeepPool PRODUCTION ingress — HTTPS with SSL termination
+# Generated by deploy_prod.sh
 # ============================================================
 
-# Redirect all HTTP traffic to HTTPS (both main and API domains)
+# HTTP -> HTTPS redirect
 server {
     listen 80;
     server_name ${SERVER_NAME} ${API_SERVER_NAME};
@@ -422,26 +381,26 @@ server {
     }
 }
 
-# Main site: portal_web + control_web + API proxy
+# Main site: portal + control + API
 server {
     listen 443 ssl;
     server_name ${SERVER_NAME};
 
-    ssl_certificate     ${CERT_DIR}/fullchain.pem;
-    ssl_certificate_key ${CERT_DIR}/privkey.pem;
+    ssl_certificate     ${CERT_DIR}/${DOMAIN}.pem;
+    ssl_certificate_key ${CERT_DIR}/${DOMAIN}.key;
     ssl_protocols       TLSv1.2 TLSv1.3;
     ssl_ciphers         HIGH:!aNULL:!MD5;
     ssl_prefer_server_ciphers on;
     ssl_session_cache   shared:SSL:10m;
     ssl_session_timeout 10m;
 
-    # Security headers
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
     add_header X-Content-Type-Options nosniff always;
     add_header X-Frame-Options SAMEORIGIN always;
 
+    # API proxy -> manager :8080 (TLS backend)
     location /api/ {
-        proxy_pass ${UPSTREAM_SCHEME}://127.0.0.1:8080;
+        proxy_pass https://127.0.0.1:8080;
         proxy_ssl_verify off;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
@@ -449,8 +408,9 @@ server {
         proxy_set_header X-Forwarded-Proto \$scheme;
     }
 
+    # Gateway proxy -> manager :8080 (SSE/streaming, TLS backend)
     location /v1/ {
-        proxy_pass ${UPSTREAM_SCHEME}://127.0.0.1:8080;
+        proxy_pass https://127.0.0.1:8080;
         proxy_ssl_verify off;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
@@ -461,12 +421,14 @@ server {
         proxy_read_timeout 300s;
     }
 
+    # Admin console
     location /admin/ {
         alias ${CW_DIR}/;
         index index.html;
         try_files \$uri \$uri/ /admin/index.html;
     }
 
+    # Portal (default)
     location / {
         root ${PW_DIR};
         index index.html;
@@ -474,27 +436,24 @@ server {
     }
 }
 
-# Dedicated API domain: handles cross-origin requests from frontend
-# NOTE: CORS headers are set by the Go backend (WithCORS middleware),
-# do NOT add them here to avoid duplicate header values.
+# Dedicated API domain (CORS handled by Go backend)
 server {
     listen 443 ssl;
     server_name ${API_SERVER_NAME};
 
-    ssl_certificate     ${CERT_DIR}/fullchain.pem;
-    ssl_certificate_key ${CERT_DIR}/privkey.pem;
+    ssl_certificate     ${CERT_DIR}/${DOMAIN}.pem;
+    ssl_certificate_key ${CERT_DIR}/${DOMAIN}.key;
     ssl_protocols       TLSv1.2 TLSv1.3;
     ssl_ciphers         HIGH:!aNULL:!MD5;
     ssl_prefer_server_ciphers on;
     ssl_session_cache   shared:SSL:10m;
     ssl_session_timeout 10m;
 
-    # Security headers
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
     add_header X-Content-Type-Options nosniff always;
 
     location /api/ {
-        proxy_pass ${UPSTREAM_SCHEME}://127.0.0.1:8080;
+        proxy_pass https://127.0.0.1:8080;
         proxy_ssl_verify off;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
@@ -503,7 +462,7 @@ server {
     }
 
     location /v1/ {
-        proxy_pass ${UPSTREAM_SCHEME}://127.0.0.1:8080;
+        proxy_pass https://127.0.0.1:8080;
         proxy_ssl_verify off;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
@@ -514,33 +473,34 @@ server {
         proxy_read_timeout 300s;
     }
 
-    # Reject all other paths on the API domain
     location / {
         return 404;
     }
 }
 NGINX_EOF
 
-echo "    Nginx config written to $CONF"
+echo "    Nginx config written to ${CONF}"
 nginx -t 2>&1 && nginx -s reload 2>/dev/null || systemctl restart nginx
-echo "    Nginx reloaded"
+echo "    Nginx reloaded."
 NGINX_SCRIPT
 
 echo "    Ingress routes:"
-echo "      ${PUBLIC_HOST} /        -> portal_web"
-echo "      ${PUBLIC_HOST} /admin/  -> control_web"
-echo "      ${PUBLIC_HOST} /api/    -> manager :8080 (${INTERNAL_SCHEME})"
-echo "      ${PUBLIC_HOST} /v1/     -> manager :8080 (${INTERNAL_SCHEME})"
-echo "      ${API_DOMAIN}  /api/    -> manager :8080 (${INTERNAL_SCHEME}, CORS)"
-echo "      ${API_DOMAIN}  /v1/     -> manager :8080 (${INTERNAL_SCHEME}, CORS)"
+echo "      ${PUBLIC_HOST}  /        -> portal_web"
+echo "      ${PUBLIC_HOST}  /admin/  -> control_web"
+echo "      ${PUBLIC_HOST}  /api/    -> manager :8080"
+echo "      ${PUBLIC_HOST}  /v1/     -> manager :8080"
+echo "      ${API_DOMAIN}   /api/    -> manager :8080 (CORS)"
+echo "      ${API_DOMAIN}   /v1/     -> manager :8080 (CORS)"
 
 # ============================================================
-# Health checks
+# Step 9: Health checks
 # ============================================================
-sleep 3
 echo ""
+echo "==> Waiting for services to initialize..."
+sleep 3
+
 echo "==> Remote process status:"
-ssh "$REMOTE_HOST" "ps aux | grep -E '$(IFS='|'; echo "${COMPONENTS[*]}")|nginx.*master' | grep -v grep || echo '    no active service process detected'"
+do_ssh "ps aux | grep -E '$(IFS='|'; echo "${COMPONENTS[*]}")|nginx.*master' | grep -v grep || echo '    No active service process detected'"
 echo ""
 
 echo "==> Health checks:"
@@ -550,51 +510,50 @@ for comp in "${COMPONENTS[@]}"; do
     scheduler)   port=8081 ;;
     nodemanager) port=8082 ;;
   esac
-
-  result=$(ssh "$REMOTE_HOST" "curl -sf --cacert ${CERT_FILE} https://127.0.0.1:${port}/health 2>/dev/null || curl -sf -k https://127.0.0.1:${port}/health 2>/dev/null || echo 'FAIL'")
-  echo "    $comp (:${port}, ${INTERNAL_SCHEME}): $result"
+  result=$(do_ssh "curl -sf -k https://127.0.0.1:${port}/health 2>/dev/null || echo 'FAIL'")
+  echo "    ${comp} (:${port}): ${result}"
 done
 
-portal_result=$(ssh "$REMOTE_HOST" "curl -sf -k https://127.0.0.1/ 2>/dev/null | head -c 50 && echo '... OK' || echo 'FAIL'")
-admin_result=$(ssh "$REMOTE_HOST" "curl -sf -k https://127.0.0.1/admin/ 2>/dev/null | head -c 50 && echo '... OK' || echo 'FAIL'")
-api_result=$(ssh "$REMOTE_HOST" "curl -sf -k https://127.0.0.1/api/v1/public/stats 2>/dev/null || echo 'FAIL'")
-echo "    portal_web  (${PUBLIC_SCHEME} :${PUBLIC_PORT} /): $portal_result"
-echo "    control_web (${PUBLIC_SCHEME} :${PUBLIC_PORT} /admin/): $admin_result"
-echo "    API proxy   (${PUBLIC_SCHEME} :${PUBLIC_PORT} /api/): $api_result"
+portal_result=$(do_ssh "curl -sf -k https://127.0.0.1/ 2>/dev/null | head -c 50 && echo '... OK' || echo 'FAIL'")
+admin_result=$(do_ssh "curl -sf -k https://127.0.0.1/admin/ 2>/dev/null | head -c 50 && echo '... OK' || echo 'FAIL'")
+api_result=$(do_ssh "curl -sf -k https://127.0.0.1/api/v1/public/stats 2>/dev/null || echo 'FAIL'")
+echo "    portal_web  (https /):       ${portal_result}"
+echo "    control_web (https /admin/): ${admin_result}"
+echo "    API proxy   (https /api/):   ${api_result}"
 echo ""
 
 # ============================================================
-# Final summary
+# Step 10: Deployment summary
 # ============================================================
-echo "==> Production deployment finished"
+echo "============================================================"
+echo "  PRODUCTION deployment completed successfully!"
+echo "============================================================"
 echo ""
 echo "  Public endpoints:"
-echo "    Portal:     ${PUBLIC_SCHEME}://${PUBLIC_HOST}/"
-echo "    Admin:      ${PUBLIC_SCHEME}://${PUBLIC_HOST}/admin/"
-echo "    API:        ${PUBLIC_SCHEME}://${API_DOMAIN}/api/"
-echo "    Gateway:    ${PUBLIC_SCHEME}://${API_DOMAIN}/v1/"
+echo "    Portal:     https://${PUBLIC_HOST}/"
+echo "    Admin:      https://${PUBLIC_HOST}/admin/"
+echo "    API:        https://${API_DOMAIN}/api/"
+echo "    Gateway:    https://${API_DOMAIN}/v1/"
 echo ""
-
-echo "  Direct service endpoints (${INTERNAL_SCHEME}):"
-echo "    manager:     ${INTERNAL_SCHEME}://${PUBLIC_HOST}:8080"
-echo "    scheduler:   ${INTERNAL_SCHEME}://${PUBLIC_HOST}:8081"
-echo "    nodemanager: ${INTERNAL_SCHEME}://${PUBLIC_HOST}:8082"
+echo "  Service endpoints (internal, HTTPS):"
+echo "    manager:     https://127.0.0.1:8080"
+echo "    scheduler:   https://127.0.0.1:8081"
+echo "    nodemanager: https://127.0.0.1:8082"
 echo ""
-
 echo "  gRPC endpoints (TLS):"
-echo "    manager:     ${PUBLIC_HOST}:9090"
-echo "    scheduler:   ${PUBLIC_HOST}:9091"
-echo "    nodemanager: ${PUBLIC_HOST}:9092"
+echo "    manager:     :9090"
+echo "    scheduler:   :9091"
+echo "    nodemanager: :9092"
 echo ""
-
-echo "  Certificate management:"
-echo "    Directory:     ${CERT_DIR}/"
-echo "    Renew cron:    daily at 03:00"
-echo "    Manual renew:  ssh ${REMOTE_HOST} 'certbot renew'"
-echo "    Inspect certs: ssh ${REMOTE_HOST} 'certbot certificates'"
+echo "  SSL Certificate (Alibaba Cloud wildcard *.deeppool.tech):"
+echo "    Path:      ${REMOTE_CERT_DIR}/"
+echo "    Expires:   2026-10-29 (renew before expiry via Alibaba Cloud console)"
 echo ""
-
 echo "  Logs:"
 for comp in "${COMPONENTS[@]}"; do
-  echo "    ssh $REMOTE_HOST 'tail -f $REMOTE_DIR/${comp}.log'"
+  echo "    ssh ${REMOTE_HOST} 'tail -f ${REMOTE_DIR}/${comp}.log'"
 done
+echo ""
+echo "  Quick commands:"
+echo "    Restart all:  ssh ${REMOTE_HOST} 'cd ${REMOTE_DIR} && kill \$(pgrep -f \"manager|scheduler|nodemanager\") 2>/dev/null; for c in manager scheduler nodemanager; do nohup ./${c} > ${c}.log 2>&1 &; done'"
+echo "    Check status:  ssh ${REMOTE_HOST} 'ps aux | grep -E \"manager|scheduler|nodemanager\" | grep -v grep'"

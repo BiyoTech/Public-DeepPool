@@ -358,6 +358,26 @@
                 </div>
               </div>
 
+              <!-- Reasoning Effort -->
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="text-xs font-medium text-dp-muted">{{ $t('service.params.reasoning_effort') }}</label>
+                </div>
+                <select
+                  v-model="inferParams.reasoningEffort"
+                  class="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-dp-body
+                         focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100 bg-white"
+                  @change="persistParams"
+                >
+                  <option value="">{{ $t('service.params.reasoning_effort_default') }}</option>
+                  <option value="none">none</option>
+                  <option value="low">low</option>
+                  <option value="medium">medium</option>
+                  <option value="high">high</option>
+                </select>
+                <p class="text-[10px] text-dp-placeholder mt-0.5">{{ $t('service.params.reasoning_effort_desc') }}</p>
+              </div>
+
               <!-- 重置按钮 -->
               <button
                 @click="resetParams"
@@ -382,7 +402,7 @@
   ],
   "temperature": {{ inferParams.temperature }},
   "max_tokens": {{ inferParams.maxTokens }},
-  "top_p": {{ inferParams.topP }}
+  "top_p": {{ inferParams.topP }}{{ inferParams.reasoningEffort ? `,\n  "reasoning_effort": "${inferParams.reasoningEffort}"` : '' }}
 }'</code></pre>
           </div>
         </div>
@@ -507,6 +527,7 @@ interface InferParams {
   topP: number
   systemPrompt: string
   stop: string[]
+  reasoningEffort: string
 }
 
 const defaultParams: InferParams = {
@@ -515,6 +536,7 @@ const defaultParams: InferParams = {
   topP: 0.9,
   systemPrompt: '',
   stop: [],
+  reasoningEffort: '',
 }
 
 function loadStoredParams(): InferParams {
@@ -528,6 +550,7 @@ function loadStoredParams(): InferParams {
       topP: parsed.topP ?? defaultParams.topP,
       systemPrompt: parsed.systemPrompt ?? defaultParams.systemPrompt,
       stop: Array.isArray(parsed.stop) ? parsed.stop : [],
+      reasoningEffort: parsed.reasoningEffort ?? defaultParams.reasoningEffort,
     }
   } catch {
     return { ...defaultParams, stop: [] }
@@ -552,7 +575,7 @@ function addStop() {
 }
 
 function resetParams() {
-  inferParams.value = { ...defaultParams, stop: [] }
+  inferParams.value = { ...defaultParams, stop: [], reasoningEffort: '' }
   persistParams()
 }
 
@@ -682,6 +705,9 @@ async function sendMessage() {
     }
     if (inferParams.value.stop.length > 0) {
       requestBody.stop = inferParams.value.stop
+    }
+    if (inferParams.value.reasoningEffort) {
+      requestBody.reasoning_effort = inferParams.value.reasoningEffort
     }
 
     // 参数变更时持久化

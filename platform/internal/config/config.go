@@ -52,9 +52,10 @@ type AdminConfig struct {
 
 // PaymentConfig holds third-party payment gateway credentials.
 type PaymentConfig struct {
-	NotifyBaseURL string          `yaml:"notify_base_url"` // public base URL for async callbacks, e.g. "https://api.deeppool.tech"
-	Wechat        WechatPayConfig `yaml:"wechat"`
-	Alipay        AlipayConfig    `yaml:"alipay"`
+	NotifyBaseURL   string          `yaml:"notify_base_url"`   // public base URL for async callbacks, e.g. "https://api.deeppool.tech"
+	FrontendBaseURL string          `yaml:"frontend_base_url"` // frontend site URL for payment return redirects, e.g. "https://deeppool.tech"
+	Wechat          WechatPayConfig `yaml:"wechat"`
+	Alipay          AlipayConfig    `yaml:"alipay"`
 }
 
 // WechatPayConfig holds WeChat Pay V3 API credentials.

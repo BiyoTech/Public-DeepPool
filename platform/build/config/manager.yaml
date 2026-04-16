@@ -2,19 +2,18 @@ server:
   addr: ":8080"
   grpc_addr: ":9090"
   tls:
-    enabled: false
+    enabled: false    # deploy_prod.sh will enable TLS and inject cert paths
     cert_file: ""
     key_file: ""
-    skip_verify: false
 
 log:
   level: "info"
 
 mysql:
-  host: "127.0.0.1"
+  host: "rm-f8z04393v8584kubu.mysql.rds.aliyuncs.com"
   port: 3306
-  user: "root"
-  password: "root@123"
+  user: "deeppool"
+  password: "AliRoot@123"
   database: "deeppool"
   max_open_conns: 20
   max_idle_conns: 10
@@ -40,6 +39,7 @@ admin:
     insecure_skip_verify: true  # smtp.deeppool.tech TLS cert doesn't include this hostname
   payment:
     notify_base_url: "https://api.deeppool.tech"  # production public HTTPS URL
+    frontend_base_url: "https://deeppool.tech"    # frontend site URL for payment return redirects
     wechat:
       mch_id: "1744006558"
       mch_serial_no: "369B4635C7C5A555B5433B50C866779125415B8E"
@@ -47,12 +47,12 @@ admin:
       mch_private_key_path: "wechat_pay_cert/apiclient_key.pem"
       wx_pub_key_id: "PUB_KEY_ID_0117440065582026041200111585000600"      # WeChat Pay public key ID, obtain from merchant dashboard
       wx_pub_key_path: "wechat_pay_cert/pub_key.pem"
-      app_id: ""
+      app_id: "wxfc2c4d8184f550da"    # WeChat app ID (REQUIRED for Native Pay)
     alipay:
       app_id: "2021006146632346"
       private_key_path: "alipay_cert/alipay_app_private_key.pem"
       alipay_public_key_path: "alipay_cert/alipay_public_key.pem"
       is_sandbox: false
   node_managers:
-    - name: "node-prod"
-      addr: "deeppool.tech:9092"
+    - name: "n_south"
+      addr: "nodemanager.deeppool.tech:9092"
