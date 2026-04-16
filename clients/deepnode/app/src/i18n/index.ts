@@ -96,7 +96,8 @@ const messages = {
       blockedNoticeTitle: '🚫 安全警告：',
       blockedNoticeBody:
         '当前设备已被平台安全策略屏蔽，无法接收推理任务。可能原因：(1) 当前安装包未通过安全加固，请下载最新版本；(2) 应用文件已被篡改，请重新下载全新安装包。',
-      statusBlocked: '已被屏蔽'
+      statusBlocked: '已被屏蔽',
+      contactLabel: '如有问题，请联系：'
     },
     deviceInit: {
       title: '设备初始化',
@@ -119,8 +120,8 @@ const messages = {
       waitingModelLoad: '正在下载并加载模型，请稍候...',
       modelLoading: '正在加载模型: {name}',
       modelLoadFailed: '模型加载失败',
-      macosUpgradeTitle: '⚠️ 强烈建议升级 macOS',
-      macosUpgradeBody: '当前系统版本较低，部分最新模型（如 Gemma 4 系列）可能无法正常加载，导致推理服务异常或无法正常提供算力。强烈建议升级到 macOS 15 (Sequoia) 或更高版本，以获得完整的模型支持和最佳性能。'
+      macosUpgradeTitle: '⚠️ 需要升级 macOS',
+      macosUpgradeBody: '当前系统版本不满足运行要求。DeepNode 需要 macOS 26 (Tahoe) 或更高版本才能正常运行。请前往 系统设置 → 通用 → 软件更新 升级您的 macOS。'
     },
     settings: {
       menu: '系统设置',
@@ -215,7 +216,8 @@ const messages = {
       blockedNoticeTitle: '🚫 Security Warning:',
       blockedNoticeBody:
         'This device has been blocked by the platform security policy and cannot receive inference tasks. Possible causes: (1) this installation package lacks security hardening — please download the latest version; (2) application files have been tampered with — please re-download a fresh installation package.',
-      statusBlocked: 'Blocked'
+      statusBlocked: 'Blocked',
+      contactLabel: 'Need help? Contact:'
     },
     deviceInit: {
       title: 'Device Initialization',
@@ -238,8 +240,8 @@ const messages = {
       waitingModelLoad: 'Downloading and loading model, please wait...',
       modelLoading: 'Loading model: {name}',
       modelLoadFailed: 'Model loading failed',
-      macosUpgradeTitle: '⚠️ macOS Upgrade Strongly Recommended',
-      macosUpgradeBody: 'Your current macOS version is outdated. Some latest models (e.g. Gemma 4 series) may fail to load properly, causing inference errors or inability to provide compute. We strongly recommend upgrading to macOS 15 (Sequoia) or later for full model support and best performance.'
+      macosUpgradeTitle: '⚠️ macOS Upgrade Required',
+      macosUpgradeBody: 'Your current macOS version does not meet the minimum requirement. DeepNode requires macOS 26 (Tahoe) or later to run properly. Please go to System Settings → General → Software Update to upgrade your macOS.'
     },
     settings: {
       menu: 'Settings',

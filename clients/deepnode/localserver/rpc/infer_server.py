@@ -138,6 +138,7 @@ def _proto_request_to_engine(req) -> ChatCompletionRequest:
         user=req.user,
         request_id=req.request_id,
         enable_thinking=req.enable_thinking if req.HasField("enable_thinking") else None,
+        reasoning_effort=req.reasoning_effort if req.HasField("reasoning_effort") else None,
     )
 
 

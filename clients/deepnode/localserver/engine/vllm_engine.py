@@ -168,14 +168,22 @@ class VLLMEngine(LLMEngine):
     # prompt 格式化
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _resolve_enable_thinking(request: ChatCompletionRequest) -> bool | None:
+        """Resolve effective enable_thinking from reasoning_effort (priority) or enable_thinking."""
+        if request.reasoning_effort is not None:
+            return request.reasoning_effort.lower() != "none"
+        return request.enable_thinking
+
     def _format_prompt(
         self,
         messages: list[ChatMessage],
         tools: list[dict] | None = None,
+        enable_thinking: bool | None = None,
     ) -> str:
-        """使用 tokenizer chat_template 格式化（替代简单字符串拼接）。
+        """Format prompt using tokenizer chat_template.
 
-        若 tokenizer 不可用或 chat_template 不支持，回退到简单拼接。
+        If tokenizer unavailable or chat_template not supported, falls back to simple concat.
         """
         if self._tokenizer is not None and hasattr(self._tokenizer, "apply_chat_template"):
             try:
@@ -183,6 +191,8 @@ class VLLMEngine(LLMEngine):
                 kwargs: dict[str, Any] = {"tokenize": False, "add_generation_prompt": True}
                 if tools:
                     kwargs["tools"] = tools
+                if enable_thinking is not None:
+                    kwargs["enable_thinking"] = enable_thinking
                 return self._tokenizer.apply_chat_template(dict_messages, **kwargs)
             except Exception as e:
                 logger.debug("chat_template failed, fallback to simple concat: %s", e)
@@ -258,7 +268,10 @@ class VLLMEngine(LLMEngine):
             if self._llm is None or self._sampling_params_cls is None:
                 raise RuntimeError("model engine is not ready")
 
-            prompt = self._format_prompt(request.messages, dict_tools)
+            prompt = self._format_prompt(
+                request.messages, dict_tools,
+                enable_thinking=self._resolve_enable_thinking(request),
+            )
             sampling_params = self._build_sampling_params(request)
             outputs = self._llm.generate([prompt], sampling_params)
 
@@ -316,7 +329,10 @@ class VLLMEngine(LLMEngine):
             if self._llm is None or self._sampling_params_cls is None:
                 raise RuntimeError("model engine is not ready")
 
-            prompt = self._format_prompt(request.messages, dict_tools)
+            prompt = self._format_prompt(
+                request.messages, dict_tools,
+                enable_thinking=self._resolve_enable_thinking(request),
+            )
             sampling_params = self._build_sampling_params(request)
             outputs = self._llm.generate([prompt], sampling_params)
 

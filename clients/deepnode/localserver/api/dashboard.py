@@ -184,6 +184,14 @@ body{
 }
 .footer span{margin:0 12px}
 
+/* Disconnect banner */
+.disconnect-banner{
+  display:none;background:rgba(255,70,70,0.15);border:1px solid rgba(255,90,90,0.4);
+  border-radius:8px;padding:12px 18px;margin-bottom:18px;text-align:center;
+  color:#ff8a8a;font-size:13px;
+}
+.disconnect-banner strong{color:#ff5a5a}
+
 @media(max-width:600px){
   .stats-grid{grid-template-columns:1fr}
   .gauges{gap:20px}
@@ -204,6 +212,11 @@ body{
 </nav>
 
 <div class="main">
+  <!-- Disconnect warning banner -->
+  <div class="disconnect-banner" id="disconnect-banner">
+    <strong>Platform Disconnected</strong> — Backend service unreachable. Auto-reconnecting...
+  </div>
+
   <!-- 信息卡片 -->
   <div class="cards">
     <div class="card"><div class="card-label">设备 SIMEI</div><div class="card-value" id="c-simei">--</div></div>
@@ -332,6 +345,8 @@ async function fetchSimei() {
   }
 }
 
+let prevPlatformConnected = true;
+
 async function refresh() {
   try {
     const resp = await fetch('/api/stats/snapshot');
@@ -343,22 +358,37 @@ async function refresh() {
     const today = d.today || {};
     const recent = d.recent_60s || {};
 
-    // 服务信息
+    // Platform connectivity — auto-reload page when backend recovers
+    const connected = d.platform_connected !== false;
+    if (!prevPlatformConnected && connected) {
+      console.log('platform recovered, reloading page...');
+      location.reload();
+      return;
+    }
+    prevPlatformConnected = connected;
+
+    // Show/hide disconnected banner
+    const banner = document.getElementById('disconnect-banner');
+    if (banner) {
+      banner.style.display = connected ? 'none' : 'block';
+    }
+
+    // Service info
     document.getElementById('c-model').textContent = svc.model_name || '--';
     document.getElementById('c-engine').textContent = svc.engine_type || '--';
     document.getElementById('c-uptime').textContent = formatUptime(svc.uptime_seconds);
 
-    // 状态指示灯
+    // Status indicator
     const dot = document.getElementById('status-dot');
-    dot.className = 'status-dot ' + (svc.running ? 'online' : 'offline');
+    dot.className = 'status-dot ' + (svc.running && connected ? 'online' : 'offline');
 
-    // 硬件
+    // Hardware
     setGauge('g-cpu', hw.cpu_percent || 0);
     setGauge('g-mem', hw.memory_percent || 0);
     setGauge('g-gpu', hw.gpu_load_percent || 0);
     document.getElementById('gpu-name').textContent = hw.gpu_name || '';
 
-    // 统计
+    // Stats
     document.getElementById('s-total-req').textContent = formatNum(total.requests);
     document.getElementById('s-total-pt').textContent = formatNum(total.prompt_tokens);
     document.getElementById('s-total-ct').textContent = formatNum(total.completion_tokens);

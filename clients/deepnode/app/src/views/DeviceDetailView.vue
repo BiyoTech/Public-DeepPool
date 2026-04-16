@@ -394,6 +394,11 @@ onBeforeUnmount(() => {
       {{ deviceBlocked ? t('device.blockedNoticeBody') : t('device.safeNoticeBody') }}
     </footer>
 
+    <div class="contact-footer">
+      <span>{{ t('device.contactLabel') }}</span>
+      <a href="mailto:contact@deeppool.tech">contact@deeppool.tech</a>
+    </div>
+
     <!-- 设置弹窗 -->
     <div v-if="settingsVisible" class="settings-mask" @click.self="closeSettings">
       <section class="settings-modal glass">
@@ -937,6 +942,24 @@ h2 {
 @media (max-width: 1280px) {
   .layout { grid-template-columns: 1fr; }
   .left-column { display: grid; grid-template-columns: 1fr 1fr; }
+}
+
+.contact-footer {
+  text-align: center;
+  padding: 12px 0 4px;
+  font-size: clamp(11px, 0.9vw, 13px);
+  color: #6b7fa8;
+}
+
+.contact-footer a {
+  color: #5b8cff;
+  text-decoration: none;
+  margin-left: 4px;
+}
+
+.contact-footer a:hover {
+  text-decoration: underline;
+  color: #7ea8ff;
 }
 
 @media (max-width: 920px) {

@@ -993,6 +993,35 @@ class VLLMMLXEngine(LLMEngine):
             return "glm"
         return ""
 
+    @staticmethod
+    def _resolve_enable_thinking(request: ChatCompletionRequest) -> bool | None:
+        """Resolve the effective enable_thinking flag from request fields.
+
+        Priority: reasoning_effort (string) > enable_thinking (bool).
+        - reasoning_effort set and != "none" → True
+        - reasoning_effort == "none" → False
+        - reasoning_effort not set → fall back to enable_thinking
+        """
+        if request.reasoning_effort is not None:
+            return request.reasoning_effort.lower() != "none"
+        return request.enable_thinking
+
+    def _merge_stop_sequences(self, request_stop: list[str] | None) -> list[str]:
+        """Merge request-level stop sequences with model default _stop_sequences.
+
+        Returns a deduplicated list: model defaults + request extras.
+        """
+        if not request_stop:
+            return list(self._stop_sequences)
+        # Preserve order: model defaults first, then request extras (deduplicated)
+        merged = list(self._stop_sequences)
+        seen = set(merged)
+        for s in request_stop:
+            if s not in seen:
+                merged.append(s)
+                seen.add(s)
+        return merged
+
     def _is_gemma_model(self) -> bool:
         """Check if the loaded model is a Gemma variant (gemma3/gemma3n/gemma4)."""
         return self._chat_format in ("gemma3", "gemma3n", "gemma4")
@@ -1088,8 +1117,9 @@ class VLLMMLXEngine(LLMEngine):
         # --- Outside lock: prompt formatting (CPU-only) ---
         dict_messages = _messages_to_dict_list(request.messages, self._chat_format)
         dict_tools = _tools_to_dict_list(request.tools)
+        enable_thinking = self._resolve_enable_thinking(request)
         formatted_prompt = self._format_prompt(
-            dict_messages, dict_tools, enable_thinking=request.enable_thinking,
+            dict_messages, dict_tools, enable_thinking=enable_thinking,
         )
 
         reasoning_parser = self._create_reasoning_parser()
@@ -1128,7 +1158,7 @@ class VLLMMLXEngine(LLMEngine):
                 "raw model output (len=%d): %s",
                 len(result_text), result_text[:500],
             )
-            result_text = _truncate_at_stop(result_text, self._stop_sequences)
+            result_text = _truncate_at_stop(result_text, self._merge_stop_sequences(request.stop))
             # First cleanup: remove generic special tokens but preserve Gemma4
             # tool_call tokens (needed by Gemma4Extractor for parsing)
             result_text = _clean_special_tokens(result_text)
@@ -1200,8 +1230,9 @@ class VLLMMLXEngine(LLMEngine):
         # --- Outside lock: prompt formatting (CPU-only) ---
         dict_messages = _messages_to_dict_list(request.messages, self._chat_format)
         dict_tools = _tools_to_dict_list(request.tools)
+        enable_thinking = self._resolve_enable_thinking(request)
         formatted_prompt = self._format_prompt(
-            dict_messages, dict_tools, enable_thinking=request.enable_thinking,
+            dict_messages, dict_tools, enable_thinking=enable_thinking,
         )
 
         reasoning_parser = self._create_reasoning_parser()
@@ -1213,6 +1244,9 @@ class VLLMMLXEngine(LLMEngine):
             ec = self._engine_config
             temperature = min(temperature, ec.tool_call_temperature)
             max_tokens = min(max_tokens, ec.tool_call_max_tokens)
+
+        # Merge request-level stop with model default stop sequences
+        merged_stop = self._merge_stop_sequences(request.stop)
 
         full_text = ""
         previous_text = ""
@@ -1250,8 +1284,8 @@ class VLLMMLXEngine(LLMEngine):
 
                     # Stop sequence detection: truncate and terminate immediately
                     stop_hit = False
-                    if self._stop_sequences:
-                        for stop_seq in self._stop_sequences:
+                    if merged_stop:
+                        for stop_seq in merged_stop:
                             stop_pos = full_text.find(stop_seq)
                             if stop_pos != -1:
                                 truncated_full = full_text[:stop_pos]

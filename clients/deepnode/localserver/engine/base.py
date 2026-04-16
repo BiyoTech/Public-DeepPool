@@ -68,7 +68,10 @@ class ChatCompletionRequest:
     top_logprobs: int | None = None
     user: str = ""
     request_id: str = ""
-    enable_thinking: bool | None = None    # 是否启用思考模式
+    enable_thinking: bool | None = None    # Legacy thinking toggle (backward compat)
+    # OpenAI-standard reasoning effort level: "none"/"minimal"/"low"/"medium"/"high"/"xhigh".
+    # Takes priority over enable_thinking when set.
+    reasoning_effort: str | None = None
 
 
 # ─────────── 响应数据结构 ───────────
