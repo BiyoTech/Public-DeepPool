@@ -17,7 +17,7 @@
     "recharge": "充值",
     "selectAmount": "选择充值金额",
     "withdraw": "提现",
-    "free_trial_tip": "全平台免费试运营",
+    "free_trial_tip": "待开放",
     "view_data": "查看数据明细"
   },
   "home": {
@@ -101,7 +101,7 @@
     }
   },
   "footer": {
-    "desc": "开源分布式 LLM 推理平台",
+    "desc": "LLM推理算力融合调度平台",
     "nav_title": "导航",
     "contact_title": "联系我们",
     "copyright": "© 2025 DeepPool. All rights reserved."
@@ -228,6 +228,9 @@
       "system_placeholder": "设定 AI 角色或行为准则...",
       "stop": "Stop 序列",
       "stop_placeholder": "输入后回车添加",
+      "reasoning_effort": "推理强度",
+      "reasoning_effort_desc": "控制推理模型的思考深度",
+      "reasoning_effort_default": "默认（由模型决定）",
       "reset": "重置为默认值"
     }
   },

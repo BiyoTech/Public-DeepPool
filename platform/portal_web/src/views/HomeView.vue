@@ -21,7 +21,7 @@
         </p>
         <div class="mt-10 flex items-center justify-center gap-4 flex-wrap">
           <router-link
-            to="/register"
+            to="/docs/getting-started/quickstart-provider"
             class="px-8 py-3 rounded-full bg-gradient-to-r from-dp-blue to-dp-blue-dark text-white font-medium
                    shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30
                    hover:from-dp-blue-dark hover:to-dp-blue-deeper transition-all duration-300 transform hover:-translate-y-0.5"
@@ -152,7 +152,7 @@
               </li>
             </ol>
             <router-link
-              to="/register"
+              to="/docs/getting-started/quickstart-provider"
               class="inline-flex items-center px-6 py-2.5 rounded-full bg-gradient-to-r from-dp-blue to-dp-blue-dark
                      text-white text-sm font-medium shadow-sm hover:shadow-md transition-all duration-200"
             >

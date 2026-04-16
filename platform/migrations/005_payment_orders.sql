@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS payment_orders (
     channel        VARCHAR(16) NOT NULL COMMENT 'payment channel: wechat / alipay',
     amount         DECIMAL(20,10) NOT NULL COMMENT 'recharge amount in yuan',
     status         VARCHAR(16) NOT NULL DEFAULT 'pending' COMMENT 'pending / paid / expired / closed',
-    qr_url         VARCHAR(512) NOT NULL DEFAULT '' COMMENT 'QR code URL for scanning',
+    qr_url         TEXT NOT NULL COMMENT 'payment URL: QR code URL (wechat) or redirect URL (alipay page pay)',
     transaction_id VARCHAR(128) DEFAULT NULL COMMENT 'third-party platform transaction ID',
     paid_at        DATETIME DEFAULT NULL COMMENT 'payment confirmation time',
     expires_at     DATETIME NOT NULL COMMENT 'order expiry time',
