@@ -56,10 +56,11 @@ message ChatStreamChunk {
 message HealthCheckRequest {}
 
 message HealthCheckResponse {
-  string status = 1;         // "ok" / "degraded" 等
-  string service = 2;        // 服务名
-  string region = 3;         // 所属区域
-  int64  online_devices = 4; // 在线设备总数
+  string status = 1;         // "ok" / "degraded" etc.
+  string service = 2;        // service name
+  string region = 3;         // region identifier
+  int64  online_devices = 4; // total online device count
+  int64  pending_tasks = 5;  // total in-flight inference tasks across all devices
 }
 
 // ── 在线会话查询 ──

@@ -19,13 +19,15 @@
 #
 # Options:
 #   --os mac|linux         Target OS (default: mac; linux planned)
-#   --os-version VERSION   Target OS version, e.g. 26, 15 (macOS major)
-#   --build-profile PROF   Build profile: dev|prod (default: prod)
-#   --binary-only          Pass --binary-only to build script
+#   --os-version VERSION   Target OS version, e.g. 26, 15 (default: 15)
+#   --build-profile PROF   Build profile: dev|prod (default: dev)
+#   --binary-only          Pass --binary-only to build script (default: on)
+#   --no-binary-only       Disable --binary-only (full build)
 #   --skip-build           Skip build step, use existing artifacts
 #   --skip-push            Skip git push (only create release)
 #   --dry-run              Validate everything without building/pushing/releasing
-#   --force                Overwrite existing release tag
+#   --force                Overwrite existing release tag (default: on)
+#   --no-force             Do not overwrite existing release tag
 #   -h, --help             Show help
 # ──────────────────────────────────────────────────────────
 
@@ -49,13 +51,13 @@ error() { echo -e "${RED}[ERROR]${NC} $*" >&2; exit 1; }
 
 # ─── Defaults ────────────────────────────────────────────
 TARGET_OS="mac"
-TARGET_OS_VERSION=""
+TARGET_OS_VERSION="26"
 BUILD_PROFILE="prod"
-BINARY_ONLY=false
+BINARY_ONLY=true
 SKIP_BUILD=false
 SKIP_PUSH=false
 DRY_RUN=false
-FORCE=false
+FORCE=true
 
 # ─── Parse arguments ────────────────────────────────────
 show_help() {
@@ -68,29 +70,28 @@ Options:
                          Currently supported: mac
                          Planned: linux
   --os-version VERSION   Target OS version (macOS major version, e.g. 26, 15)
-                         Passed to build script as --target-os
-                         If omitted, auto-detects from current system
-  --build-profile PROF   Build profile: dev | prod (default: prod)
-  --binary-only          Pass --binary-only to build script (single binary mode)
+                         Default: 15
+  --build-profile PROF   Build profile: dev | prod (default: dev)
+  --binary-only          Pass --binary-only to build script (default: on)
+  --no-binary-only       Disable --binary-only flag (full build)
   --skip-build           Skip the build step; use existing artifacts in dist/
   --skip-push            Skip git push, only create GitHub Release
   --dry-run              Validate everything without building, pushing, or releasing
-  --force                Overwrite existing release tag
+  --force                Overwrite existing release tag (default: on)
+  --no-force             Do not overwrite existing release tag
   -h, --help             Show this help message
 
 Environment Variables:
   GITHUB_TOKEN                GitHub personal access token (alternative to gh auth login)
   DEEPNODE_CODESIGN_IDENTITY  Code signing identity for macOS build
 
-Examples:
-  # Full release: build for current macOS + publish
+Defaults (no arguments):
   bash release.sh
+  # Equivalent to: --os mac --os-version 26 --build-profile prod --binary-only --force
 
-  # Build for macOS 26 and release
-  bash release.sh --os mac --os-version 26
-
-  # Build for macOS 15 in dev profile
-  bash release.sh --os mac --os-version 15 --build-profile dev
+Examples:
+  # Build for macOS 26 with prod profile
+  bash release.sh --os-version 26 --build-profile prod
 
   # Skip build, just publish existing artifacts
   bash release.sh --skip-build
@@ -98,8 +99,8 @@ Examples:
   # Dry run (validate only)
   bash release.sh --dry-run
 
-  # Force overwrite existing release
-  bash release.sh --force
+  # Full build (not binary-only) without force
+  bash release.sh --no-binary-only --no-force
 EOF
     exit 0
 }
@@ -122,11 +123,13 @@ while [[ $# -gt 0 ]]; do
             [[ $# -eq 0 ]] && error "--build-profile requires a value (dev or prod)"
             BUILD_PROFILE="$1"
             ;;
-        --binary-only) BINARY_ONLY=true ;;
-        --skip-build)  SKIP_BUILD=true ;;
-        --skip-push)   SKIP_PUSH=true ;;
-        --dry-run)     DRY_RUN=true ;;
-        --force)       FORCE=true ;;
+        --binary-only)    BINARY_ONLY=true ;;
+        --no-binary-only) BINARY_ONLY=false ;;
+        --skip-build)     SKIP_BUILD=true ;;
+        --skip-push)      SKIP_PUSH=true ;;
+        --dry-run)        DRY_RUN=true ;;
+        --force)          FORCE=true ;;
+        --no-force)       FORCE=false ;;
         *) error "Unknown option: $1. Use --help for usage." ;;
     esac
     shift
@@ -462,7 +465,7 @@ INSTALL_EOF
 chmod +x "$INSTALL_SCRIPT"
 ok "Generated install.sh"
 
-# Push README + install.sh to GitHub
+# Push README + install.sh to GitHub (binary release assets only, NO source code)
 if ! $SKIP_PUSH; then
     echo ""
     info "Pushing README + install.sh to GitHub ..."
@@ -488,10 +491,33 @@ if ! $SKIP_PUSH; then
     fi
 
     cd "$WORK_DIR"
+
+    # Safety: remove ALL files except .git to prevent source code leak.
+    find "$WORK_DIR" -mindepth 1 -maxdepth 1 -not -name '.git' -exec rm -rf {} + 2>/dev/null || true
+
     cp "$README_SRC" "$WORK_DIR/README.md"
     cp "$INSTALL_SCRIPT" "$WORK_DIR/install.sh"
 
-    git add README.md install.sh
+    # Safety: add .gitignore that only allows README.md and install.sh
+    cat > "$WORK_DIR/.gitignore" << 'GITIGNORE_EOF'
+# Only allow README.md, install.sh, and this .gitignore — block everything else
+*
+!README.md
+!install.sh
+!.gitignore
+GITIGNORE_EOF
+
+    git add README.md install.sh .gitignore
+
+    # Safety check: ensure no unexpected files are staged
+    STAGED_FILES="$(git diff --cached --name-only 2>/dev/null || true)"
+    for f in $STAGED_FILES; do
+        case "$f" in
+            README.md|install.sh|.gitignore) ;;
+            *) error "Unexpected file staged for push: '$f'. Aborting to prevent source code leak." ;;
+        esac
+    done
+
     if git diff --cached --quiet 2>/dev/null; then
         ok "No changes to push (files already up to date)"
     else
