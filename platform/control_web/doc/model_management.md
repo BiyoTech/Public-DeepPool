@@ -31,6 +31,10 @@ Hybrid 模型是一个**虚拟入口** — 自身不执行推理。当用户请�
 # 可选值：round-robin（默认）、least-inflight
 load_balance: round-robin
 
+# Gateway 单个 DeepNode 子模型的最大 inflight 上限（超过则跳过，给其它候选让路）
+# 0 表示使用代码默认值（2）
+max_inflight_per_deepnode_child: 2
+
 # 规则自上而下评估，首个匹配的规则生效
 rules:
   - name: "rule_name"           # 规则名称（便于阅读）
@@ -39,6 +43,7 @@ rules:
       min_input_tokens: 100     # 输入 token 数 >= 该值
       has_tools: true           # 请求包含工具定义
       has_reasoning: false      # 请求启用了 enable_thinking=true
+      has_vision: true          # 最后一条 user 消息包含图片（image_url）
       max_tool_count: 5         # 工具数量 <= 该值
       min_tool_count: 1         # 工具数量 >= 该值
     targets:                    # 该规则的候选模型（必须是子模型）
@@ -51,6 +56,8 @@ default_targets:
   - "model-b"
 ```
 
+> **说明**：路由策略文件只负责"**怎么选子模型**"。"**每个子模型执行时的流式健康度兜底**"（首 token 超时 / chunk 间 idle 超时）不在这里配置，详见下文 [3. 流式超时配置](#3-流式超时配置)。
+
 ### 1.3 条件字段参考
 
 | 字段 | 类型 | 说明 |
@@ -59,10 +66,13 @@ default_targets:
 | `min_input_tokens` | int | 预估输入 token 数 ≥ 该值时匹配 |
 | `has_tools` | bool | 请求包含工具定义时匹配 |
 | `has_reasoning` | bool | `enable_thinking` 为 true 时匹配 |
+| `has_vision` | bool | 最后一条 user 消息包含 `image_url` 类型内容时匹配 |
 | `max_tool_count` | int | 工具数量 ≤ 该值时匹配 |
 | `min_tool_count` | int | 工具数量 ≥ 该值时匹配 |
 
-> **注意**：Token 预估使用 `len(content) / 4` 启发式方法（约每 4 个字符 1 个 token）。所有指定条件必须同时满足（AND 逻辑）。未指定的字段不参与检查。
+> **注意**：Token 预估使用 `len(content) / 4` 启发式方法（约每 4 个字符 1 个 token），图片按 detail 模式估算（low=85 tokens/张，high/auto=765 tokens/张）。所有指定条件必须同时满足（AND 逻辑）。未指定的字段不参与检查。
+>
+> **视觉检测范围**：`has_vision` 仅检测**最后一条 `role: "user"` 的消息**是否包含图片，而非扫描全部 messages。多轮对话中，如果用户早期发送了图片但后续追问是纯文本，`has_vision` 为 false，避免将纯文本追问路由到昂贵的视觉模型。
 
 ### 1.4 负载均衡策略
 
@@ -131,11 +141,37 @@ default_targets:
   - "gpt-4o-mini-proxy"
 ```
 
-#### 示例 3：留空使用简单轮询
+#### 示例 3：视觉理解请求路由
+
+将包含图片的请求路由到支持视觉理解的模型；纯文本请求路由到轻量本地模型。
+
+```yaml
+load_balance: least-inflight
+
+rules:
+  - name: "vision_requests"
+    condition:
+      has_vision: true
+    targets:
+      - "qwen-vl-proxy"
+      - "gpt-4o-proxy"
+
+  - name: "text_only"
+    condition:
+      has_vision: false
+    targets:
+      - "qwen3-0.6b-local"
+
+default_targets:
+  - "qwen3-0.6b-local"
+  - "gpt-4o-proxy"
+```
+
+#### 示例 4：留空使用简单轮询
 
 如果未配置路由策略 YAML，所有子模型将使用轮询负载均衡并自动降级。
 
-#### 示例 4：基于并发感知的 least-inflight 路由
+#### 示例 5：基于并发感知的 least-inflight 路由
 
 适用于 DeepNode + Provider 混合部署，本地设备在高负载下可能饱和的场景。
 
@@ -274,7 +310,70 @@ hybrid-model 无自有 pricing_tiers。
 
 ---
 
-## 3. 快速参考
+## 3. 流式超时配置
+
+### 3.1 背景
+
+流式（SSE）推理请求与传统的"整体超时"语义天然冲突 —— 长推理、长生成（尤其是 reasoning 模型）可能连续数分钟输出 token，但每两个 chunk 之间应当保持较短的间隔；如果某个上游"连上了但不吐 token"或"中途卡住"，整条链路会一直阻塞，客户端超时后连接挂起、资源占用、降级机会也被白白浪费。
+
+为此 DeepPool 为**所有流式链路**（包括 Hybrid 的 Provider / DeepNode 子模型，以及非 Hybrid 的直连模型）统一应用两段式健康度守护：
+
+| 参数 | 作用 | 默认值 |
+|------|------|--------|
+| `first_token_timeout_seconds` | **首 token 超时（TTFT）**：从任务下发到收到首个 chunk 的最大等待时间 | `10` 秒 |
+| `inter_chunk_idle_timeout_seconds` | **chunk 间 idle 超时**：两个连续 chunk 之间允许的最大间隔 | `20` 秒 |
+
+**语义要点**：
+- 一旦收到首个 chunk，`first_token_timeout` 解除，切换为 `inter_chunk_idle`。
+- `inter_chunk_idle` 在每次收到新 chunk 时重置；只要 chunk 持续流入，整体时长不设上限。
+- 超时触发时主动断开上游连接；如果此时尚未向客户端写入过字节，Hybrid 会自动降级到下一个候选；否则以 OpenAI 风格的 SSE `error` 事件结束流。
+
+### 3.2 生效链路
+
+同一份配置同时作用于以下三处（对称语义、同步调整）：
+
+| 位置 | 说明 |
+|------|------|
+| Gateway → Provider（HTTP SSE） | OpenAI / 百度千帆 / 任何第三方 provider 的 SSE 行读循环 |
+| Gateway → NodeManager（gRPC stream） | Gateway 侧 gRPC `Recv` 兜底，避免 NodeManager 假死时 Gateway 无限等待 |
+| NodeManager → DeepNode（隧道 chunk 通道） | 设备未按时吐出 chunk 时，任务被中止并记录推理失败日志 |
+
+### 3.3 配置位置
+
+流式超时是**顶层配置**，不再位于 hybrid 路由策略文件中。分别在 Manager 与 NodeManager 各自的 YAML 中声明：
+
+**`manager.yaml`**（Gateway 使用）：
+```yaml
+# Stream-level liveness timeouts shared with NodeManager.
+# 0 means "use code default" (10s / 20s).
+stream_timeouts:
+  first_token_timeout_seconds: 10
+  inter_chunk_idle_timeout_seconds: 20
+```
+
+**`nodemanager.yaml`**（DispatchService 使用）：
+```yaml
+stream_timeouts:
+  first_token_timeout_seconds: 10
+  inter_chunk_idle_timeout_seconds: 20
+```
+
+> **为什么不放在 hybrid policy 里**：policy 语义上只描述"**怎么选 child**"，不是"每个 child 执行时的健康度兜底"。放在顶层 `stream_timeouts` 后，非 Hybrid 的直连 Provider / 直连 DeepNode 模型也能自动享受同一套保护，避免"只有 Hybrid 的 child 才有兜底"的语义错位。
+
+### 3.4 调参建议
+
+| 场景 | 建议 |
+|------|------|
+| 通用（默认） | 保持 10s / 20s |
+| DeepNode 冷启动 / 大模型 load 较慢 | 适当放宽 `first_token_timeout_seconds` 到 20~30s |
+| reasoning 模型（深度推理、chunk 间隔可能较长） | 适当放宽 `inter_chunk_idle_timeout_seconds` 到 30~60s |
+| 追求更激进的 Hybrid 降级 | 收紧 `first_token_timeout_seconds` 到 5~8s，让卡住的候选更快失败以切换 |
+
+> **提示**：任一字段设为 `0` 或缺省时，组件将自动回退到代码默认值。改动需重启 Manager / NodeManager 才生效。
+
+---
+
+## 4. 快速参考
 
 ### 模型创建清单
 

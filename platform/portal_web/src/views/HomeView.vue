@@ -13,6 +13,17 @@
         <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-dp-title leading-tight tracking-tight">
           {{ $t('home.hero.title') }}
         </h1>
+        <div class="mt-5 flex items-center justify-center gap-3 flex-wrap">
+          <span class="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200 shadow-sm">
+            {{ $t('home.hero.tag_cost') }}
+          </span>
+          <span class="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold bg-blue-100 text-blue-700 border border-blue-200 shadow-sm">
+            {{ $t('home.hero.tag_reliable') }}
+          </span>
+          <span class="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold bg-violet-100 text-violet-700 border border-violet-200 shadow-sm">
+            {{ $t('home.hero.tag_api') }}
+          </span>
+        </div>
         <p class="mt-6 text-lg md:text-xl text-dp-muted max-w-2xl mx-auto leading-relaxed">
           {{ $t('home.hero.subtitle') }}
         </p>
@@ -28,13 +39,13 @@
           >
             {{ $t('home.hero.cta_provider') }}
           </router-link>
-          <router-link
-            to="/docs"
+          <a
+            href="https://deeppool.tech/service"
             class="px-8 py-3 rounded-full border-2 border-dp-blue text-dp-blue font-medium
                    hover:bg-dp-blue hover:text-white transition-all duration-300 transform hover:-translate-y-0.5"
           >
             {{ $t('home.hero.cta_consumer') }}
-          </router-link>
+          </a>
         </div>
       </div>
     </section>

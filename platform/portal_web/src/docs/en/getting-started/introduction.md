@@ -2,7 +2,7 @@
 
 ## What is DeepPool?
 
-DeepPool is an open-source distributed Large Language Model (LLM) inference computing pool platform. It aggregates idle computing resources from edge devices (Mac Apple Silicon, Linux NVIDIA GPU) into a unified pool, while also integrating cloud LLM APIs (OpenAI, Qianfan, etc.), delivering cost-effective, reliable LLM inference through intelligent scheduling via a standard OpenAI-compatible API.
+DeepPool is a distributed Large Language Model (LLM) inference computing fusion and scheduling platform. It aggregates idle computing resources from edge devices (Mac Apple Silicon, Linux NVIDIA GPU) into a unified pool, while also integrating cloud LLM APIs (Qwen、Qianfan、GLM、DeepSeek, etc.), delivering cost-effective, reliable LLM inference through intelligent scheduling via a standard OpenAI-compatible API.
 
 ## Key Features
 

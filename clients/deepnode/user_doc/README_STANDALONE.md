@@ -94,8 +94,6 @@ deepnode-server/
 ├── deepnode-server-bin      # PyInstaller-packaged main binary
 ├── config.yaml              # User-configurable settings
 ├── README.md                # This file
-├── _internal/               # PyInstaller runtime dependencies (do not modify)
-└── mlx-packages/            # MLX inference engine packages (do not modify)
 ```
 
 ---
@@ -127,9 +125,6 @@ Edit `config.yaml` to adjust:
 2. macOS version meets the minimum requirement
 3. GPU is not blocked by remote desktop or similar tools
 
-### Q: How to switch the connected Platform server?
-
-**A**: Edit the `platform` section in `config.yaml`, change the `*_grpc_target` addresses.
 
 ### Q: How to view detailed logs?
 
@@ -137,7 +132,7 @@ Edit `config.yaml` to adjust:
 
 ### Q: Can I run multiple instances?
 
-**A**: Yes, but you need to change `server.port` in `config.yaml` to a different port for each instance.
+**A**: No
 
 ### Q: Where are model files stored?
 

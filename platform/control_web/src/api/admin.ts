@@ -78,3 +78,55 @@ export function assignModelsToDevice(data: { device_id: number; model_ids: numbe
 export function batchAssignModels(data: { device_ids: number[]; model_ids: number[] }) {
   return http.post('/admin/devices/batch-assign', data)
 }
+
+// ─── Consumer Operations: Token Grants ───
+
+// List token grants for a user
+export function getTokenGrants(userId: number) {
+  return http.get('/admin/token-grants', { params: { user_id: userId } })
+}
+
+// Create token grant for a user
+export function createTokenGrant(data: { user_id: number; tokens: number; expires_at?: string; remark?: string }) {
+  return http.post('/admin/token-grants', data)
+}
+
+// Delete a token grant
+export function deleteTokenGrant(id: number) {
+  return http.delete(`/admin/token-grants/${id}`)
+}
+
+// ─── Consumer Operations: Discounts ───
+
+// List discounts for a user
+export function getDiscounts(userId: number) {
+  return http.get('/admin/discounts', { params: { user_id: userId } })
+}
+
+// Create discount for a user
+export function createDiscount(data: {
+  user_id: number
+  discount_rate: number
+  effective_from: string
+  effective_to: string
+  remark?: string
+}) {
+  return http.post('/admin/discounts', data)
+}
+
+// Delete a discount
+export function deleteDiscount(id: number) {
+  return http.delete(`/admin/discounts/${id}`)
+}
+
+// ─── Consumer Operations: Platform Config ───
+
+// List all platform configs
+export function getPlatformConfigs() {
+  return http.get('/admin/platform-config')
+}
+
+// Update a platform config
+export function updatePlatformConfig(data: { config_key: string; config_value: string }) {
+  return http.put('/admin/platform-config', data)
+}

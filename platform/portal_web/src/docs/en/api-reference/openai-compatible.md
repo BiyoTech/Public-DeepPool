@@ -38,12 +38,39 @@ Content-Type: application/json
 }
 ```
 
+#### Vision Request (Image Understanding)
+
+For vision-capable models, the `content` field in `messages` supports a **multipart array** format, allowing you to send images alongside text. This follows the [OpenAI Vision API](https://platform.openai.com/docs/guides/vision) specification.
+
+```json
+{
+  "model": "deeppool-hybrid-v1",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {"type": "text", "text": "What's in this image?"},
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,iVBORw0KGgo...",
+            "detail": "auto"
+          }
+        }
+      ]
+    }
+  ],
+  "stream": true,
+  "max_tokens": 2048
+}
+```
+
 ### Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `model` | string | Yes | Model name (use `/v1/models` to get available list) |
-| `messages` | array | Yes | Conversation message list, supports `system` / `user` / `assistant` / `tool` roles |
+| `messages` | array | Yes | Conversation message list, supports `system` / `user` / `assistant` / `tool` roles. The `content` field can be a string or a multipart array (for vision requests, see below) |
 | `stream` | boolean | No | Enable streaming output (SSE), default `false` |
 | `temperature` | number | No | Sampling temperature 0~2, default 1.0 |
 | `top_p` | number | No | Nucleus sampling probability, default 1.0 |
@@ -57,6 +84,28 @@ Content-Type: application/json
 | `reasoning_effort` | string | No | Reasoning intensity control, see details below |
 | `enable_thinking` | boolean | No | Enable reasoning mode (legacy compat), recommend using `reasoning_effort` instead |
 | `seed` | integer | No | Random seed (for reproducible output) |
+
+#### Vision Message Content Format
+
+When sending images, the `content` field of a `user` message should be an array of content parts:
+
+| Part Type | Fields | Description |
+|-----------|--------|-------------|
+| `text` | `type: "text"`, `text: string` | Text content |
+| `image_url` | `type: "image_url"`, `image_url: { url, detail? }` | Image content |
+
+The `image_url.url` field supports:
+- **Base64 data URL**: `data:image/<format>;base64,<data>` (recommended for direct uploads)
+- **HTTP(S) URL**: `https://example.com/image.png` (if the model supports URL fetching)
+
+The `image_url.detail` field controls image processing fidelity:
+- `"auto"` (default) — model decides the optimal resolution
+- `"low"` — faster processing, lower resolution
+- `"high"` — higher resolution, more tokens consumed
+
+> **💡 Routing Tip**: When using Hybrid models, the Gateway automatically detects vision requests (by checking if the last `user` message contains `image_url` type content) and routes them to vision-capable child models. See [Model Routing](/en/architecture/model-routing) for details.
+
+> **⚠️ Note**: Not all models support vision. Use `/v1/models` to check model capabilities. Sending images to a non-vision model will result in an error.
 
 ---
 
@@ -268,5 +317,6 @@ The following parameters are automatically adapted by the Gateway — callers ne
 | `stop` | All DeepNode models | Auto-merged with model built-in stop sequences |
 | `tools` / `tool_choice` | All FC-capable models | Unified OpenAI Function Calling format |
 | `model` | All Provider models | Auto-replaced with upstream model name; restored in response |
+| Vision `content` array | All vision-capable models | Auto-detected and routed to vision-capable backends in Hybrid mode |
 
 This means you can use the exact same code to call Qwen, DeepSeek, GPT-4o, Claude, and other vendor models — no per-model parameter adaptation required.

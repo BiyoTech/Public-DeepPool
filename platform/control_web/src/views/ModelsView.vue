@@ -83,6 +83,11 @@
           <t-tag v-else theme="default" variant="light" size="small">No</t-tag>
         </template>
 
+        <template #supports_vision="{ row }">
+          <t-tag v-if="row.supports_vision" theme="success" variant="light" size="small">Yes</t-tag>
+          <t-tag v-else theme="default" variant="light" size="small">No</t-tag>
+        </template>
+
         <template #max_context_length="{ row }">
           <span class="text-dp-text-2 text-sm">{{ row.max_context_length ? formatContextLength(row.max_context_length) : '-' }}</span>
         </template>
@@ -295,6 +300,10 @@
           <t-switch v-model="formData.supports_function_call" />
         </t-form-item>
 
+        <t-form-item v-if="!isHybrid" label="支持视觉理解">
+          <t-switch v-model="formData.supports_vision" />
+        </t-form-item>
+
         <t-form-item v-if="!isHybrid" label="最大上下文 (K tokens)">
           <t-input-number v-model="formData.max_context_length" :min="0" :step="1" suffix="K" />
         </t-form-item>
@@ -454,6 +463,7 @@ interface ModelRow {
   priority?: number
   supports_reasoning?: boolean
   supports_function_call?: boolean
+  supports_vision?: boolean
   max_context_length?: number
   param_scale?: number
   enabled?: boolean
@@ -531,6 +541,7 @@ const columns = [
   { colKey: 'param_scale', title: '参数量级', width: 100, cell: 'param_scale' },
   { colKey: 'supports_reasoning', title: 'Reasoning', width: 100, cell: 'supports_reasoning' },
   { colKey: 'supports_function_call', title: 'FnCall', width: 90, cell: 'supports_function_call' },
+  { colKey: 'supports_vision', title: 'Vision', width: 90, cell: 'supports_vision' },
   { colKey: 'max_context_length', title: '最大上下文', width: 110, cell: 'max_context_length' },
   { colKey: 'supported_engines', title: '支持引擎', width: 160, cell: 'supported_engines' },
   { colKey: 'priority', title: '优先级', width: 90 },
@@ -584,6 +595,7 @@ const defaultForm = {
   priority: 0,
   supports_reasoning: false,
   supports_function_call: false,
+  supports_vision: false,
   max_context_length: 0,
   param_scale: 0,
   allow_external_call: true,
@@ -775,6 +787,7 @@ function openEditDialog(row: ModelRow) {
   formData.priority = row.priority || 0
   formData.supports_reasoning = row.supports_reasoning || false
   formData.supports_function_call = row.supports_function_call || false
+  formData.supports_vision = row.supports_vision || false
   formData.max_context_length = Math.round((row.max_context_length || 0) / 1000)
   formData.param_scale = row.param_scale || 0
   formData.allow_external_call = row.allow_external_call !== false
@@ -825,6 +838,7 @@ function buildPayload() {
     vendor_type: formData.vendor_type,
     supports_reasoning: formData.supports_reasoning,
     supports_function_call: formData.supports_function_call,
+    supports_vision: formData.supports_vision,
     max_context_length: formData.max_context_length * 1000,
     param_scale: formData.param_scale,
     pricing_tiers: pricingTiersRaw.length ? pricingTiersRaw : [],

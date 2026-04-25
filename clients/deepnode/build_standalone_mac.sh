@@ -532,7 +532,7 @@ mkdir -p "$OUTDIR"
 
 mv "$ONEFILE_BIN" "$OUTDIR/deepnode-server-bin"
 cp "$LOCALSERVER_DIR/$CONFIG_SOURCE_NAME" "$OUTDIR/config.yaml"
-cp "$SCRIPT_DIR/README_STANDALONE.md" "$OUTDIR/README.md"
+cp "$SCRIPT_DIR/user_doc/README_STANDALONE.md" "$OUTDIR/README.md"
 
 # Generate launcher script (same interface, adapted for onefile)
 cat > "$OUTDIR/deepnode-server" << 'WRAPPER_EOF'

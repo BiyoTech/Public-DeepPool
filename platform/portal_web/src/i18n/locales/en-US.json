@@ -4,6 +4,7 @@
     "docs": "Docs",
     "service": "Service",
     "data": "Data",
+    "misszhao": "MissZhao",
     "login": "Login",
     "register": "Sign Up",
     "logout": "Logout"
@@ -22,7 +23,10 @@
   },
   "home": {
     "hero": {
-      "title": "Distributed LLM Inference Pool",
+      "title": "LLM Inference Fusion Scheduling Platform",
+      "tag_cost": "Low Cost",
+      "tag_reliable": "High Reliability",
+      "tag_api": "Unified API Standard",
       "subtitle": "Fusing edge devices with cloud APIs through intelligent scheduling for cost-effective, reliable LLM inference",
       "cta_provider": "Earn by Sharing Power",
       "cta_consumer": "Use API",
@@ -192,12 +196,18 @@
       "placeholder": "Select a model and send a message to start chatting",
       "input_placeholder": "Type a message...",
       "send": "Send",
+      "paste_image_tip": "💡 Paste images for vision understanding (Ctrl+V)",
+      "input_placeholder_with_image": "Describe this image...",
+      "images_attached": "{count} image(s) attached",
+      "image_too_large": "Image too large, max {max}MB",
+      "image_limit": "Up to {max} images allowed",
       "thinking": "💭 Thinking",
       "need_apikey": "Please create an API Key in the right panel first, then you can start chatting.",
       "need_model": "There is no routable model available yet. Please ask an administrator to configure one.",
       "no_models": "No models available",
       "available_models": "{count} models available",
-      "load_models_failed": "Failed to load the model list. Please try again later."
+      "load_models_failed": "Failed to load the model list. Please try again later.",
+      "image_parse_error": "Failed to parse image, please try again"
     },
     "apikey": {
       "title": "API Key",
@@ -233,6 +243,32 @@
       "reasoning_effort_default": "Default (model decides)",
       "reset": "Reset to Defaults"
     }
+  },
+  "misszhao": {
+    "title": "MissZhao AI Assistant",
+    "welcome_title": "Hi, I'm MissZhao 👋",
+    "welcome_desc": "I'm your super AI assistant. I can search info, analyze stocks, set reminders, generate videos, and more. Try asking me:",
+    "example1": "Analyze the recent trend of Kweichow Moutai",
+    "example2": "Set a meeting reminder for tomorrow at 10 AM",
+    "example3": "Search for the latest AI industry news",
+    "example4": "Help me write a product promo video script",
+    "new_chat": "New Chat",
+    "history": "Chat History",
+    "no_history": "No chat history yet",
+    "input_placeholder": "Type a message, press Enter to send...",
+    "stop": "Stop",
+    "send": "Send",
+    "retry": "Retry",
+    "error_network": "Network error, please check your connection and retry",
+    "error_server": "Server error, please try again later",
+    "thinking": "Thinking...",
+    "copy_code": "Copy",
+    "copied": "Copied",
+    "select_model": "Model",
+    "no_models": "No models available",
+    "create_apikey": "Create API Key",
+    "error_no_model": "Please select a model first",
+    "error_no_apikey": "Please select or create an API Key first"
   },
   "data": {
     "title": "Data Center",

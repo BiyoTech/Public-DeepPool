@@ -1,6 +1,13 @@
 # Default hybrid routing policy.
 # No rules defined — all child models are used as default targets
-# with round-robin load balancing and automatic failover.
-load_balance: "round-robin"
+# with least-inflight load balancing and automatic failover.
+#
+# NOTE: Stream-level liveness timeouts (TTFT / inter-chunk idle) are no longer
+# configured here. They live in the top-level `stream_timeouts` block of
+# manager.yaml / nodemanager.yaml so that non-hybrid models (pure Provider /
+# pure DeepNode) benefit from the same safety net.
+load_balance: "least-inflight"
+max_inflight_per_deepnode_child: 2  # Gateway-level max inflight per deepnode child model before skipping (0 = use code default)
+
 rules: []
-default_targets: []  # empty means use all child_models with round-robin
+default_targets: []  # empty means use all child_models with least-inflight

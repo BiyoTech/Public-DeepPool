@@ -41,10 +41,12 @@ Hybrid 是生产环境的推荐模型类型，核心能力：
 
 | 特征 | 计算方式 |
 |------|---------|
-| InputTokens | 所有 message content 字符总长 ÷ 4 |
+| InputTokens | 所有 message content 字符总长 ÷ 4 + 图片 Token 估算 |
 | ToolCount | tools 数组长度 |
 | HasTools | 是否包含 function calling |
 | HasReasoning | enable_thinking 是否为 true |
+| HasVision | 最后一条 user 消息是否包含 image_url 类型内容 |
+| ImageCount | 最后一条 user 消息中的图片数量 |
 
 ### 路由策略（YAML）
 
@@ -72,6 +74,12 @@ rules:
       has_reasoning: true
     targets: ["deepseek-r1-provider"]
 
+  # 视觉理解请求路由到支持视觉的模型
+  - name: "vision"
+    condition:
+      has_vision: true
+    targets: ["qwen-vl-provider", "gpt-4o-provider"]
+
 # 无规则命中时的默认目标
 default_targets: ["qwen3-deepnode"]
 ```
@@ -93,6 +101,7 @@ default_targets: ["qwen3-deepnode"]
 | 100 tokens, 无 tools | 无匹配 → default | `["local-qwen", "cloud-gpt4", "cloud-deepseek"]` |
 | 3000 tokens | long_context | `["cloud-gpt4", "local-qwen", "cloud-deepseek"]` |
 | 有 tools | tool_call | `["local-qwen", "cloud-gpt4", "cloud-deepseek"]` |
+| 包含图片 | vision | `["qwen-vl-provider", "gpt-4o-provider", "local-qwen"]` |
 
 ## PolicyCache 缓存机制
 

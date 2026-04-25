@@ -17,10 +17,24 @@ from typing import Any, Generator, Optional
 # ─────────── 请求数据结构 ───────────
 
 @dataclass
+class ContentPart:
+    """多部分内容中的单个部分（用于视觉理解等多模态请求）。"""
+    type: str = "text"                     # "text" / "image_url"
+    text: Optional[str] = None             # type="text" 时的文本内容
+    image_url: Optional[dict] = None       # type="image_url" 时的图片信息，如 {"url": "...", "detail": "auto"}
+
+
+@dataclass
 class ChatMessage:
-    """单条聊天消息。"""
+    """单条聊天消息。
+
+    content 字段支持两种格式：
+    - str: 纯文本内容（传统模式）
+    - list[ContentPart]: 多部分内容数组（视觉理解等多模态请求）
+    引擎层应优先检查 content 是否为 list 类型来判断是否为多模态请求。
+    """
     role: str                              # system / user / assistant / tool
-    content: Optional[str] = None
+    content: str | list[ContentPart] | None = None
     name: Optional[str] = None             # role=tool 时标识函数名
     tool_calls: list[ToolCallResult] | None = None
     tool_call_id: Optional[str] = None     # role=tool 时关联的 tool_call id

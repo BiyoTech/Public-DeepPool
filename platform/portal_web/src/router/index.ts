@@ -34,6 +34,12 @@ const router = createRouter({
           component: () => import('@/views/DataView.vue'),
         },
         {
+          path: 'misszhao',
+          name: 'MissZhao',
+          meta: { requiresAuth: true },
+          component: () => import('@/views/MissZhaoView.vue'),
+        },
+        {
           path: 'wallet/recharge',
           name: 'Recharge',
           meta: { requiresAuth: true },
