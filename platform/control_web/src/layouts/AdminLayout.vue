@@ -61,6 +61,7 @@ import {
   ChatIcon,
   LogoutIcon,
   LayersIcon,
+  GiftIcon,
 } from 'tdesign-icons-vue-next'
 import { useAuthStore } from '@/stores/auth'
 
@@ -73,6 +74,7 @@ const menuItems = [
   { path: '/users', label: '用户管理', icon: UserIcon },
   { path: '/devices', label: '设备管理', icon: DeviceIcon },
   { path: '/models', label: '模型管理', icon: LayersIcon },
+  { path: '/consumer-operations', label: '用户运营', icon: GiftIcon },
   { path: '/chat', label: 'Chat 调试', icon: ChatIcon },
 ]
 

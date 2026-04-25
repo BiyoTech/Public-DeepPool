@@ -4,6 +4,7 @@
     "docs": "文档",
     "service": "服务",
     "data": "数据",
+    "misszhao": "小赵",
     "login": "登录",
     "register": "注册",
     "logout": "退出"
@@ -22,7 +23,10 @@
   },
   "home": {
     "hero": {
-      "title": "分布式 LLM 推理算力池",
+      "title": "LLM 推理算力融合调度平台",
+      "tag_cost": "低成本",
+      "tag_reliable": "高可靠",
+      "tag_api": "统一 API 标准",
       "subtitle": "融合边缘设备与云端 API，通过智能调度实现高性价比、高可靠的大模型推理服务",
       "cta_provider": "贡献算力赚收益",
       "cta_consumer": "接入 API",
@@ -192,12 +196,18 @@
       "placeholder": "选择模型并发送消息开始对话",
       "input_placeholder": "输入消息...",
       "send": "发送",
+      "paste_image_tip": "💡 支持粘贴图片进行视觉理解问答（Ctrl+V）",
+      "input_placeholder_with_image": "描述一下这张图片...",
+      "images_attached": "已添加 {count} 张图片",
+      "image_too_large": "图片过大，最大支持 {max}MB",
+      "image_limit": "最多支持 {max} 张图片",
       "thinking": "💭 思考过程",
       "need_apikey": "请先在右侧面板创建一个 API Key，然后即可开始对话。",
       "need_model": "当前没有可调试的模型，请先联系管理员配置模型。",
       "no_models": "暂无可用模型",
       "available_models": "可用模型 {count} 个",
-      "load_models_failed": "加载模型列表失败，请稍后重试。"
+      "load_models_failed": "加载模型列表失败，请稍后重试。",
+      "image_parse_error": "图片解析失败，请重试"
     },
     "apikey": {
       "title": "API Key",
@@ -233,6 +243,32 @@
       "reasoning_effort_default": "默认（由模型决定）",
       "reset": "重置为默认值"
     }
+  },
+  "misszhao": {
+    "title": "小赵 AI 助理",
+    "welcome_title": "你好，我是小赵 👋",
+    "welcome_desc": "我是你的超级 AI 助理，可以帮你搜索信息、分析股票、设置提醒、生成视频等。试试问我：",
+    "example1": "帮我分析一下贵州茅台最近的走势",
+    "example2": "设置一个明天上午 10 点的会议提醒",
+    "example3": "搜索一下最新的 AI 行业动态",
+    "example4": "帮我生成一个产品宣传视频脚本",
+    "new_chat": "新建对话",
+    "history": "对话历史",
+    "no_history": "暂无对话历史",
+    "input_placeholder": "输入消息，按 Enter 发送...",
+    "stop": "停止",
+    "send": "发送",
+    "retry": "重试",
+    "error_network": "网络请求失败，请检查网络后重试",
+    "error_server": "服务异常，请稍后重试",
+    "thinking": "思考中...",
+    "copy_code": "复制",
+    "copied": "已复制",
+    "select_model": "模型",
+    "no_models": "暂无可用模型",
+    "create_apikey": "创建 API Key",
+    "error_no_model": "请先选择一个模型",
+    "error_no_apikey": "请先选择或创建一个 API Key"
   },
   "data": {
     "title": "数据中心",

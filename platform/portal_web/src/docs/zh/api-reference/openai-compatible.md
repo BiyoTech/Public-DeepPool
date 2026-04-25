@@ -38,12 +38,39 @@ Content-Type: application/json
 }
 ```
 
+#### 视觉理解请求（Vision）
+
+对于支持视觉理解的模型，`messages` 中的 `content` 字段支持**多部分数组**格式，可以同时发送图片和文本。该格式遵循 [OpenAI Vision API](https://platform.openai.com/docs/guides/vision) 规范。
+
+```json
+{
+  "model": "deeppool-hybrid-v1",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {"type": "text", "text": "这张图片里有什么？"},
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,iVBORw0KGgo...",
+            "detail": "auto"
+          }
+        }
+      ]
+    }
+  ],
+  "stream": true,
+  "max_tokens": 2048
+}
+```
+
 ### 参数说明
 
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `model` | string | 是 | 模型名称（通过 `/v1/models` 获取可用列表） |
-| `messages` | array | 是 | 对话消息列表，支持 `system` / `user` / `assistant` / `tool` 角色 |
+| `messages` | array | 是 | 对话消息列表，支持 `system` / `user` / `assistant` / `tool` 角色。`content` 字段可以是字符串或多部分数组（用于视觉理解请求，详见下方说明） |
 | `stream` | boolean | 否 | 是否流式输出（SSE），默认 `false` |
 | `temperature` | number | 否 | 采样温度 0~2，默认 1.0 |
 | `top_p` | number | 否 | 核采样概率，默认 1.0 |
@@ -57,6 +84,28 @@ Content-Type: application/json
 | `reasoning_effort` | string | 否 | 推理强度控制，详见下方说明 |
 | `enable_thinking` | boolean | 否 | 启用推理模式（旧版兼容），推荐使用 `reasoning_effort` 代替 |
 | `seed` | integer | 否 | 随机种子（用于可复现输出） |
+
+#### 视觉理解消息 Content 格式
+
+发送图片时，`user` 消息的 `content` 字段应为内容部分的数组：
+
+| 部分类型 | 字段 | 说明 |
+|---------|------|------|
+| `text` | `type: "text"`, `text: string` | 文本内容 |
+| `image_url` | `type: "image_url"`, `image_url: { url, detail? }` | 图片内容 |
+
+`image_url.url` 字段支持：
+- **Base64 data URL**：`data:image/<格式>;base64,<数据>`（推荐，适用于直接上传）
+- **HTTP(S) URL**：`https://example.com/image.png`（需模型支持 URL 拉取）
+
+`image_url.detail` 字段控制图片处理精度：
+- `"auto"`（默认）— 由模型自动决定最优分辨率
+- `"low"` — 更快处理，较低分辨率
+- `"high"` — 更高分辨率，消耗更多 Token
+
+> **💡 路由提示**：使用 Hybrid 模型时，Gateway 会自动检测视觉理解请求（通过检查最后一条 `user` 消息是否包含 `image_url` 类型内容），并将其路由到支持视觉理解的子模型。详见[模型路由](/zh/architecture/model-routing)。
+
+> **⚠️ 注意**：并非所有模型都支持视觉理解。可通过 `/v1/models` 查看模型能力。向不支持视觉的模型发送图片将返回错误。
 
 ---
 
@@ -268,5 +317,6 @@ DeepPool Gateway 的核心设计理念是**对上层提供标准 OpenAI 规范�
 | `stop` | 所有 DeepNode 模型 | 自动与模型内置停止序列合并 |
 | `tools` / `tool_choice` | 所有支持 FC 的模型 | 统一 OpenAI Function Calling 格式 |
 | `model` | 所有 Provider 模型 | 自动替换为上游模型名，响应中还原回 DeepPool 名称 |
+| Vision `content` 数组 | 所有支持视觉的模型 | Hybrid 模式下自动检测并路由到支持视觉理解的后端 |
 
 这意味着你可以用完全相同的代码调用 Qwen、DeepSeek、GPT-4o、Claude 等不同厂商的模型，无需针对每个模型做参数适配。

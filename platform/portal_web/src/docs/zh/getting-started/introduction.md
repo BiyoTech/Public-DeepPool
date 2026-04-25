@@ -2,7 +2,7 @@
 
 ## 什么是 DeepPool？
 
-DeepPool 是一个开源的分布式大语言模型（LLM）推理算力池平台。它将分散在各地的闲置设备（Mac Apple Silicon、Linux NVIDIA GPU）的计算资源汇聚成统一算力池，同时对接云端大模型 API（OpenAI、百度千帆等），通过智能调度对外提供标准 OpenAI 兼容 API。
+DeepPool 是一个分布式大语言模型（LLM）推理算力融合调度平台。它将分散在各地的闲置设备（Mac Apple Silicon、Linux NVIDIA GPU）的计算资源汇聚成统一算力池，同时对接云端大模型 API（Qwen、百度千帆、GLM、DeepSeek等），通过智能调度对外提供标准 OpenAI 兼容 API。
 
 ## 核心特性
 

@@ -41,10 +41,12 @@ The system extracts the following features from the request body for routing dec
 
 | Feature | Calculation |
 |---------|------------|
-| InputTokens | Total chars of all message contents ÷ 4 |
+| InputTokens | Total chars of all message contents ÷ 4 + image token estimation |
 | ToolCount | Length of tools array |
 | HasTools | Whether function calling is included |
 | HasReasoning | Whether enable_thinking is true |
+| HasVision | Whether the last user message contains image_url type content |
+| ImageCount | Number of images in the last user message |
 
 ### Routing Policy (YAML)
 
@@ -72,6 +74,12 @@ rules:
       has_reasoning: true
     targets: ["deepseek-r1-provider"]
 
+  # Route vision requests to vision-capable models
+  - name: "vision"
+    condition:
+      has_vision: true
+    targets: ["qwen-vl-provider", "gpt-4o-provider"]
+
 # Default targets when no rule matches
 default_targets: ["qwen3-deepnode"]
 ```
@@ -93,6 +101,7 @@ Given a Hybrid model with `child_models: ["local-qwen", "cloud-gpt4", "cloud-dee
 | 100 tokens, no tools | No match → default | `["local-qwen", "cloud-gpt4", "cloud-deepseek"]` |
 | 3000 tokens | long_context | `["cloud-gpt4", "local-qwen", "cloud-deepseek"]` |
 | Has tools | tool_call | `["local-qwen", "cloud-gpt4", "cloud-deepseek"]` |
+| Has images | vision | `["qwen-vl-provider", "gpt-4o-provider", "local-qwen"]` |
 
 ## PolicyCache
 

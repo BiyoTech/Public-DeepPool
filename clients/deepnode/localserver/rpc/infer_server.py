@@ -27,6 +27,7 @@ from engine.base import (
     ChatCompletionRequest,
     ChatMessage as EngineChatMessage,
     CompletionTokensDetails,
+    ContentPart,
     FunctionDef,
     LLMEngine,
     ResponseFormat,
@@ -52,8 +53,42 @@ def _record_stats(**kwargs) -> None:
 # Proto ↔ Engine 数据结构转换
 # ─────────────────────────────────────────────────
 
+def _parse_multipart_content(raw_content: str) -> list[ContentPart] | str:
+    """尝试将 content 字符串解析为多部分内容数组（视觉理解等多模态请求）。
+
+    当 Gateway 转发多模态请求到 DeepNode 时，会将原始 JSON 数组作为 content 字符串传递。
+    此函数检测 content 是否为 JSON 数组格式，如果是则解析为 ContentPart 列表。
+    否则返回原始字符串（纯文本，向后兼容）。
+    """
+    if not raw_content or not raw_content.startswith("["):
+        return raw_content
+    try:
+        import json
+        parts = json.loads(raw_content)
+        if not isinstance(parts, list):
+            return raw_content
+        result = []
+        for part in parts:
+            if not isinstance(part, dict) or "type" not in part:
+                return raw_content  # 不是有效的 content parts 格式，回退到纯文本
+            cp = ContentPart(type=part["type"])
+            if part["type"] == "text":
+                cp.text = part.get("text", "")
+            elif part["type"] == "image_url":
+                cp.image_url = part.get("image_url", {})
+            result.append(cp)
+        return result
+    except (json.JSONDecodeError, TypeError, KeyError):
+        return raw_content
+
+
 def _proto_messages_to_engine(proto_msgs) -> list[EngineChatMessage]:
-    """Convert proto ChatMessage list to engine ChatMessage list."""
+    """Convert proto ChatMessage list to engine ChatMessage list.
+
+    Supports multi-part content (vision requests): when the content field
+    contains a JSON array string (forwarded by Gateway for multi-modal requests),
+    it is parsed into a list of ContentPart objects.
+    """
     result = []
     for pm in proto_msgs:
         tool_calls = None
@@ -67,9 +102,17 @@ def _proto_messages_to_engine(proto_msgs) -> list[EngineChatMessage]:
                 )
                 for tc in pm.tool_calls
             ]
+
+        # Parse content: detect multi-part JSON array for vision/multi-modal requests.
+        raw_content = pm.content if pm.HasField("content") else None
+        if raw_content is not None:
+            content = _parse_multipart_content(raw_content)
+        else:
+            content = None
+
         msg = EngineChatMessage(
             role=pm.role,
-            content=pm.content if pm.HasField("content") else None,
+            content=content,
             name=pm.name if pm.HasField("name") else None,
             tool_calls=tool_calls,
             tool_call_id=pm.tool_call_id if pm.HasField("tool_call_id") else None,

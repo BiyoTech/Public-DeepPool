@@ -128,6 +128,16 @@
                   </summary>
                   <div class="mt-1 text-xs opacity-60 border-l-2 border-slate-300 pl-2">{{ msg.reasoning }}</div>
                 </details>
+                <!-- 用户消息中的图片预览 -->
+                <div v-if="msg.images && msg.images.length" class="flex flex-wrap gap-2 mb-2">
+                  <img
+                    v-for="(img, idx) in msg.images"
+                    :key="idx"
+                    :src="img"
+                    class="max-w-[200px] max-h-[200px] rounded-lg border border-white/20 object-cover cursor-pointer"
+                    @click="previewImage(img)"
+                  />
+                </div>
                 {{ msg.content }}
                 <!-- 流式打字光标 -->
                 <span v-if="msg.streaming" class="inline-block w-1.5 h-4 bg-dp-blue animate-pulse ml-0.5 align-text-bottom" />
@@ -137,25 +147,52 @@
 
           <!-- 输入区域 -->
           <div class="px-6 py-4 border-t border-slate-100">
+            <!-- 已粘贴图片预览 -->
+            <div v-if="pendingImages.length" class="flex flex-wrap gap-2 mb-3">
+              <div
+                v-for="(img, idx) in pendingImages"
+                :key="idx"
+                class="relative group"
+              >
+                <img
+                  :src="img"
+                  class="w-16 h-16 rounded-lg border border-slate-200 object-cover"
+                />
+                <button
+                  @click="removePendingImage(idx)"
+                  class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white text-[10px]
+                         flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity
+                         hover:bg-red-600 shadow-sm"
+                >✕</button>
+              </div>
+              <div class="flex items-end">
+                <span class="text-[10px] text-dp-placeholder">{{ $t('service.chat.images_attached', { count: pendingImages.length }) }}</span>
+              </div>
+            </div>
             <form @submit.prevent="sendMessage" class="flex gap-3">
-              <input
-                v-model="userInput"
-                type="text"
-                :placeholder="$t('service.chat.input_placeholder')"
-                :disabled="isSending"
-                class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-dp-body
-                       placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100
-                       transition-all duration-200 disabled:opacity-60"
-              />
+              <div class="flex-1 relative">
+                <input
+                  ref="chatInputRef"
+                  v-model="userInput"
+                  type="text"
+                  :placeholder="pendingImages.length ? $t('service.chat.input_placeholder_with_image') : $t('service.chat.input_placeholder')"
+                  :disabled="isSending"
+                  class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-dp-body
+                         placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100
+                         transition-all duration-200 disabled:opacity-60"
+                  @paste="handlePaste"
+                />
+              </div>
               <button
                 type="submit"
-                :disabled="isSending || !userInput.trim()"
+                :disabled="isSending || (!userInput.trim() && !pendingImages.length)"
                 class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-dp-blue to-dp-blue-dark text-white text-sm font-medium
                        shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {{ isSending ? '...' : $t('service.chat.send') }}
               </button>
             </form>
+            <div class="mt-1.5 text-[10px] text-dp-placeholder">{{ $t('service.chat.paste_image_tip') }}</div>
           </div>
         </div>
 
@@ -458,6 +495,7 @@ interface ChatMessage {
   content: string
   reasoning?: string
   streaming?: boolean
+  images?: string[]  // Base64 data URLs for vision messages
 }
 
 interface GatewayModelOption {
@@ -479,6 +517,56 @@ const messages = ref<ChatMessage[]>([])
 const userInput = ref('')
 const isSending = ref(false)
 const chatContainer = ref<HTMLElement>()
+const chatInputRef = ref<HTMLInputElement>()
+
+// ── 图片粘贴支持 ──
+const pendingImages = ref<string[]>([])
+const imagePreviewUrl = ref<string | null>(null)
+
+const MAX_PENDING_IMAGES = 5
+const MAX_IMAGE_SIZE_MB = 10
+
+/** 处理粘贴事件，提取图片并转为 Base64 */
+function handlePaste(e: ClipboardEvent) {
+  const items = e.clipboardData?.items
+  if (!items) return
+
+  for (const item of items) {
+    if (!item.type.startsWith('image/')) continue
+
+    e.preventDefault() // 阻止图片被粘贴为文本
+    const file = item.getAsFile()
+    if (!file) continue
+
+    if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
+      showToast(t('service.chat.image_too_large', { max: MAX_IMAGE_SIZE_MB }), 'info')
+      continue
+    }
+
+    if (pendingImages.value.length >= MAX_PENDING_IMAGES) {
+      showToast(t('service.chat.image_limit', { max: MAX_PENDING_IMAGES }), 'info')
+      break
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        pendingImages.value.push(reader.result)
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+}
+
+/** 移除待发送的图片 */
+function removePendingImage(index: number) {
+  pendingImages.value.splice(index, 1)
+}
+
+/** 预览图片（点击放大） */
+function previewImage(url: string) {
+  window.open(url, '_blank')
+}
 
 // ── Custom model dropdown state ──
 const modelDropdownOpen = ref(false)
@@ -656,7 +744,7 @@ function handleSelect(id: number) {
 /** 发送消息并流式接收回复。 */
 async function sendMessage() {
   const text = userInput.value.trim()
-  if (!text || isSending.value) return
+  if ((!text && !pendingImages.value.length) || isSending.value) return
 
   if (!selectedModel.value) {
     messages.value.push({
@@ -675,8 +763,12 @@ async function sendMessage() {
     return
   }
 
-  // 先写入用户消息，再直接复用当前消息列表构造上下文，避免重复追加最后一条 user 消息。
-  messages.value.push({ role: 'user', content: text })
+  // 捕获当前待发送的图片，然后清空
+  const imagesToSend = [...pendingImages.value]
+  pendingImages.value = []
+
+  // 先写入用户消息（含图片预览），再直接复用当前消息列表构造上下文，避免重复追加最后一条 user 消息。
+  messages.value.push({ role: 'user', content: text, images: imagesToSend.length ? imagesToSend : undefined })
   userInput.value = ''
   isSending.value = true
   scrollToBottom()
@@ -687,9 +779,26 @@ async function sendMessage() {
 
   try {
     // 构造消息列表：如有 system prompt 则注入到开头
+    // 支持 Vision API：如果消息包含图片，构造 OpenAI 多部分 content 数组格式
     const chatMessages = messages.value
       .filter(message => !message.streaming)
-      .map(message => ({ role: message.role, content: message.content }))
+      .map(message => {
+        if (message.images && message.images.length > 0) {
+          // 构造 OpenAI Vision API 格式的多部分 content
+          const contentParts: Array<Record<string, any>> = []
+          if (message.content) {
+            contentParts.push({ type: 'text', text: message.content })
+          }
+          for (const imgDataUrl of message.images) {
+            contentParts.push({
+              type: 'image_url',
+              image_url: { url: imgDataUrl, detail: 'auto' },
+            })
+          }
+          return { role: message.role, content: contentParts }
+        }
+        return { role: message.role, content: message.content }
+      })
     if (inferParams.value.systemPrompt.trim()) {
       chatMessages.unshift({ role: 'system', content: inferParams.value.systemPrompt.trim() })
     }

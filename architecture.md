@@ -165,7 +165,7 @@ manager/
 | 字段类别 | 关键字段 | 说明 |
 |---------|---------|------|
 | 通用 | `model_name`(UK), `vendor_type`, `enabled`, `priority` | 模型唯一名称、类型、启停、优先级 |
-| 通用 | `supports_reasoning`, `supports_function_call`, `max_context_length`, `param_scale` | 能力标签（推理/FC/上下文长度/参数量） |
+| 通用 | `supports_reasoning`, `supports_function_call`, `supports_vision`, `max_context_length`, `param_scale` | 能力标签（推理/FC/视觉理解/上下文长度/参数量） |
 | DeepNode | `repo_id`, `model_base_dir`, `engine`, `supported_engines`, `min_memory_gb`, `min_gpu_memory_gb` | HF 仓库、存储路径、引擎、硬件门槛 |
 | Provider | `endpoint`, `api_key`(AES-256-GCM), `upstream_model`, `provider_type` | 上游 URL、密钥（加密存储）、上游模型名 |
 | Hybrid | `child_models`(JSON), `routing_policy`(YAML) | 子模型名称列表（≥2）、路由策略 |
@@ -314,7 +314,8 @@ RateLimiter
 │    · ToolCount                · DefaultTargets                   │
 │    · HasTools                 · Round-Robin LB                   │
 │    · HasReasoning                    │                           │
-│                                      ▼                           │
+│    · HasVision                       │                           │
+│    · ImageCount                      ▼                           │
 │                            policy.Match(features)                │
 │                                      │                           │
 │                              有序候选列表                         │
@@ -347,6 +348,11 @@ rules:                               # 条件规则列表（按顺序匹配, 首
       has_tools: true                 # 包含 function calling
     targets: ["qwen3-deepnode", "gpt-4o-provider"]
 
+  - name: "vision_to_cloud"
+    condition:
+      has_vision: true                # 包含图片内容
+    targets: ["gpt-4o-provider"]
+
 default_targets: ["qwen3-deepnode"]   # 无规则匹配时的默认目标
 ```
 
@@ -358,6 +364,7 @@ default_targets: ["qwen3-deepnode"]   # 无规则匹配时的默认目标
 | `max_tool_count` / `min_tool_count` | int | tools 数组长度范围 |
 | `has_tools` | bool | 是否包含 function calling |
 | `has_reasoning` | bool | 是否启用 enable_thinking |
+| `has_vision` | bool | 最后一条 user 消息是否包含 image_url 类型内容 |
 
 #### 4.5.3 匹配与故障转移逻辑
 

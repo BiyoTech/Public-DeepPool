@@ -399,6 +399,7 @@ server {
     add_header X-Frame-Options SAMEORIGIN always;
 
     # API proxy -> manager :8080 (TLS backend)
+    # Includes misszhao SSE chat via /api/misszhao/chat/*, so SSE settings required.
     location /api/ {
         proxy_pass https://127.0.0.1:8080;
         proxy_ssl_verify off;
@@ -406,6 +407,9 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 300s;
     }
 
     # Gateway proxy -> manager :8080 (SSE/streaming, TLS backend)
@@ -459,6 +463,9 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 300s;
     }
 
     location /v1/ {

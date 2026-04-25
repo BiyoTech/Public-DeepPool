@@ -103,6 +103,8 @@ message ChatMessage {
   string role = 1;
 
   // 文本内容（user/system/assistant 使用）
+  // 当 content 为多部分数组时（视觉理解等多模态请求），Gateway 会将原始 JSON 数组
+  // 字符串直接存入此字段，DeepNode 引擎层负责检测并解析。
   optional string content = 2;
 
   // 函数名（role=tool 时标识回复对应的函数）

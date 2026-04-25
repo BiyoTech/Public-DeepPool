@@ -6,16 +6,37 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
 
 // Config 顶层配置，server/mysql/log 为通用字段，各组件可扩展。
 type Config struct {
-	Server ServerConfig `yaml:"server"`
-	MySQL  MySQLConfig  `yaml:"mysql"`
-	Log    LogConfig    `yaml:"log"`
-	Admin  AdminConfig  `yaml:"admin"`
+	Server         ServerConfig         `yaml:"server"`
+	MySQL          MySQLConfig          `yaml:"mysql"`
+	Log            LogConfig            `yaml:"log"`
+	Admin          AdminConfig          `yaml:"admin"`
+	StreamTimeouts StreamTimeoutsConfig `yaml:"stream_timeouts"`
+}
+
+// StreamTimeoutsConfig holds global stream-level liveness timeouts shared by
+// both the Gateway (Provider SSE + gRPC stream to NodeManager) and the
+// NodeManager (DeepNode chunk channel). Keeping these as a top-level config
+// block — rather than hiding them inside hybrid routing policy — lets
+// non-hybrid models (pure Provider / pure DeepNode) benefit from the same
+// safety net, and makes the knob easy to tune per deployment.
+//
+// Semantics:
+//   - FirstTokenTimeoutSeconds: max wait from dispatch until the FIRST chunk
+//     arrives (TTFT guard). 0 means "use built-in default" (10s).
+//   - InterChunkIdleTimeoutSeconds: max idle gap allowed between two
+//     consecutive chunks (liveness guard). 0 means "use built-in default"
+//     (20s). Long-running reasoning/generation is allowed as long as chunks
+//     keep flowing within this window.
+type StreamTimeoutsConfig struct {
+	FirstTokenTimeoutSeconds     int `yaml:"first_token_timeout_seconds"`
+	InterChunkIdleTimeoutSeconds int `yaml:"inter_chunk_idle_timeout_seconds"`
 }
 
 // TLSConfig TLS/HTTPS 配置，嵌入 ServerConfig 中。
@@ -109,6 +130,39 @@ type MySQLConfig struct {
 
 type LogConfig struct {
 	Level string `yaml:"level"`
+}
+
+// Default stream-level timeouts, shared by Gateway and NodeManager. Kept in
+// the config package so all consumers reach the same defaults without a
+// cross-package dependency.
+const (
+	// DefaultFirstTokenTimeout bounds how long to wait for the FIRST streaming
+	// chunk after dispatching a task. Guards against upstream stalls / cold
+	// start hangs while tolerating reasonable model warm-up latency.
+	DefaultFirstTokenTimeout = 10 * time.Second
+
+	// DefaultInterChunkIdleTimeout bounds the gap between two consecutive
+	// chunks in a streaming response. Long-running reasoning / generation is
+	// allowed as long as chunks keep flowing within this window.
+	DefaultInterChunkIdleTimeout = 20 * time.Second
+)
+
+// FirstTokenTimeout returns the configured TTFT budget or the built-in
+// default when unset / non-positive.
+func (s StreamTimeoutsConfig) FirstTokenTimeout() time.Duration {
+	if s.FirstTokenTimeoutSeconds > 0 {
+		return time.Duration(s.FirstTokenTimeoutSeconds) * time.Second
+	}
+	return DefaultFirstTokenTimeout
+}
+
+// InterChunkIdleTimeout returns the configured inter-chunk idle budget or
+// the built-in default when unset / non-positive.
+func (s StreamTimeoutsConfig) InterChunkIdleTimeout() time.Duration {
+	if s.InterChunkIdleTimeoutSeconds > 0 {
+		return time.Duration(s.InterChunkIdleTimeoutSeconds) * time.Second
+	}
+	return DefaultInterChunkIdleTimeout
 }
 
 // Load 从指定路径加载配置文件，校验必填项并填充默认值。
