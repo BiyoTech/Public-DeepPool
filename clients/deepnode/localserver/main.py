@@ -168,6 +168,7 @@ def _try_restore_and_connect() -> None:
     from rpc.platform_client import get_shared_platform_client
     from service.connection_manager import get_connection_manager
     from service.manager import get_service_manager
+    from service.token_manager import init_token_manager
 
     cred = load_credential()
     if cred is None:
@@ -175,6 +176,9 @@ def _try_restore_and_connect() -> None:
         return
 
     logger.info("auto-restore: found credential simei=%s, requesting deploy configs from platform", cred.simei)
+
+    # Initialize TokenManager in sidecar mode (token only, no auto-refresh)
+    init_token_manager(token=cred.token)
 
     cm = get_connection_manager()
     try:
@@ -277,18 +281,26 @@ def _resolve_standalone_token() -> str | None:
     """Resolve auth token for standalone mode.
 
     Priority: direct token > auto-login via account/password.
+    Initializes the global TokenManager so that token refresh is possible
+    during the process lifetime (password kept in memory only).
+
     Returns None if token cannot be obtained.
     """
-    # 优先使用直接提供的 token
-    token = cfg.standalone.token.strip()
-    if token:
-        logger.info("standalone: using pre-configured token")
-        return token
+    from service.token_manager import init_token_manager
 
-    # 尝试通过 account/password 自动登录
+    # Use directly provided token
+    token = cfg.standalone.token.strip()
     account = cfg.standalone.account.strip()
     password = cfg.standalone.password.strip()
 
+    if token:
+        logger.info("standalone: using pre-configured token")
+        # Initialize TokenManager — if account/password are also provided,
+        # auto-refresh will be available; otherwise token-only (no refresh).
+        init_token_manager(token=token, account=account, password=password)
+        return token
+
+    # Attempt auto-login via account/password
     if not account or not password:
         logger.error(
             "standalone mode requires either --token or --account/--password. "
@@ -300,9 +312,12 @@ def _resolve_standalone_token() -> str | None:
     try:
         from service.platform_auth import platform_login
         result = platform_login(account=account, password=password)
-        # 将获取到的 token 回写到配置，供后续流程使用
         cfg.standalone.token = result.token
         logger.info("standalone: login success, user=%s (id=%d)", result.username, result.user_id)
+
+        # Initialize TokenManager with credentials for in-process refresh
+        init_token_manager(token=result.token, account=account, password=password)
+
         return result.token
     except RuntimeError as exc:
         logger.error("standalone: login failed: %s", exc)
@@ -355,6 +370,11 @@ def _start_platform_watchdog() -> None:
     the watchdog automatically re-runs the full init flow (re-register
     device + re-fetch model configs + restart tunnel) to bring the node
     back online without manual intervention.
+
+    Token-expired errors are handled transparently by PlatformClient's
+    built-in token refresh mechanism (via TokenManager).  The watchdog
+    only marks the platform as disconnected for genuine connectivity
+    failures (UNAVAILABLE, DEADLINE_EXCEEDED, etc.).
     """
     import time as _time
 
@@ -363,11 +383,10 @@ def _start_platform_watchdog() -> None:
 
         from service.credential import load_credential
         from rpc.platform_client import get_shared_platform_client
-        from service.manager import get_service_manager
+        from service.token_manager import get_token_manager
 
         logger.info("platform watchdog started (interval=%ds)", _WATCHDOG_INTERVAL_SEC)
 
-        # Track consecutive failures to avoid log spam
         consecutive_failures = 0
 
         while True:
@@ -375,16 +394,17 @@ def _start_platform_watchdog() -> None:
 
             cred = load_credential()
             if cred is None:
-                # No credential yet — nothing to watch
                 continue
 
-            # Probe: lightweight GetDevice call
+            # Use the latest token from TokenManager (may have been refreshed)
+            tm = get_token_manager()
+            current_token = tm.token if tm else cred.token
+
             try:
-                client = get_shared_platform_client(cred.token)
+                client = get_shared_platform_client(current_token)
                 client.get_device(cred.simei)
 
                 if not _platform_connected:
-                    # Backend just recovered — trigger re-init
                     logger.info("platform watchdog: backend recovered, triggering auto-recovery")
                     _platform_connected = True
                     consecutive_failures = 0
@@ -404,7 +424,6 @@ def _start_platform_watchdog() -> None:
                 if was_connected:
                     logger.warning("platform watchdog: backend unreachable — %s", exc)
                 elif consecutive_failures % 10 == 0:
-                    # Log every 10th failure to avoid spam (every ~5 min at 30s interval)
                     logger.warning(
                         "platform watchdog: still unreachable (failures=%d) — %s",
                         consecutive_failures, exc,

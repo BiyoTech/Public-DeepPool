@@ -125,8 +125,16 @@ class NodeManagerClient:
             backoff = min(backoff * _BACKOFF_MULTIPLIER, _MAX_BACKOFF_SEC)
 
     def _run_tunnel(self) -> None:
-        """执行一次完整的隧道连接生命周期。"""
-        # 根据 TLS 配置创建 gRPC channel
+        """Execute a single tunnel connection lifecycle.
+
+        Before establishing the connection, syncs the auth token from
+        TokenManager (if available) to ensure we use the latest token
+        — e.g. after a background refresh by PlatformClient.
+        """
+        # Sync latest token from TokenManager before connecting
+        self._sync_token_from_manager()
+
+        # Create gRPC channel based on TLS config
         if self._use_tls:
             root_certs = None
             if self._ca_cert:
@@ -139,31 +147,32 @@ class NodeManagerClient:
             self._channel = grpc.insecure_channel(self._target)
         stub = node_tunnel_pb2_grpc.NodeTunnelServiceStub(self._channel)
 
-        # 创建双向流通道
-        # 使用生成器发送消息，接收线程在主循环中处理
         outgoing = _MessageQueue()
         self._outgoing = outgoing
         stream = stub.Tunnel(outgoing)
 
         try:
-            # ── 注册 ──
-            # 构建模型名称列表：从 ServiceManager 获取所有已注册模型
+            # ── Register ──
             model_names = self._get_all_model_names()
             outgoing.send(node_tunnel_pb2.ClientMessage(
                 register=node_tunnel_pb2.RegisterRequest(
                     simei=self._simei,
                     auth_token=self._token,
-                    model_name=self._model_name,  # 兼容旧版 NodeManager
+                    model_name=self._model_name,
                     engine=self._engine_type,
-                    model_names=model_names,       # 多模型列表
+                    model_names=model_names,
                 ),
             ))
 
-            # 等待注册响应
+            # Wait for register ack
             resp = next(stream)
             ack = resp.register_ack
             if not ack or not ack.success:
                 msg = ack.message if ack else "no register ack"
+                # Check if the failure looks like token expiry; attempt refresh
+                if self._try_token_refresh_on_register_fail(msg):
+                    # Token refreshed — raise to trigger reconnect loop with new token
+                    raise RuntimeError(f"register failed (token refreshed, reconnecting): {msg}")
                 raise RuntimeError(f"register failed: {msg}")
 
             self._session_id = ack.session_id
@@ -173,7 +182,7 @@ class NodeManagerClient:
                 self._session_id, self._heartbeat_interval,
             )
 
-            # ── 启动心跳线程 ──
+            # ── Start heartbeat thread ──
             heartbeat_thread = threading.Thread(
                 target=self._heartbeat_loop,
                 args=(outgoing,),
@@ -182,7 +191,7 @@ class NodeManagerClient:
             )
             heartbeat_thread.start()
 
-            # ── 事件循环：接收服务端消息 ──
+            # ── Event loop: receive server messages ──
             for server_msg in stream:
                 if not self._running:
                     break
@@ -194,6 +203,40 @@ class NodeManagerClient:
             if self._channel:
                 self._channel.close()
                 self._channel = None
+
+    def _sync_token_from_manager(self) -> None:
+        """Pull the latest token from the global TokenManager, if available."""
+        try:
+            from service.token_manager import get_token_manager
+            tm = get_token_manager()
+            if tm is not None and tm.token:
+                self._token = tm.token
+        except Exception:
+            pass
+
+    def _try_token_refresh_on_register_fail(self, message: str) -> bool:
+        """Attempt token refresh when tunnel registration fails due to auth error.
+
+        Returns True if the token was successfully refreshed (caller should reconnect).
+        """
+        lower_msg = message.lower()
+        auth_hints = ("expired token", "invalid token", "unauthorized", "unauthenticated")
+        if not any(hint in lower_msg for hint in auth_hints):
+            return False
+
+        logger.warning("tunnel register failed with auth error, attempting token refresh")
+        try:
+            from service.token_manager import get_token_manager, TokenExpiredError
+            tm = get_token_manager()
+            if tm is None:
+                return False
+            new_token = tm.refresh_token()
+            self._token = new_token
+            logger.info("tunnel: token refreshed, will reconnect with new token")
+            return True
+        except (TokenExpiredError, Exception) as exc:
+            logger.warning("tunnel: token refresh failed: %s", exc)
+            return False
 
     def _heartbeat_loop(self, outgoing: _MessageQueue) -> None:
         """定时发送心跳。"""
@@ -498,6 +541,19 @@ class NodeManagerClient:
                         proto_delta.content = sc.delta.content
                     if sc.delta.reasoning_content is not None:
                         proto_delta.reasoning_content = sc.delta.reasoning_content
+                    # Serialize tool_calls into proto delta
+                    if sc.delta.tool_calls:
+                        for tc in sc.delta.tool_calls:
+                            proto_delta.tool_calls.append(
+                                llm_infer_pb2.ToolCall(
+                                    id=tc.id,
+                                    type=tc.type,
+                                    function=llm_infer_pb2.FunctionCallDetail(
+                                        name=tc.function_name,
+                                        arguments=tc.function_arguments,
+                                    ),
+                                )
+                            )
 
                 proto_cc = llm_infer_pb2.ChunkChoice(
                     index=sc.index,

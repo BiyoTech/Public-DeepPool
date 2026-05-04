@@ -2,7 +2,7 @@
   "nav": {
     "home": "Home",
     "docs": "Docs",
-    "service": "Service",
+    "service": "API",
     "data": "Data",
     "misszhao": "MissZhao",
     "login": "Login",
@@ -207,6 +207,7 @@
       "no_models": "No models available",
       "available_models": "{count} models available",
       "load_models_failed": "Failed to load the model list. Please try again later.",
+      "hybrid_tip": "For custom hybrid routing policies or questions, contact contact{'@'}deeppool.tech",
       "image_parse_error": "Failed to parse image, please try again"
     },
     "apikey": {
@@ -268,7 +269,20 @@
     "no_models": "No models available",
     "create_apikey": "Create API Key",
     "error_no_model": "Please select a model first",
-    "error_no_apikey": "Please select or create an API Key first"
+    "error_no_apikey": "Please select or create an API Key first",
+    "processing": "Processing your request...",
+    "process_complete": "Processing complete",
+    "step_tool_output": "Tool result",
+    "step_reasoning": "Thinking",
+    "output_files": "Output Files",
+    "search_files": "Search files or directories...",
+    "no_files": "No files yet",
+    "file_tab_all": "All",
+    "file_tab_doc": "Docs",
+    "file_tab_image": "Images",
+    "file_tab_sheet": "Sheets",
+    "file_tab_code": "Code",
+    "file_tab_other": "Other"
   },
   "data": {
     "title": "Data Center",

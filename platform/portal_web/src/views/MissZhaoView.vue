@@ -1,11 +1,11 @@
 <template>
   <div class="flex h-[calc(100vh-4rem)] overflow-hidden">
-    <!-- ── 左侧侧边栏 ── -->
+    <!-- ── Left sidebar: chat history ── -->
     <aside
       class="flex-shrink-0 w-64 bg-slate-50 border-r border-slate-200 flex flex-col transition-all duration-300"
       :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'"
     >
-      <!-- 新建对话按钮 -->
+      <!-- New chat button -->
       <div class="p-3 border-b border-slate-200">
         <button
           class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg border border-slate-200
@@ -19,7 +19,7 @@
         </button>
       </div>
 
-      <!-- 对话历史列表 -->
+      <!-- Chat history list -->
       <div class="flex-1 overflow-y-auto p-3">
         <h3 class="text-xs font-semibold text-dp-muted uppercase tracking-wider mb-2 px-1">
           {{ $t('misszhao.history') }}
@@ -44,14 +44,14 @@
       </div>
     </aside>
 
-    <!-- 移动端侧边栏遮罩 -->
+    <!-- Mobile sidebar overlay -->
     <div
       v-if="sidebarOpen"
       class="fixed inset-0 bg-black/30 z-40 md:hidden"
       @click="sidebarOpen = false"
     />
 
-    <!-- ── 中间主区域 ── -->
+    <!-- ── Center: main chat area ── -->
     <div class="flex-1 flex flex-col min-w-0">
       <!-- Mobile top bar -->
       <div class="md:hidden flex items-center gap-3 px-4 py-2 border-b border-slate-200 bg-white">
@@ -66,7 +66,7 @@
       <!-- Model & API Key config bar -->
       <div class="border-b border-slate-100 bg-white px-4 py-2.5">
         <div class="max-w-3xl mx-auto flex flex-wrap items-center gap-3">
-          <!-- Model selector (custom dropdown matching ServiceView) -->
+          <!-- Model selector -->
           <div class="flex items-center gap-2">
             <label class="text-xs font-medium text-dp-muted whitespace-nowrap">{{ $t('misszhao.select_model') }}</label>
             <div class="relative" ref="modelDropdownRef">
@@ -144,20 +144,31 @@
               </router-link>
             </template>
           </div>
+
+          <!-- File panel toggle -->
+          <button
+            class="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+            :class="filePanelOpen
+              ? 'bg-dp-blue/10 text-dp-blue'
+              : 'text-dp-muted hover:bg-slate-100 hover:text-dp-title'"
+            @click="filePanelOpen = !filePanelOpen"
+          >
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+            </svg>
+            {{ $t('misszhao.output_files') }}
+          </button>
         </div>
       </div>
 
       <!-- Messages area -->
       <div ref="messagesContainer" class="flex-1 overflow-y-auto">
-        <!-- 欢迎界面 -->
+        <!-- Welcome screen -->
         <div v-if="!messages.length" class="flex flex-col items-center justify-center h-full px-6 py-12">
           <div class="max-w-2xl w-full text-center">
-            <!-- Avatar -->
             <img src="/misszhao.png" alt="misszhao" class="w-16 h-16 mx-auto mb-6 rounded-2xl shadow-lg object-cover" />
             <h2 class="text-2xl font-bold text-dp-title mb-3">{{ $t('misszhao.welcome_title') }}</h2>
             <p class="text-dp-muted mb-8 leading-relaxed">{{ $t('misszhao.welcome_desc') }}</p>
-
-            <!-- 示例问题卡片 -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto">
               <button
                 v-for="(example, idx) in exampleQuestions"
@@ -172,7 +183,7 @@
           </div>
         </div>
 
-        <!-- 消息列表 -->
+        <!-- Message list -->
         <div v-else class="max-w-3xl mx-auto px-4 py-6 space-y-6">
           <div
             v-for="(msg, idx) in messages"
@@ -183,22 +194,29 @@
             <!-- AI avatar -->
             <img v-if="msg.role === 'assistant'" src="/misszhao.png" alt="misszhao" class="flex-shrink-0 w-8 h-8 rounded-lg object-cover mt-0.5" />
 
-            <!-- 消息气泡 -->
+            <!-- Message bubble -->
             <div
               class="max-w-[80%] rounded-2xl px-4 py-3"
               :class="msg.role === 'user'
                 ? 'bg-dp-blue text-white rounded-br-md'
                 : 'bg-white border border-slate-200 shadow-sm rounded-bl-md'"
             >
-              <!-- 用户消息：纯文本 -->
+              <!-- User message -->
               <div v-if="msg.role === 'user'" class="text-sm leading-relaxed whitespace-pre-wrap">
                 {{ msg.content }}
               </div>
 
-              <!-- AI 消息：Markdown 渲染 -->
+              <!-- AI message with execution steps -->
               <div v-else>
-                <MarkdownRenderer :content="msg.content" />
-                <!-- 复制按钮 -->
+                <!-- Execution progress panel -->
+                <ExecutionSteps
+                  v-if="msg.steps.length"
+                  :steps="msg.steps"
+                  :is-active="isStreaming && idx === messages.length - 1"
+                />
+                <!-- Markdown content -->
+                <MarkdownRenderer v-if="msg.content" :content="msg.content" />
+                <!-- Copy button -->
                 <div v-if="msg.content && !isStreaming" class="flex justify-end mt-2 -mb-1">
                   <button
                     class="text-xs text-dp-muted hover:text-dp-title transition-colors flex items-center gap-1"
@@ -213,7 +231,7 @@
               </div>
             </div>
 
-            <!-- 用户头像 -->
+            <!-- User avatar -->
             <div v-if="msg.role === 'user'" class="flex-shrink-0 w-8 h-8 rounded-lg bg-slate-200 flex items-center justify-center mt-0.5">
               <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
@@ -221,8 +239,8 @@
             </div>
           </div>
 
-          <!-- 加载动画 -->
-          <div v-if="isStreaming && !streamingContent" class="flex gap-3 justify-start">
+          <!-- Loading animation -->
+          <div v-if="isStreaming && !streamingContent && !currentSteps.length" class="flex gap-3 justify-start">
             <img src="/misszhao.png" alt="misszhao" class="flex-shrink-0 w-8 h-8 rounded-lg object-cover" />
             <div class="bg-white border border-slate-200 shadow-sm rounded-2xl rounded-bl-md px-4 py-3">
               <div class="flex items-center gap-1.5">
@@ -236,7 +254,7 @@
             </div>
           </div>
 
-          <!-- 错误提示 -->
+          <!-- Error message -->
           <div v-if="errorMessage" class="flex gap-3 justify-start">
             <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
               <svg class="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -259,7 +277,7 @@
         </div>
       </div>
 
-      <!-- ── 底部输入区域 ── -->
+      <!-- ── Bottom input area ── -->
       <div class="border-t border-slate-200 bg-white px-4 py-3">
         <div class="max-w-3xl mx-auto">
           <div class="flex items-end gap-3">
@@ -279,7 +297,7 @@
               />
             </div>
 
-            <!-- 发送 / 停止按钮 -->
+            <!-- Send / Stop button -->
             <button
               v-if="isStreaming"
               class="flex-shrink-0 w-10 h-10 rounded-xl bg-red-500 hover:bg-red-600 text-white
@@ -307,6 +325,79 @@
         </div>
       </div>
     </div>
+
+    <!-- ── Right panel: workspace file browser ── -->
+    <Transition
+      enter-active-class="transition-all duration-200 ease-out"
+      enter-from-class="w-0 opacity-0"
+      enter-to-class="w-80 opacity-100"
+      leave-active-class="transition-all duration-150 ease-in"
+      leave-from-class="w-80 opacity-100"
+      leave-to-class="w-0 opacity-0"
+    >
+      <aside
+        v-if="filePanelOpen"
+        class="flex-shrink-0 w-80 border-l border-slate-200 bg-white flex flex-col overflow-hidden"
+      >
+        <!-- Header -->
+        <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+          <h3 class="text-sm font-semibold text-dp-title">{{ $t('misszhao.output_files') }}</h3>
+          <button
+            class="text-dp-muted hover:text-dp-title transition-colors p-1 rounded"
+            @click="refreshFiles"
+          >
+            <svg class="w-4 h-4" :class="{ 'animate-spin': filesLoading }" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Search -->
+        <div class="px-4 py-2">
+          <input
+            v-model="fileSearchQuery"
+            type="text"
+            :placeholder="$t('misszhao.search_files')"
+            class="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs bg-slate-50 text-dp-body
+                   placeholder:text-dp-muted/50 focus:outline-none focus:border-dp-blue/40 focus:ring-1 focus:ring-dp-blue/20"
+          />
+        </div>
+
+        <!-- File type tabs -->
+        <div class="px-4 pb-2 flex gap-1 flex-wrap">
+          <button
+            v-for="tab in fileTypeTabs"
+            :key="tab.key"
+            class="px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors"
+            :class="activeFileTab === tab.key
+              ? 'bg-dp-blue text-white'
+              : 'bg-slate-100 text-dp-muted hover:bg-slate-200'"
+            @click="activeFileTab = tab.key"
+          >
+            {{ tab.label }}
+          </button>
+        </div>
+
+        <!-- File list -->
+        <div class="flex-1 overflow-y-auto px-2">
+          <div v-if="filesLoading" class="flex items-center justify-center py-8">
+            <div class="flex gap-1">
+              <span class="w-1.5 h-1.5 bg-dp-blue/40 rounded-full animate-bounce" style="animation-delay: 0ms" />
+              <span class="w-1.5 h-1.5 bg-dp-blue/40 rounded-full animate-bounce" style="animation-delay: 150ms" />
+              <span class="w-1.5 h-1.5 bg-dp-blue/40 rounded-full animate-bounce" style="animation-delay: 300ms" />
+            </div>
+          </div>
+          <div v-else-if="!filteredFiles.length" class="text-xs text-dp-muted text-center py-8">
+            {{ $t('misszhao.no_files') }}
+          </div>
+          <FileTreeNode
+            v-for="entry in filteredFiles"
+            :key="entry.path"
+            :entry="entry"
+          />
+        </div>
+      </aside>
+    </Transition>
   </div>
 </template>
 
@@ -314,10 +405,35 @@
 import { ref, reactive, nextTick, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
-import { sendMessage, getChatHistory, createNewChat, type ChatMessage, type StreamCallbacks } from '@/api/misszhao'
+import ExecutionSteps from '@/components/ExecutionSteps.vue'
+import type { ExecutionStep } from '@/components/ExecutionSteps.vue'
+import FileTreeNode from '@/components/FileTreeNode.vue'
+import {
+  sendMessage,
+  getChatHistory,
+  createNewChat,
+  listWorkspaceFiles,
+  type ChatMessage,
+  type StreamCallbacks,
+  type AgentEvent,
+  type FileEntry,
+} from '@/api/misszhao'
 import { listAPIKeys, fetchKeySecret, type APIKey } from '@/api/apikey'
 
 const { t } = useI18n()
+
+// ── Display message with execution steps ──
+
+interface DisplayMessage {
+  role: 'user' | 'assistant'
+  content: string
+  steps: ExecutionStep[]
+}
+
+interface ChatSession {
+  title: string
+  messages: DisplayMessage[]
+}
 
 // ── Model & API Key state ──
 
@@ -332,7 +448,6 @@ const selectedModelOption = computed(() => availableModels.value.find(m => m.id 
 const apiKeys = ref<APIKey[]>([])
 const selectedKeyId = ref<number | null>(null)
 
-// Custom model dropdown state
 const modelDropdownOpen = ref(false)
 const modelDropdownRef = ref<HTMLElement>()
 
@@ -344,23 +459,17 @@ function selectModel(id: string) {
 
 function vendorTypeTagClass(vendorType?: string): string {
   switch ((vendorType || '').trim()) {
-    case 'provider':
-      return 'bg-emerald-100 text-emerald-700'
-    case 'hybrid':
-      return 'bg-amber-100 text-amber-700'
-    default:
-      return 'bg-blue-100 text-dp-blue'
+    case 'provider': return 'bg-emerald-100 text-emerald-700'
+    case 'hybrid': return 'bg-amber-100 text-amber-700'
+    default: return 'bg-blue-100 text-dp-blue'
   }
 }
 
 function vendorTypeLabel(vendorType?: string): string {
   switch ((vendorType || '').trim()) {
-    case 'provider':
-      return 'Provider'
-    case 'hybrid':
-      return 'Hybrid'
-    default:
-      return 'DeepNode'
+    case 'provider': return 'Provider'
+    case 'hybrid': return 'Hybrid'
+    default: return 'DeepNode'
   }
 }
 
@@ -370,9 +479,7 @@ function handleClickOutsideDropdown(e: MouseEvent) {
   }
 }
 
-// In-memory cache for full API keys
 const keySecretCache = ref<Record<string, string>>({})
-
 const GATEWAY_BASE = import.meta.env.VITE_GATEWAY_BASE_URL || (window.location.origin + '/v1')
 const SELECTED_MODEL_KEY = 'dp_misszhao_selected_model'
 const SELECTED_KEY_KEY = 'dp_misszhao_selected_key_id'
@@ -383,14 +490,10 @@ async function fetchModels() {
   const json = await res.json()
   const items = Array.isArray(json?.data) ? json.data : []
   availableModels.value = items
-    .map((m: any) => ({
-      id: String(m.id || '').trim(),
-      vendor_type: String(m.vendor_type || '').trim(),
-    }))
+    .map((m: any) => ({ id: String(m.id || '').trim(), vendor_type: String(m.vendor_type || '').trim() }))
     .filter((m: GatewayModel) => m.id)
     .sort((a: GatewayModel, b: GatewayModel) => a.id.localeCompare(b.id))
 
-  // Restore persisted selection or pick first
   const saved = localStorage.getItem(SELECTED_MODEL_KEY)
   if (saved && availableModels.value.some(m => m.id === saved)) {
     selectedModel.value = saved
@@ -402,8 +505,6 @@ async function fetchModels() {
 async function fetchKeys() {
   const res = await listAPIKeys()
   apiKeys.value = res.data?.data || []
-
-  // Restore persisted key selection or pick first
   const saved = localStorage.getItem(SELECTED_KEY_KEY)
   const savedId = saved ? Number(saved) : null
   if (savedId && apiKeys.value.some(k => k.id === savedId)) {
@@ -419,7 +520,6 @@ function onKeyChange() {
   }
 }
 
-/** Get the full API key for the selected key (with cache). */
 async function getActiveApiKey(): Promise<string | null> {
   if (selectedKeyId.value === null) return null
   const cacheKey = String(selectedKeyId.value)
@@ -433,39 +533,95 @@ async function getActiveApiKey(): Promise<string | null> {
   return null
 }
 
-// Persist model selection on change
 function persistModelSelection() {
-  if (selectedModel.value) {
-    localStorage.setItem(SELECTED_MODEL_KEY, selectedModel.value)
-  }
+  if (selectedModel.value) localStorage.setItem(SELECTED_MODEL_KEY, selectedModel.value)
 }
 
 // ── Chat state ──
-
-interface DisplayMessage {
-  role: 'user' | 'assistant'
-  content: string
-}
-
-interface ChatSession {
-  title: string
-  messages: DisplayMessage[]
-}
 
 const messages = ref<DisplayMessage[]>([])
 const inputText = ref('')
 const inputHeight = ref(44)
 const isStreaming = ref(false)
 const streamingContent = ref('')
+const currentSteps = ref<ExecutionStep[]>([])
 const errorMessage = ref('')
 const sidebarOpen = ref(false)
 const chatSessions = reactive<ChatSession[]>([])
 const activeSessionIdx = ref(-1)
+// Track active conversation thread_id from backend
+const currentThreadId = ref<string>('')
 
 const messagesContainer = ref<HTMLElement | null>(null)
 const inputRef = ref<HTMLTextAreaElement | null>(null)
-
 let currentAbortController: AbortController | null = null
+
+// ── File panel state ──
+
+const filePanelOpen = ref(false)
+const workspaceFiles = ref<FileEntry[]>([])
+const filesLoading = ref(false)
+const fileSearchQuery = ref('')
+const activeFileTab = ref('all')
+
+const fileTypeTabs = computed(() => [
+  { key: 'all', label: t('misszhao.file_tab_all') },
+  { key: 'document', label: t('misszhao.file_tab_doc') },
+  { key: 'image', label: t('misszhao.file_tab_image') },
+  { key: 'spreadsheet', label: t('misszhao.file_tab_sheet') },
+  { key: 'code', label: t('misszhao.file_tab_code') },
+  { key: 'other', label: t('misszhao.file_tab_other') },
+])
+
+/** Filter workspace files by search query and file type tab */
+const filteredFiles = computed(() => {
+  let files = workspaceFiles.value
+  if (activeFileTab.value !== 'all') {
+    files = filterByType(files, activeFileTab.value)
+  }
+  if (fileSearchQuery.value.trim()) {
+    files = filterByName(files, fileSearchQuery.value.trim().toLowerCase())
+  }
+  return files
+})
+
+function filterByType(entries: FileEntry[], type: string): FileEntry[] {
+  const result: FileEntry[] = []
+  for (const e of entries) {
+    if (e.is_dir) {
+      const children = e.children ? filterByType(e.children, type) : []
+      if (children.length) result.push({ ...e, children })
+    } else if (e.file_type === type) {
+      result.push(e)
+    }
+  }
+  return result
+}
+
+function filterByName(entries: FileEntry[], query: string): FileEntry[] {
+  const result: FileEntry[] = []
+  for (const e of entries) {
+    if (e.name.toLowerCase().includes(query)) {
+      result.push(e)
+    } else if (e.is_dir && e.children) {
+      const children = filterByName(e.children, query)
+      if (children.length) result.push({ ...e, children })
+    }
+  }
+  return result
+}
+
+async function refreshFiles() {
+  filesLoading.value = true
+  try {
+    const resp = await listWorkspaceFiles()
+    workspaceFiles.value = resp.files
+  } catch {
+    // Silent on error
+  } finally {
+    filesLoading.value = false
+  }
+}
 
 // ── Example questions ──
 
@@ -480,7 +636,7 @@ const exampleQuestions = computed(() => [
 
 onMounted(async () => {
   document.addEventListener('click', handleClickOutsideDropdown)
-  await Promise.all([fetchModels(), fetchKeys(), loadHistory()])
+  await Promise.all([fetchModels(), fetchKeys(), loadHistory(), refreshFiles()])
 })
 
 onBeforeUnmount(() => {
@@ -491,11 +647,14 @@ onBeforeUnmount(() => {
 
 async function loadHistory() {
   try {
-    const history = await getChatHistory(50)
+    // Pass currentThreadId to load only the active conversation's messages
+    const threadId = currentThreadId.value || undefined
+    const history = await getChatHistory(50, threadId)
     if (history.length) {
       const displayMessages: DisplayMessage[] = history.map((m: ChatMessage) => ({
         role: m.role,
         content: m.content,
+        steps: [],
       }))
       messages.value = displayMessages
 
@@ -510,7 +669,89 @@ async function loadHistory() {
       scrollToBottom()
     }
   } catch {
-    // Silent — may have no history on first visit
+    // Silent
+  }
+}
+
+// ── Execution step helpers ──
+
+function formatDuration(ms: number): string {
+  const sec = Math.floor(ms / 1000)
+  const min = Math.floor(sec / 60)
+  const s = sec % 60
+  return min > 0 ? `${min.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}` : `00:${s.toString().padStart(2, '0')}`
+}
+
+function makeStepLabel(event: AgentEvent): string {
+  switch (event.type) {
+    case 'tool_called': return event.tool_name
+    case 'tool_output': return t('misszhao.step_tool_output')
+    case 'reasoning': return t('misszhao.step_reasoning')
+    case 'handoff': return `${event.source_agent} → ${event.target_agent}`
+    case 'agent_updated': return event.agent_name
+    default: return ''
+  }
+}
+
+function makeStepDetail(event: AgentEvent): string {
+  switch (event.type) {
+    case 'tool_called': {
+      try {
+        const args = JSON.parse(event.arguments)
+        return Object.entries(args).map(([k, v]) => `${k}: ${v}`).join(', ')
+      } catch { return event.arguments }
+    }
+    case 'tool_output': return event.output.slice(0, 200)
+    case 'reasoning': return event.content.slice(0, 200)
+    case 'handoff': return ''
+    case 'agent_updated': return ''
+    default: return ''
+  }
+}
+
+function handleAgentEvent(event: AgentEvent) {
+  const now = Date.now()
+
+  // Mark previous running step as done
+  if (event.type === 'tool_output') {
+    const toolStep = currentSteps.value.find(
+      s => s.type === 'tool_called' && s.status === 'running'
+    )
+    if (toolStep) {
+      toolStep.status = 'done'
+      toolStep.duration = formatDuration(now - toolStep.startTime)
+    }
+    // Don't add tool_output as a separate step — just update the tool_called step
+    updateAiMessageSteps()
+    return
+  }
+
+  // Mark all running steps as done when new step starts
+  for (const s of currentSteps.value) {
+    if (s.status === 'running') {
+      s.status = 'done'
+      if (!s.duration) s.duration = formatDuration(now - s.startTime)
+    }
+  }
+
+  const step: ExecutionStep = {
+    type: event.type,
+    label: makeStepLabel(event),
+    detail: makeStepDetail(event),
+    status: 'running',
+    startTime: now,
+    duration: '',
+  }
+
+  currentSteps.value.push(step)
+  updateAiMessageSteps()
+  scrollToBottom()
+}
+
+function updateAiMessageSteps() {
+  const aiMsg = messages.value[messages.value.length - 1]
+  if (aiMsg && aiMsg.role === 'assistant') {
+    aiMsg.steps = [...currentSteps.value]
   }
 }
 
@@ -531,23 +772,19 @@ async function doSend(text: string) {
   inputText.value = ''
   inputHeight.value = 44
 
-  // Validate model and API key are selected (required for web channel)
   if (!selectedModel.value) {
     errorMessage.value = t('misszhao.error_no_model')
     return
   }
-
-  // Persist model selection
   persistModelSelection()
 
-  // Resolve API key before sending
   const apiKey = await getActiveApiKey()
   if (!apiKey) {
     errorMessage.value = t('misszhao.error_no_apikey')
     return
   }
 
-  messages.value.push({ role: 'user', content: text })
+  messages.value.push({ role: 'user', content: text, steps: [] })
 
   if (activeSessionIdx.value === -1 || !chatSessions.length) {
     chatSessions.unshift({ title: text.slice(0, 30), messages: [] })
@@ -561,7 +798,8 @@ async function doSend(text: string) {
 
   isStreaming.value = true
   streamingContent.value = ''
-  messages.value.push({ role: 'assistant', content: '' })
+  currentSteps.value = []
+  messages.value.push({ role: 'assistant', content: '', steps: [] })
   const aiMsgIdx = messages.value.length - 1
 
   const callbacks: StreamCallbacks = {
@@ -570,16 +808,32 @@ async function doSend(text: string) {
       messages.value[aiMsgIdx].content = streamingContent.value
       scrollToBottom()
     },
+    onEvent(event: AgentEvent) {
+      handleAgentEvent(event)
+    },
     onDone() {
+      // Mark all remaining running steps as done
+      const now = Date.now()
+      for (const s of currentSteps.value) {
+        if (s.status === 'running') {
+          s.status = 'done'
+          if (!s.duration) s.duration = formatDuration(now - s.startTime)
+        }
+      }
+      updateAiMessageSteps()
+
       isStreaming.value = false
       if (chatSessions[activeSessionIdx.value]) {
         chatSessions[activeSessionIdx.value].messages = [...messages.value]
       }
       scrollToBottom()
+
+      // Refresh files after agent completes
+      refreshFiles()
     },
     onError(error: string) {
       isStreaming.value = false
-      if (messages.value[aiMsgIdx] && !messages.value[aiMsgIdx].content) {
+      if (messages.value[aiMsgIdx] && !messages.value[aiMsgIdx].content && !messages.value[aiMsgIdx].steps.length) {
         messages.value.splice(aiMsgIdx, 1)
       }
       errorMessage.value = error
@@ -587,7 +841,6 @@ async function doSend(text: string) {
     },
   }
 
-  // Pass model and API key (required for web channel)
   currentAbortController = sendMessage(text, callbacks, {
     model: selectedModel.value,
     apiKey: apiKey,
@@ -622,10 +875,12 @@ async function handleNewChat() {
   stopStreaming()
   errorMessage.value = ''
 
+  // Request backend to create new conversation with a fresh thread_id
   try {
-    await createNewChat()
+    const result = await createNewChat()
+    currentThreadId.value = result.thread_id
   } catch {
-    // Clear frontend even if backend fails
+    // Clear frontend state even if backend fails
   }
 
   if (messages.value.length && activeSessionIdx.value >= 0) {
@@ -634,6 +889,7 @@ async function handleNewChat() {
 
   messages.value = []
   streamingContent.value = ''
+  currentSteps.value = []
   activeSessionIdx.value = -1
   sidebarOpen.value = false
 }
@@ -679,19 +935,13 @@ function handleKeydown(e: KeyboardEvent) {
 function scrollToBottom() {
   nextTick(() => {
     const container = messagesContainer.value
-    if (container) {
-      container.scrollTop = container.scrollHeight
-    }
+    if (container) container.scrollTop = container.scrollHeight
   })
 }
 
 // ── Copy message ──
 
 async function copyMessage(content: string) {
-  try {
-    await navigator.clipboard.writeText(content)
-  } catch {
-    // Silent
-  }
+  try { await navigator.clipboard.writeText(content) } catch { /* Silent */ }
 }
 </script>

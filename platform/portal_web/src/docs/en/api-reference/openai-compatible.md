@@ -192,12 +192,24 @@ The `stop` parameter specifies strings that cause the model to immediately stop 
     "finish_reason": "stop"
   }],
   "usage": {
-    "prompt_tokens": 12,
-    "completion_tokens": 8,
-    "total_tokens": 20
+    "prompt_tokens": 33,
+    "completion_tokens": 196,
+    "total_tokens": 229,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 7,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
   }
 }
 ```
+
+> **Usage Format**: The `usage` field in responses is fully OpenAI-compatible, including nested `prompt_tokens_details` and `completion_tokens_details` structures. When the upstream model does not return certain fields, their values default to 0.
 
 ### Streaming Response (SSE)
 
@@ -238,6 +250,33 @@ When the model returns tool calls, `finish_reason` is `"tool_calls"`:
   }]
 }
 ```
+
+## Billing
+
+### Token Usage & Cached Tokens
+
+DeepPool billing is based on actual token consumption and fully follows the OpenAI Usage format. The `usage.prompt_tokens_details.cached_tokens` field indicates the number of prompt tokens served from cache.
+
+#### Cached Tokens Pricing
+
+| Token Type | Billing Rate | Description |
+|-----------|-------------|-------------|
+| Regular Prompt Tokens | 100% | Non-cached input tokens, billed at the model's standard input price |
+| Cached Tokens | **20%** | Cache-hit input tokens, billed at **20%** of the standard input price |
+| Completion Tokens | 100% | Output tokens, billed at the model's standard output price |
+
+#### Billing Formula
+
+```
+input_cost  = (prompt_tokens - cached_tokens) × input_price / 1,000,000
+            + cached_tokens × input_price × 0.2 / 1,000,000
+output_cost = completion_tokens × output_price / 1,000,000
+total_cost  = input_cost + output_cost
+```
+
+> **💡 Tip**: When a model supports context caching (e.g., repeated system prompts in long conversations), `cached_tokens` takes effect automatically — no additional configuration is needed. When no cache is hit, `cached_tokens` is 0 and billing falls back to the standard formula.
+
+---
 
 ## List Available Models
 

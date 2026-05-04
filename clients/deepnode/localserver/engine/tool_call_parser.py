@@ -626,19 +626,41 @@ class Gemma4Extractor(ToolCallExtractor):
             result[key] = self._cast_value(value)
         return result
 
+    # Format C: bare call without tags (EOS-truncated both tags)
+    # Matches: call:func_name{key:value,...} or call:func_name\n{json}
+    _BARE_INLINE_RE = re.compile(
+        r"(?:^|\n)\s*call:\s*(?P<name>\w+)\s*\{(?P<args>[^}]*)\}",
+        re.DOTALL,
+    )
+    _BARE_JSON_RE = re.compile(
+        r"(?:^|\n)\s*call:\s*(?P<name>[^\n{]+?)\s*\n\s*(?P<args>\{.*?\})",
+        re.DOTALL,
+    )
+
     def extract(self, text: str, tools: list[dict] | None = None) -> ExtractedToolCalls:
         cleaned = _strip_think_tags(text)
 
-        if "<|tool_call>" not in cleaned:
+        # Check for any recognizable Gemma4 tool call pattern
+        has_tag = "<|tool_call>" in cleaned
+        has_bare = "call:" in cleaned
+
+        if not has_tag and not has_bare:
             return ExtractedToolCalls(found=False, content=cleaned)
 
         # Extract content before the first tool_call block
-        first_pos = cleaned.find("<|tool_call>")
+        if has_tag:
+            first_pos = cleaned.find("<|tool_call>")
+        else:
+            # For bare format, find 'call:' preceded by start or newline
+            first_pos = -1
+            for m in re.finditer(r"(?:^|\n)\s*call:", cleaned):
+                first_pos = m.start()
+                break
         content = cleaned[:first_pos].strip() if first_pos > 0 else None
 
         calls: list[dict] = []
 
-        # Try Format A first (inline key-value, most common)
+        # Try Format A first (inline key-value with tags, most common)
         for match in self._INLINE_BLOCK_RE.finditer(cleaned):
             func_name = match.group("name").strip()
             args_str = match.group("args").strip()
@@ -647,7 +669,7 @@ class Gemma4Extractor(ToolCallExtractor):
             arguments = self._parse_inline_args(args_str)
             calls.append({"name": func_name, "arguments": arguments})
 
-        # If no inline matches, try Format B (JSON body)
+        # If no inline matches, try Format B (JSON body with tags)
         if not calls:
             for match in self._JSON_BLOCK_RE.finditer(cleaned):
                 func_name = match.group("name").strip()
@@ -666,6 +688,33 @@ class Gemma4Extractor(ToolCallExtractor):
                     "name": func_name,
                     "arguments": args if isinstance(args, dict) else {},
                 })
+
+        # Format C: bare call without tags (EOS stripped both tags)
+        if not calls:
+            for match in self._BARE_INLINE_RE.finditer(cleaned):
+                func_name = match.group("name").strip()
+                args_str = match.group("args").strip()
+                if not func_name:
+                    continue
+                arguments = self._parse_inline_args(args_str)
+                calls.append({"name": func_name, "arguments": arguments})
+                logger.debug("gemma4 extractor Format C (bare inline): func=%s", func_name)
+
+        if not calls:
+            for match in self._BARE_JSON_RE.finditer(cleaned):
+                func_name = match.group("name").strip()
+                args_str = match.group("args").strip()
+                if not func_name:
+                    continue
+                try:
+                    args = json.loads(args_str)
+                except json.JSONDecodeError:
+                    args = {}
+                calls.append({
+                    "name": func_name,
+                    "arguments": args if isinstance(args, dict) else {},
+                })
+                logger.debug("gemma4 extractor Format C (bare JSON): func=%s", func_name)
 
         if calls:
             logger.debug("gemma4 extractor found %d tool call(s)", len(calls))
