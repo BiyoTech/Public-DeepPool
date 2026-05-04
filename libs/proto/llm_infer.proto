@@ -178,20 +178,28 @@ message ChoiceLogprobs {
   repeated TokenLogprob content = 1;
 }
 
-// ─────────── Token 用量统计 ───────────
+// ─────────── Token Usage Statistics ───────────
 
-// 对齐 OpenAI CompletionTokensDetails
+// Aligned with OpenAI PromptTokensDetails
+message PromptTokensDetails {
+  int32 cached_tokens = 1;
+  int32 audio_tokens = 2;
+}
+
+// Aligned with OpenAI CompletionTokensDetails
 message CompletionTokensDetails {
-  // 推理/思考阶段消耗的 token 数
   int32 reasoning_tokens = 1;
+  int32 audio_tokens = 2;
+  int32 accepted_prediction_tokens = 3;
+  int32 rejected_prediction_tokens = 4;
 }
 
 message Usage {
   int32 prompt_tokens = 1;
   int32 completion_tokens = 2;
   int32 total_tokens = 3;
-  // 补全 token 的细分统计（reasoning_tokens 等）
   optional CompletionTokensDetails completion_tokens_details = 4;
+  optional PromptTokensDetails prompt_tokens_details = 5;
 }
 
 // ─────────── Chat Completions Response（非流式） ───────────

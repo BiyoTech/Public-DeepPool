@@ -192,12 +192,24 @@ DeepPool 支持通过 **`reasoning_effort`** 参数控制模型的思考/推理�
     "finish_reason": "stop"
   }],
   "usage": {
-    "prompt_tokens": 12,
-    "completion_tokens": 8,
-    "total_tokens": 20
+    "prompt_tokens": 33,
+    "completion_tokens": 196,
+    "total_tokens": 229,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 7,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
   }
 }
 ```
+
+> **Usage 格式说明**：响应中的 `usage` 字段完整兼容 OpenAI 标准格式，包含 `prompt_tokens_details` 和 `completion_tokens_details` 嵌套结构。当上游模型未返回某些字段时，对应值默认为 0。
 
 ### 流式响应（SSE）
 
@@ -238,6 +250,33 @@ data: [DONE]
   }]
 }
 ```
+
+## 计费说明
+
+### Token 用量与 Cached Tokens
+
+DeepPool 的计费基于实际 token 消耗，完整兼容 OpenAI 的 Usage 格式。响应中的 `usage.prompt_tokens_details.cached_tokens` 字段标识了被缓存命中的 prompt token 数量。
+
+#### Cached Tokens 计费规则
+
+| Token 类型 | 计费倍率 | 说明 |
+|-----------|---------|------|
+| 普通 Prompt Tokens | 100% | 未命中缓存的输入 token，按模型标准输入价格计费 |
+| Cached Tokens | **20%** | 命中上下文缓存的输入 token，按标准输入价格的 **20%** 计费 |
+| Completion Tokens | 100% | 输出 token，按模型标准输出价格计费 |
+
+#### 计费公式
+
+```
+输入费用 = (prompt_tokens - cached_tokens) × input_price / 1,000,000
+         + cached_tokens × input_price × 0.2 / 1,000,000
+输出费用 = completion_tokens × output_price / 1,000,000
+总费用   = 输入费用 + 输出费用
+```
+
+> **💡 提示**：当模型支持上下文缓存（如长对话中重复的 system prompt），`cached_tokens` 会自动生效，用户无需额外配置。未命中缓存时 `cached_tokens` 为 0，计费退化为标准公式。
+
+---
 
 ## 列出可用模型
 

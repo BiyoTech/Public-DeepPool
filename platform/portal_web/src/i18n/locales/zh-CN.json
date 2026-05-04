@@ -2,7 +2,7 @@
   "nav": {
     "home": "首页",
     "docs": "文档",
-    "service": "服务",
+    "service": "API",
     "data": "数据",
     "misszhao": "小赵",
     "login": "登录",
@@ -26,7 +26,7 @@
       "title": "LLM 推理算力融合调度平台",
       "tag_cost": "低成本",
       "tag_reliable": "高可靠",
-      "tag_api": "统一 API 标准",
+      "tag_api": "一个API KEY 一套接口调用所有模型",
       "subtitle": "融合边缘设备与云端 API，通过智能调度实现高性价比、高可靠的大模型推理服务",
       "cta_provider": "贡献算力赚收益",
       "cta_consumer": "接入 API",
@@ -207,6 +207,7 @@
       "no_models": "暂无可用模型",
       "available_models": "可用模型 {count} 个",
       "load_models_failed": "加载模型列表失败，请稍后重试。",
+      "hybrid_tip": "如需定制融合调度策略或有相关疑问，请联系 contact{'@'}deeppool.tech",
       "image_parse_error": "图片解析失败，请重试"
     },
     "apikey": {
@@ -268,7 +269,20 @@
     "no_models": "暂无可用模型",
     "create_apikey": "创建 API Key",
     "error_no_model": "请先选择一个模型",
-    "error_no_apikey": "请先选择或创建一个 API Key"
+    "error_no_apikey": "请先选择或创建一个 API Key",
+    "processing": "正在处理你的请求...",
+    "process_complete": "处理完成",
+    "step_tool_output": "工具返回结果",
+    "step_reasoning": "思考过程",
+    "output_files": "输出文件",
+    "search_files": "搜索文件或目录...",
+    "no_files": "暂无文件",
+    "file_tab_all": "全部",
+    "file_tab_doc": "文档",
+    "file_tab_image": "图片",
+    "file_tab_sheet": "表格",
+    "file_tab_code": "代码",
+    "file_tab_other": "其他"
   },
   "data": {
     "title": "数据中心",

@@ -334,6 +334,8 @@ type ChatMessage struct {
 	// "system" / "user" / "assistant" / "tool"
 	Role string `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
 	// 文本内容（user/system/assistant 使用）
+	// 当 content 为多部分数组时（视觉理解等多模态请求），Gateway 会将原始 JSON 数组
+	// 字符串直接存入此字段，DeepNode 引擎层负责检测并解析。
 	Content *string `protobuf:"bytes,2,opt,name=content,proto3,oneof" json:"content,omitempty"`
 	// 函数名（role=tool 时标识回复对应的函数）
 	Name *string `protobuf:"bytes,3,opt,name=name,proto3,oneof" json:"name,omitempty"`
@@ -875,18 +877,73 @@ func (x *ChoiceLogprobs) GetContent() []*TokenLogprob {
 	return nil
 }
 
-// 对齐 OpenAI CompletionTokensDetails
+// Aligned with OpenAI PromptTokensDetails
+type PromptTokensDetails struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	CachedTokens  int32                  `protobuf:"varint,1,opt,name=cached_tokens,json=cachedTokens,proto3" json:"cached_tokens,omitempty"`
+	AudioTokens   int32                  `protobuf:"varint,2,opt,name=audio_tokens,json=audioTokens,proto3" json:"audio_tokens,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PromptTokensDetails) Reset() {
+	*x = PromptTokensDetails{}
+	mi := &file_llm_infer_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PromptTokensDetails) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PromptTokensDetails) ProtoMessage() {}
+
+func (x *PromptTokensDetails) ProtoReflect() protoreflect.Message {
+	mi := &file_llm_infer_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PromptTokensDetails.ProtoReflect.Descriptor instead.
+func (*PromptTokensDetails) Descriptor() ([]byte, []int) {
+	return file_llm_infer_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *PromptTokensDetails) GetCachedTokens() int32 {
+	if x != nil {
+		return x.CachedTokens
+	}
+	return 0
+}
+
+func (x *PromptTokensDetails) GetAudioTokens() int32 {
+	if x != nil {
+		return x.AudioTokens
+	}
+	return 0
+}
+
+// Aligned with OpenAI CompletionTokensDetails
 type CompletionTokensDetails struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// 推理/思考阶段消耗的 token 数
-	ReasoningTokens int32 `protobuf:"varint,1,opt,name=reasoning_tokens,json=reasoningTokens,proto3" json:"reasoning_tokens,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state                    protoimpl.MessageState `protogen:"open.v1"`
+	ReasoningTokens          int32                  `protobuf:"varint,1,opt,name=reasoning_tokens,json=reasoningTokens,proto3" json:"reasoning_tokens,omitempty"`
+	AudioTokens              int32                  `protobuf:"varint,2,opt,name=audio_tokens,json=audioTokens,proto3" json:"audio_tokens,omitempty"`
+	AcceptedPredictionTokens int32                  `protobuf:"varint,3,opt,name=accepted_prediction_tokens,json=acceptedPredictionTokens,proto3" json:"accepted_prediction_tokens,omitempty"`
+	RejectedPredictionTokens int32                  `protobuf:"varint,4,opt,name=rejected_prediction_tokens,json=rejectedPredictionTokens,proto3" json:"rejected_prediction_tokens,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *CompletionTokensDetails) Reset() {
 	*x = CompletionTokensDetails{}
-	mi := &file_llm_infer_proto_msgTypes[12]
+	mi := &file_llm_infer_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -898,7 +955,7 @@ func (x *CompletionTokensDetails) String() string {
 func (*CompletionTokensDetails) ProtoMessage() {}
 
 func (x *CompletionTokensDetails) ProtoReflect() protoreflect.Message {
-	mi := &file_llm_infer_proto_msgTypes[12]
+	mi := &file_llm_infer_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -911,7 +968,7 @@ func (x *CompletionTokensDetails) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompletionTokensDetails.ProtoReflect.Descriptor instead.
 func (*CompletionTokensDetails) Descriptor() ([]byte, []int) {
-	return file_llm_infer_proto_rawDescGZIP(), []int{12}
+	return file_llm_infer_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *CompletionTokensDetails) GetReasoningTokens() int32 {
@@ -921,20 +978,41 @@ func (x *CompletionTokensDetails) GetReasoningTokens() int32 {
 	return 0
 }
 
+func (x *CompletionTokensDetails) GetAudioTokens() int32 {
+	if x != nil {
+		return x.AudioTokens
+	}
+	return 0
+}
+
+func (x *CompletionTokensDetails) GetAcceptedPredictionTokens() int32 {
+	if x != nil {
+		return x.AcceptedPredictionTokens
+	}
+	return 0
+}
+
+func (x *CompletionTokensDetails) GetRejectedPredictionTokens() int32 {
+	if x != nil {
+		return x.RejectedPredictionTokens
+	}
+	return 0
+}
+
 type Usage struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	PromptTokens     int32                  `protobuf:"varint,1,opt,name=prompt_tokens,json=promptTokens,proto3" json:"prompt_tokens,omitempty"`
-	CompletionTokens int32                  `protobuf:"varint,2,opt,name=completion_tokens,json=completionTokens,proto3" json:"completion_tokens,omitempty"`
-	TotalTokens      int32                  `protobuf:"varint,3,opt,name=total_tokens,json=totalTokens,proto3" json:"total_tokens,omitempty"`
-	// 补全 token 的细分统计（reasoning_tokens 等）
+	state                   protoimpl.MessageState   `protogen:"open.v1"`
+	PromptTokens            int32                    `protobuf:"varint,1,opt,name=prompt_tokens,json=promptTokens,proto3" json:"prompt_tokens,omitempty"`
+	CompletionTokens        int32                    `protobuf:"varint,2,opt,name=completion_tokens,json=completionTokens,proto3" json:"completion_tokens,omitempty"`
+	TotalTokens             int32                    `protobuf:"varint,3,opt,name=total_tokens,json=totalTokens,proto3" json:"total_tokens,omitempty"`
 	CompletionTokensDetails *CompletionTokensDetails `protobuf:"bytes,4,opt,name=completion_tokens_details,json=completionTokensDetails,proto3,oneof" json:"completion_tokens_details,omitempty"`
+	PromptTokensDetails     *PromptTokensDetails     `protobuf:"bytes,5,opt,name=prompt_tokens_details,json=promptTokensDetails,proto3,oneof" json:"prompt_tokens_details,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
 
 func (x *Usage) Reset() {
 	*x = Usage{}
-	mi := &file_llm_infer_proto_msgTypes[13]
+	mi := &file_llm_infer_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -946,7 +1024,7 @@ func (x *Usage) String() string {
 func (*Usage) ProtoMessage() {}
 
 func (x *Usage) ProtoReflect() protoreflect.Message {
-	mi := &file_llm_infer_proto_msgTypes[13]
+	mi := &file_llm_infer_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -959,7 +1037,7 @@ func (x *Usage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Usage.ProtoReflect.Descriptor instead.
 func (*Usage) Descriptor() ([]byte, []int) {
-	return file_llm_infer_proto_rawDescGZIP(), []int{13}
+	return file_llm_infer_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *Usage) GetPromptTokens() int32 {
@@ -990,6 +1068,13 @@ func (x *Usage) GetCompletionTokensDetails() *CompletionTokensDetails {
 	return nil
 }
 
+func (x *Usage) GetPromptTokensDetails() *PromptTokensDetails {
+	if x != nil {
+		return x.PromptTokensDetails
+	}
+	return nil
+}
+
 type ChatCompletionResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Id    string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -1006,7 +1091,7 @@ type ChatCompletionResponse struct {
 
 func (x *ChatCompletionResponse) Reset() {
 	*x = ChatCompletionResponse{}
-	mi := &file_llm_infer_proto_msgTypes[14]
+	mi := &file_llm_infer_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1018,7 +1103,7 @@ func (x *ChatCompletionResponse) String() string {
 func (*ChatCompletionResponse) ProtoMessage() {}
 
 func (x *ChatCompletionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_llm_infer_proto_msgTypes[14]
+	mi := &file_llm_infer_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1031,7 +1116,7 @@ func (x *ChatCompletionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChatCompletionResponse.ProtoReflect.Descriptor instead.
 func (*ChatCompletionResponse) Descriptor() ([]byte, []int) {
-	return file_llm_infer_proto_rawDescGZIP(), []int{14}
+	return file_llm_infer_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ChatCompletionResponse) GetId() string {
@@ -1096,7 +1181,7 @@ type Choice struct {
 
 func (x *Choice) Reset() {
 	*x = Choice{}
-	mi := &file_llm_infer_proto_msgTypes[15]
+	mi := &file_llm_infer_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1108,7 +1193,7 @@ func (x *Choice) String() string {
 func (*Choice) ProtoMessage() {}
 
 func (x *Choice) ProtoReflect() protoreflect.Message {
-	mi := &file_llm_infer_proto_msgTypes[15]
+	mi := &file_llm_infer_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1121,7 +1206,7 @@ func (x *Choice) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Choice.ProtoReflect.Descriptor instead.
 func (*Choice) Descriptor() ([]byte, []int) {
-	return file_llm_infer_proto_rawDescGZIP(), []int{15}
+	return file_llm_infer_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *Choice) GetIndex() int32 {
@@ -1169,7 +1254,7 @@ type ChatCompletionChunk struct {
 
 func (x *ChatCompletionChunk) Reset() {
 	*x = ChatCompletionChunk{}
-	mi := &file_llm_infer_proto_msgTypes[16]
+	mi := &file_llm_infer_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1181,7 +1266,7 @@ func (x *ChatCompletionChunk) String() string {
 func (*ChatCompletionChunk) ProtoMessage() {}
 
 func (x *ChatCompletionChunk) ProtoReflect() protoreflect.Message {
-	mi := &file_llm_infer_proto_msgTypes[16]
+	mi := &file_llm_infer_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1194,7 +1279,7 @@ func (x *ChatCompletionChunk) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChatCompletionChunk.ProtoReflect.Descriptor instead.
 func (*ChatCompletionChunk) Descriptor() ([]byte, []int) {
-	return file_llm_infer_proto_rawDescGZIP(), []int{16}
+	return file_llm_infer_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ChatCompletionChunk) GetId() string {
@@ -1259,7 +1344,7 @@ type ChunkChoice struct {
 
 func (x *ChunkChoice) Reset() {
 	*x = ChunkChoice{}
-	mi := &file_llm_infer_proto_msgTypes[17]
+	mi := &file_llm_infer_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1271,7 +1356,7 @@ func (x *ChunkChoice) String() string {
 func (*ChunkChoice) ProtoMessage() {}
 
 func (x *ChunkChoice) ProtoReflect() protoreflect.Message {
-	mi := &file_llm_infer_proto_msgTypes[17]
+	mi := &file_llm_infer_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1284,7 +1369,7 @@ func (x *ChunkChoice) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChunkChoice.ProtoReflect.Descriptor instead.
 func (*ChunkChoice) Descriptor() ([]byte, []int) {
-	return file_llm_infer_proto_rawDescGZIP(), []int{17}
+	return file_llm_infer_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *ChunkChoice) GetIndex() int32 {
@@ -1329,7 +1414,7 @@ type ChatMessageDelta struct {
 
 func (x *ChatMessageDelta) Reset() {
 	*x = ChatMessageDelta{}
-	mi := &file_llm_infer_proto_msgTypes[18]
+	mi := &file_llm_infer_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1341,7 +1426,7 @@ func (x *ChatMessageDelta) String() string {
 func (*ChatMessageDelta) ProtoMessage() {}
 
 func (x *ChatMessageDelta) ProtoReflect() protoreflect.Message {
-	mi := &file_llm_infer_proto_msgTypes[18]
+	mi := &file_llm_infer_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1354,7 +1439,7 @@ func (x *ChatMessageDelta) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChatMessageDelta.ProtoReflect.Descriptor instead.
 func (*ChatMessageDelta) Descriptor() ([]byte, []int) {
-	return file_llm_infer_proto_rawDescGZIP(), []int{18}
+	return file_llm_infer_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *ChatMessageDelta) GetRole() string {
@@ -1471,15 +1556,23 @@ const file_llm_infer_proto_rawDesc = "" +
 	"\x05bytes\x18\x03 \x03(\x05R\x05bytes\x12>\n" +
 	"\ftop_logprobs\x18\x04 \x03(\v2\x1b.deeppool.llm.v1.TopLogprobR\vtopLogprobs\"I\n" +
 	"\x0eChoiceLogprobs\x127\n" +
-	"\acontent\x18\x01 \x03(\v2\x1d.deeppool.llm.v1.TokenLogprobR\acontent\"D\n" +
+	"\acontent\x18\x01 \x03(\v2\x1d.deeppool.llm.v1.TokenLogprobR\acontent\"]\n" +
+	"\x13PromptTokensDetails\x12#\n" +
+	"\rcached_tokens\x18\x01 \x01(\x05R\fcachedTokens\x12!\n" +
+	"\faudio_tokens\x18\x02 \x01(\x05R\vaudioTokens\"\xe3\x01\n" +
 	"\x17CompletionTokensDetails\x12)\n" +
-	"\x10reasoning_tokens\x18\x01 \x01(\x05R\x0freasoningTokens\"\x85\x02\n" +
+	"\x10reasoning_tokens\x18\x01 \x01(\x05R\x0freasoningTokens\x12!\n" +
+	"\faudio_tokens\x18\x02 \x01(\x05R\vaudioTokens\x12<\n" +
+	"\x1aaccepted_prediction_tokens\x18\x03 \x01(\x05R\x18acceptedPredictionTokens\x12<\n" +
+	"\x1arejected_prediction_tokens\x18\x04 \x01(\x05R\x18rejectedPredictionTokens\"\xfe\x02\n" +
 	"\x05Usage\x12#\n" +
 	"\rprompt_tokens\x18\x01 \x01(\x05R\fpromptTokens\x12+\n" +
 	"\x11completion_tokens\x18\x02 \x01(\x05R\x10completionTokens\x12!\n" +
 	"\ftotal_tokens\x18\x03 \x01(\x05R\vtotalTokens\x12i\n" +
-	"\x19completion_tokens_details\x18\x04 \x01(\v2(.deeppool.llm.v1.CompletionTokensDetailsH\x00R\x17completionTokensDetails\x88\x01\x01B\x1c\n" +
-	"\x1a_completion_tokens_details\"\x9c\x02\n" +
+	"\x19completion_tokens_details\x18\x04 \x01(\v2(.deeppool.llm.v1.CompletionTokensDetailsH\x00R\x17completionTokensDetails\x88\x01\x01\x12]\n" +
+	"\x15prompt_tokens_details\x18\x05 \x01(\v2$.deeppool.llm.v1.PromptTokensDetailsH\x01R\x13promptTokensDetails\x88\x01\x01B\x1c\n" +
+	"\x1a_completion_tokens_detailsB\x18\n" +
+	"\x16_prompt_tokens_details\"\x9c\x02\n" +
 	"\x16ChatCompletionResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
 	"\x06object\x18\x02 \x01(\tR\x06object\x12\x18\n" +
@@ -1539,7 +1632,7 @@ func file_llm_infer_proto_rawDescGZIP() []byte {
 	return file_llm_infer_proto_rawDescData
 }
 
-var file_llm_infer_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_llm_infer_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_llm_infer_proto_goTypes = []any{
 	(*HealthRequest)(nil),           // 0: deeppool.llm.v1.HealthRequest
 	(*HealthResponse)(nil),          // 1: deeppool.llm.v1.HealthResponse
@@ -1553,13 +1646,14 @@ var file_llm_infer_proto_goTypes = []any{
 	(*TopLogprob)(nil),              // 9: deeppool.llm.v1.TopLogprob
 	(*TokenLogprob)(nil),            // 10: deeppool.llm.v1.TokenLogprob
 	(*ChoiceLogprobs)(nil),          // 11: deeppool.llm.v1.ChoiceLogprobs
-	(*CompletionTokensDetails)(nil), // 12: deeppool.llm.v1.CompletionTokensDetails
-	(*Usage)(nil),                   // 13: deeppool.llm.v1.Usage
-	(*ChatCompletionResponse)(nil),  // 14: deeppool.llm.v1.ChatCompletionResponse
-	(*Choice)(nil),                  // 15: deeppool.llm.v1.Choice
-	(*ChatCompletionChunk)(nil),     // 16: deeppool.llm.v1.ChatCompletionChunk
-	(*ChunkChoice)(nil),             // 17: deeppool.llm.v1.ChunkChoice
-	(*ChatMessageDelta)(nil),        // 18: deeppool.llm.v1.ChatMessageDelta
+	(*PromptTokensDetails)(nil),     // 12: deeppool.llm.v1.PromptTokensDetails
+	(*CompletionTokensDetails)(nil), // 13: deeppool.llm.v1.CompletionTokensDetails
+	(*Usage)(nil),                   // 14: deeppool.llm.v1.Usage
+	(*ChatCompletionResponse)(nil),  // 15: deeppool.llm.v1.ChatCompletionResponse
+	(*Choice)(nil),                  // 16: deeppool.llm.v1.Choice
+	(*ChatCompletionChunk)(nil),     // 17: deeppool.llm.v1.ChatCompletionChunk
+	(*ChunkChoice)(nil),             // 18: deeppool.llm.v1.ChunkChoice
+	(*ChatMessageDelta)(nil),        // 19: deeppool.llm.v1.ChatMessageDelta
 }
 var file_llm_infer_proto_depIdxs = []int32{
 	3,  // 0: deeppool.llm.v1.ChatCompletionRequest.messages:type_name -> deeppool.llm.v1.ChatMessage
@@ -1570,27 +1664,28 @@ var file_llm_infer_proto_depIdxs = []int32{
 	7,  // 5: deeppool.llm.v1.ToolCall.function:type_name -> deeppool.llm.v1.FunctionCallDetail
 	9,  // 6: deeppool.llm.v1.TokenLogprob.top_logprobs:type_name -> deeppool.llm.v1.TopLogprob
 	10, // 7: deeppool.llm.v1.ChoiceLogprobs.content:type_name -> deeppool.llm.v1.TokenLogprob
-	12, // 8: deeppool.llm.v1.Usage.completion_tokens_details:type_name -> deeppool.llm.v1.CompletionTokensDetails
-	15, // 9: deeppool.llm.v1.ChatCompletionResponse.choices:type_name -> deeppool.llm.v1.Choice
-	13, // 10: deeppool.llm.v1.ChatCompletionResponse.usage:type_name -> deeppool.llm.v1.Usage
-	3,  // 11: deeppool.llm.v1.Choice.message:type_name -> deeppool.llm.v1.ChatMessage
-	11, // 12: deeppool.llm.v1.Choice.logprobs:type_name -> deeppool.llm.v1.ChoiceLogprobs
-	17, // 13: deeppool.llm.v1.ChatCompletionChunk.choices:type_name -> deeppool.llm.v1.ChunkChoice
-	13, // 14: deeppool.llm.v1.ChatCompletionChunk.usage:type_name -> deeppool.llm.v1.Usage
-	18, // 15: deeppool.llm.v1.ChunkChoice.delta:type_name -> deeppool.llm.v1.ChatMessageDelta
-	11, // 16: deeppool.llm.v1.ChunkChoice.logprobs:type_name -> deeppool.llm.v1.ChoiceLogprobs
-	6,  // 17: deeppool.llm.v1.ChatMessageDelta.tool_calls:type_name -> deeppool.llm.v1.ToolCall
-	0,  // 18: deeppool.llm.v1.LLMInferService.Health:input_type -> deeppool.llm.v1.HealthRequest
-	2,  // 19: deeppool.llm.v1.LLMInferService.ChatCompletion:input_type -> deeppool.llm.v1.ChatCompletionRequest
-	2,  // 20: deeppool.llm.v1.LLMInferService.ChatCompletionStream:input_type -> deeppool.llm.v1.ChatCompletionRequest
-	1,  // 21: deeppool.llm.v1.LLMInferService.Health:output_type -> deeppool.llm.v1.HealthResponse
-	14, // 22: deeppool.llm.v1.LLMInferService.ChatCompletion:output_type -> deeppool.llm.v1.ChatCompletionResponse
-	16, // 23: deeppool.llm.v1.LLMInferService.ChatCompletionStream:output_type -> deeppool.llm.v1.ChatCompletionChunk
-	21, // [21:24] is the sub-list for method output_type
-	18, // [18:21] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	13, // 8: deeppool.llm.v1.Usage.completion_tokens_details:type_name -> deeppool.llm.v1.CompletionTokensDetails
+	12, // 9: deeppool.llm.v1.Usage.prompt_tokens_details:type_name -> deeppool.llm.v1.PromptTokensDetails
+	16, // 10: deeppool.llm.v1.ChatCompletionResponse.choices:type_name -> deeppool.llm.v1.Choice
+	14, // 11: deeppool.llm.v1.ChatCompletionResponse.usage:type_name -> deeppool.llm.v1.Usage
+	3,  // 12: deeppool.llm.v1.Choice.message:type_name -> deeppool.llm.v1.ChatMessage
+	11, // 13: deeppool.llm.v1.Choice.logprobs:type_name -> deeppool.llm.v1.ChoiceLogprobs
+	18, // 14: deeppool.llm.v1.ChatCompletionChunk.choices:type_name -> deeppool.llm.v1.ChunkChoice
+	14, // 15: deeppool.llm.v1.ChatCompletionChunk.usage:type_name -> deeppool.llm.v1.Usage
+	19, // 16: deeppool.llm.v1.ChunkChoice.delta:type_name -> deeppool.llm.v1.ChatMessageDelta
+	11, // 17: deeppool.llm.v1.ChunkChoice.logprobs:type_name -> deeppool.llm.v1.ChoiceLogprobs
+	6,  // 18: deeppool.llm.v1.ChatMessageDelta.tool_calls:type_name -> deeppool.llm.v1.ToolCall
+	0,  // 19: deeppool.llm.v1.LLMInferService.Health:input_type -> deeppool.llm.v1.HealthRequest
+	2,  // 20: deeppool.llm.v1.LLMInferService.ChatCompletion:input_type -> deeppool.llm.v1.ChatCompletionRequest
+	2,  // 21: deeppool.llm.v1.LLMInferService.ChatCompletionStream:input_type -> deeppool.llm.v1.ChatCompletionRequest
+	1,  // 22: deeppool.llm.v1.LLMInferService.Health:output_type -> deeppool.llm.v1.HealthResponse
+	15, // 23: deeppool.llm.v1.LLMInferService.ChatCompletion:output_type -> deeppool.llm.v1.ChatCompletionResponse
+	17, // 24: deeppool.llm.v1.LLMInferService.ChatCompletionStream:output_type -> deeppool.llm.v1.ChatCompletionChunk
+	22, // [22:25] is the sub-list for method output_type
+	19, // [19:22] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_llm_infer_proto_init() }
@@ -1602,19 +1697,19 @@ func file_llm_infer_proto_init() {
 	file_llm_infer_proto_msgTypes[3].OneofWrappers = []any{}
 	file_llm_infer_proto_msgTypes[5].OneofWrappers = []any{}
 	file_llm_infer_proto_msgTypes[8].OneofWrappers = []any{}
-	file_llm_infer_proto_msgTypes[13].OneofWrappers = []any{}
 	file_llm_infer_proto_msgTypes[14].OneofWrappers = []any{}
 	file_llm_infer_proto_msgTypes[15].OneofWrappers = []any{}
 	file_llm_infer_proto_msgTypes[16].OneofWrappers = []any{}
 	file_llm_infer_proto_msgTypes[17].OneofWrappers = []any{}
 	file_llm_infer_proto_msgTypes[18].OneofWrappers = []any{}
+	file_llm_infer_proto_msgTypes[19].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_llm_infer_proto_rawDesc), len(file_llm_infer_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   19,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

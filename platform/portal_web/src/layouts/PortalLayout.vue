@@ -21,6 +21,11 @@
           active-class="!text-dp-blue"
         >
           {{ item.label }}
+          <span
+            v-if="item.beta"
+            class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold leading-none
+                   bg-amber-100 text-amber-700 border border-amber-200 align-top"
+          >BETA</span>
           <!-- 活跃指示条 -->
           <span
             v-if="isActive(item.path)"
@@ -207,7 +212,7 @@ const navItems = computed(() => [
   { path: '/', label: t('nav.home') },
   { path: '/service', label: t('nav.service') },
   { path: '/data', label: t('nav.data') },
-  { path: '/misszhao', label: t('nav.misszhao') },
+  { path: '/misszhao', label: t('nav.misszhao'), beta: true },
   { path: '/docs', label: t('nav.docs') },
 ])
 

@@ -23,7 +23,7 @@
                 <button
                   type="button"
                   :disabled="!hasAvailableModels"
-                  class="min-w-[320px] flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg border text-sm text-left
+                  class="min-w-[480px] flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg border text-sm text-left
                          focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100
                          disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-dp-placeholder"
                   :class="modelDropdownOpen ? 'border-dp-blue ring-2 ring-blue-100 bg-white' : 'border-slate-200 bg-white'"
@@ -49,7 +49,7 @@
                 >
                   <ul
                     v-if="modelDropdownOpen"
-                    class="absolute z-50 mt-1 max-h-64 w-full min-w-[320px] overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+                    class="absolute z-50 mt-1 max-h-80 w-full min-w-[480px] overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
                   >
                     <li
                       v-for="model in availableModels"
@@ -61,11 +61,9 @@
                       <div class="flex-1 min-w-0">
                         <div class="truncate">{{ model.id }}</div>
                         <div class="flex flex-wrap items-center gap-1 mt-0.5">
-                          <span v-if="model.param_scale" class="text-[10px] text-slate-400">{{ model.param_scale }}B</span>
-                          <span v-if="model.param_scale && model.max_context_length" class="text-[10px] text-slate-300">|</span>
                           <span v-if="model.max_context_length" class="text-[10px] text-slate-400">{{ formatModelCtx(model.max_context_length) }}</span>
                           <span
-                            v-for="tag in (model.tags || []).slice(0, 3)"
+                            v-for="tag in (model.tags || [])"
                             :key="tag"
                             class="inline-flex items-center rounded-full bg-slate-100 px-1.5 py-0 text-[10px] text-slate-500"
                           >{{ tag }}</span>
@@ -77,6 +75,19 @@
                     </li>
                   </ul>
                 </Transition>
+              </div>
+              <!-- Hybrid routing inquiry tooltip -->
+              <div class="relative group flex items-center">
+                <svg class="w-5 h-5 text-amber-500 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+                <div class="invisible group-hover:visible opacity-0 group-hover:opacity-100
+                            absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 px-3 py-2
+                            bg-slate-800 text-white text-xs leading-relaxed rounded-lg shadow-lg
+                            transition-all duration-200 z-50 pointer-events-none">
+                  {{ $t('service.chat.hybrid_tip') }}
+                  <div class="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-x-[6px] border-x-transparent border-t-[6px] border-t-slate-800" />
+                </div>
               </div>
             </div>
             <div class="flex flex-wrap items-center gap-2 text-xs">

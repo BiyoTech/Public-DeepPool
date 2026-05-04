@@ -565,6 +565,77 @@ def _tools_to_dict_list(tools: list | None) -> list[dict] | None:
     ]
 
 
+# ─────────── Tool call start markers for streaming buffer ───────────
+# When streaming with tools enabled, once we detect any of these markers
+# in the accumulated text, we stop yielding content to the client and
+# buffer the rest for post-stream tool_call parsing.
+# This prevents raw tool call syntax (e.g. "call:get_weather{city:北京}")
+# from leaking into the streamed content.
+_TOOL_CALL_START_MARKERS: list[str] = [
+    # Gemma 4
+    "<|tool_call>",
+    # Gemma 4 bare format (when EOS strips the <|tool_call> tag)
+    "\ncall:",
+    "call:",
+    # GLM 4.7
+    "<tool_call>",
+    # Kimi / Moonshot
+    "<|tool_calls_section_begin|>",
+    "<|tool_call_begin|>",
+    # DeepSeek
+    "<｜tool▁calls▁begin｜>",
+    # Qwen bracket style
+    "[Calling tool:",
+    # Llama / Hermes function style
+    "<function=",
+    # Mistral
+    "[TOOL_CALLS]",
+]
+
+# Partial prefixes that might grow into a full start marker.
+# We hold back content when the tail of accumulated text matches
+# any of these prefixes, to avoid emitting a partial marker.
+_TOOL_CALL_PARTIAL_PREFIXES: list[str] = []
+
+# Pre-compute: for each start marker, all non-trivial prefixes.
+# e.g. "<|tool_call>" → ["<", "<|", "<|t", ..., "<|tool_call"]
+for _marker in _TOOL_CALL_START_MARKERS:
+    for _i in range(1, len(_marker)):
+        _prefix = _marker[:_i]
+        if _prefix not in _TOOL_CALL_PARTIAL_PREFIXES:
+            _TOOL_CALL_PARTIAL_PREFIXES.append(_prefix)
+
+
+def _detect_tool_call_start(text: str) -> int:
+    """Check if text contains a tool call start marker.
+
+    Returns the position of the first marker found, or -1 if none.
+    """
+    earliest = -1
+    for marker in _TOOL_CALL_START_MARKERS:
+        pos = text.find(marker)
+        if pos != -1 and (earliest == -1 or pos < earliest):
+            earliest = pos
+    return earliest
+
+
+def _tail_matches_partial_prefix(text: str) -> bool:
+    """Check if the tail of text matches any partial prefix of a start marker.
+
+    This prevents yielding text that might be the beginning of a tool call
+    marker (e.g. yielding "<|tool" before we know if it becomes "<|tool_call>").
+    """
+    if not text:
+        return False
+    # Check up to the length of the longest marker
+    max_check = max(len(m) for m in _TOOL_CALL_START_MARKERS) if _TOOL_CALL_START_MARKERS else 0
+    tail = text[-max_check:] if len(text) > max_check else text
+    for prefix in _TOOL_CALL_PARTIAL_PREFIXES:
+        if tail.endswith(prefix):
+            return True
+    return False
+
+
 class VLLMMLXEngine(LLMEngine):
     """MLX 推理引擎，自动区分 LLM / VLM 并使用对应后端。
 
@@ -1138,6 +1209,10 @@ class VLLMMLXEngine(LLMEngine):
         tc_metrics: ToolCallMetrics | None = None
         infer_metrics = InferMetrics()
 
+        # Detect if this is a tool-response turn (messages end with role=tool)
+        # Used for empty-response retry logic below.
+        has_tool_response_input = any(m.role == "tool" for m in request.messages)
+
         for i in range(request.n):
             # Measure lock wait time
             lock_wait_start = _time.monotonic()
@@ -1163,11 +1238,47 @@ class VLLMMLXEngine(LLMEngine):
             # tool_call tokens (needed by Gemma4Extractor for parsing)
             result_text = _clean_special_tokens(result_text)
 
+            # Gemma4 empty-response retry: small quantized models sometimes emit
+            # only EOS after a tool response, producing empty content. Retry once
+            # with temperature=0.3 to encourage the model to generate a reply.
+            if (
+                not result_text.strip()
+                and has_tool_response_input
+                and self._chat_format == "gemma4"
+            ):
+                logger.warning(
+                    "gemma4: empty response after tool_response, retrying with lower temperature"
+                )
+                with self._infer_lock:
+                    result_text, prompt_tks, gen_tks = self._generate_with_metrics(
+                        formatted_prompt, infer_metrics,
+                        temperature=0.3,
+                        max_tokens=max_tokens,
+                        top_p=request.top_p,
+                    )
+                mx.clear_cache()
+                result_text = _truncate_at_stop(result_text, self._merge_stop_sequences(request.stop))
+                result_text = _clean_special_tokens(result_text)
+
             reasoning_text = None
             content_text = result_text
             if reasoning_parser:
                 reasoning_text, parsed_content = reasoning_parser.extract_reasoning(result_text)
                 content_text = parsed_content if parsed_content is not None else ""
+
+            # Gemma4 EOS-truncation fix: append missing closing tag (see streaming path)
+            if dict_tools and request.tool_choice != "none":
+                if "<|tool_call>" in content_text and "<tool_call|>" not in content_text:
+                    content_text += "<tool_call|>"
+                    logger.info("gemma4 (non-stream): appended missing <tool_call|> closing tag")
+                # Fallback: EOS may strip all tags, leaving only "call:func_name{...}"
+                elif (
+                    "<|tool_call>" not in content_text
+                    and self._chat_format == "gemma4"
+                    and "call:" in content_text
+                ):
+                    logger.info("gemma4 (non-stream): no tags, wrapping 'call:' text with tags")
+                    content_text = "<|tool_call>" + content_text.strip() + "<tool_call|>"
 
             parse_result = self._parse_tool_calls(
                 content_text, dict_tools, request.tool_choice, formatted_prompt, max_tokens,
@@ -1253,6 +1364,15 @@ class VLLMMLXEngine(LLMEngine):
         last_usage = UsageStats()
         infer_metrics = InferMetrics()
 
+        # Tool call buffering: when tools are present, detect tool call
+        # start markers and stop yielding content once a marker is found.
+        # This prevents raw tool call syntax from leaking to the client.
+        has_tools = bool(dict_tools) and request.tool_choice != "none"
+        tc_buffer_active = False   # True once a tool call start marker is detected
+        tc_buffer_start = -1       # Position in full_text where buffering started
+        # Content yielded so far (for deduplication after buffer)
+        yielded_content_len = 0
+
         try:
             # Measure lock wait time
             lock_wait_start = _time.monotonic()
@@ -1305,6 +1425,39 @@ class VLLMMLXEngine(LLMEngine):
                         ),
                     )
 
+                    # --- Tool call buffering: once a marker is detected, stop yielding ---
+                    if has_tools and not tc_buffer_active:
+                        marker_pos = _detect_tool_call_start(full_text)
+                        if marker_pos != -1:
+                            tc_buffer_active = True
+                            tc_buffer_start = marker_pos
+                            # Yield any content before the marker that hasn't been yielded yet
+                            pre_marker = full_text[yielded_content_len:marker_pos]
+                            if pre_marker:
+                                cleaned = _clean_special_tokens(pre_marker, include_gemma4_tokens=True)
+                                if cleaned:
+                                    yield ChatCompletionChunkResult(
+                                        choices=[StreamChoice(
+                                            index=0,
+                                            delta=StreamDelta(content=cleaned),
+                                        )]
+                                    )
+                                    yielded_content_len = marker_pos
+                            logger.debug(
+                                "tool call buffer activated at pos=%d, marker in full_text",
+                                marker_pos,
+                            )
+                            if stop_hit:
+                                break
+                            continue
+
+                    # If buffering is active, just accumulate — don't yield
+                    if tc_buffer_active:
+                        if stop_hit:
+                            break
+                        continue
+
+                    # --- Normal streaming output (no tool call detected yet) ---
                     if reasoning_parser:
                         delta_msg = reasoning_parser.extract_reasoning_streaming(
                             previous_text, full_text, delta_text,
@@ -1312,6 +1465,8 @@ class VLLMMLXEngine(LLMEngine):
                         previous_text = full_text
 
                         if delta_msg is None:
+                            if stop_hit:
+                                break
                             continue
 
                         content_part = _clean_special_tokens(
@@ -1320,6 +1475,8 @@ class VLLMMLXEngine(LLMEngine):
                         reasoning_part = delta_msg.reasoning
 
                         if not content_part and not reasoning_part:
+                            if stop_hit:
+                                break
                             continue
 
                         yield ChatCompletionChunkResult(
@@ -1333,19 +1490,26 @@ class VLLMMLXEngine(LLMEngine):
                                 )
                             ]
                         )
+                        if content_part:
+                            yielded_content_len = len(full_text)
                     else:
                         # Clean for client display (including Gemma4 tool tokens)
                         # but full_text retains them for post-stream tool_call parsing
                         cleaned = _clean_special_tokens(delta_text, include_gemma4_tokens=True)
                         if cleaned:
-                            yield ChatCompletionChunkResult(
-                                choices=[
-                                    StreamChoice(
-                                        index=0,
-                                        delta=StreamDelta(content=cleaned),
-                                    )
-                                ]
-                            )
+                            # Hold back content if tail might be a partial tool call marker
+                            if has_tools and _tail_matches_partial_prefix(full_text):
+                                pass  # Don't yield yet — wait for more tokens to disambiguate
+                            else:
+                                yield ChatCompletionChunkResult(
+                                    choices=[
+                                        StreamChoice(
+                                            index=0,
+                                            delta=StreamDelta(content=cleaned),
+                                        )
+                                    ]
+                                )
+                                yielded_content_len = len(full_text)
 
                     if stop_hit:
                         break
@@ -1354,6 +1518,48 @@ class VLLMMLXEngine(LLMEngine):
                 total_gpu_ms = int((_time.monotonic() - prefill_start) * 1000)
                 infer_metrics.decode_ms = max(0, total_gpu_ms - infer_metrics.prefill_ms)
 
+            # Gemma4 empty-response retry for streaming: when the model emits
+            # only EOS after a tool response (full_text is empty), retry once
+            # with lower temperature to produce a meaningful reply.
+            has_tool_response_input = any(m.role == "tool" for m in request.messages)
+            if (
+                not full_text.strip()
+                and has_tool_response_input
+                and self._chat_format == "gemma4"
+            ):
+                logger.warning(
+                    "gemma4 stream: empty response after tool_response, "
+                    "retrying with lower temperature (non-stream fallback)"
+                )
+                with self._infer_lock:
+                    retry_text, _, retry_gen_tks = self._generate_with_metrics(
+                        formatted_prompt, infer_metrics,
+                        temperature=0.3,
+                        max_tokens=max_tokens,
+                        top_p=request.top_p,
+                    )
+                mx.clear_cache()
+                retry_text = _truncate_at_stop(retry_text, merged_stop)
+                retry_text = _clean_special_tokens(retry_text)
+                if retry_text.strip():
+                    full_text = retry_text
+                    last_usage = UsageStats(
+                        prompt_tokens=infer_metrics.prompt_tokens,
+                        completion_tokens=infer_metrics.completion_tokens,
+                        total_tokens=infer_metrics.prompt_tokens + infer_metrics.completion_tokens,
+                    )
+                    # Emit the retried content as a single chunk
+                    yield ChatCompletionChunkResult(
+                        choices=[StreamChoice(
+                            index=0,
+                            delta=StreamDelta(content=retry_text),
+                        )]
+                    )
+                    logger.info(
+                        "gemma4 stream: retry succeeded, content_len=%d",
+                        len(retry_text),
+                    )
+
             # --- Outside lock: tool_calls parsing + final chunk (CPU) ---
             if reasoning_parser:
                 _, content_for_tools = reasoning_parser.extract_reasoning(full_text)
@@ -1361,15 +1567,71 @@ class VLLMMLXEngine(LLMEngine):
             else:
                 content_for_tools = full_text
 
+            # Debug: log raw full_text before any processing for FC diagnosis
+            logger.info(
+                "stream_chat_complete FC: full_text_len=%d tc_buffer_active=%s "
+                "has_tool_call_marker=%s full_text_repr=%r",
+                len(full_text), tc_buffer_active,
+                "<|tool_call>" in full_text,
+                full_text[:500],
+            )
+
+            # Gemma4 EOS-truncation fix: when <tool_call|> is registered as an
+            # EOS token, mlx_lm stops generation before emitting it. The full_text
+            # ends with "<|tool_call>call:func_name{...}" but lacks the closing
+            # "<tool_call|>" tag. Gemma4Extractor requires the full block to match,
+            # so we append the missing closing tag(s) before parsing.
+            if has_tools and "<|tool_call>" in content_for_tools and "<tool_call|>" not in content_for_tools:
+                content_for_tools += "<tool_call|>"
+                logger.info("gemma4: appended missing <tool_call|> closing tag for parser")
+
+            # Fallback for Gemma4: when EOS stops generation before even emitting
+            # <|tool_call> (e.g. <tool_call|> or <turn|> is the EOS), the full_text
+            # may contain only "call:func_name{...}" without any tags. Detect this
+            # pattern and wrap it with the expected tags.
+            if (
+                has_tools
+                and "<|tool_call>" not in content_for_tools
+                and self._chat_format == "gemma4"
+                and "call:" in content_for_tools
+            ):
+                logger.info(
+                    "gemma4: no <|tool_call> marker but 'call:' found, wrapping with tags"
+                )
+                content_for_tools = "<|tool_call>" + content_for_tools.strip() + "<tool_call|>"
+
             parse_result = self._parse_tool_calls(
                 content_for_tools, dict_tools, request.tool_choice, formatted_prompt, max_tokens,
             )
             tool_calls = parse_result.calls
+            logger.info(
+                "stream_chat_complete FC result: tool_calls=%s finish_reason=%s",
+                [{"name": tc.function_name, "args": tc.function_arguments[:100]} for tc in tool_calls] if tool_calls else None,
+                "tool_calls" if tool_calls else "stop",
+            )
             finish_reason = "tool_calls" if tool_calls else "stop"
 
             final_delta = StreamDelta()
             if tool_calls:
                 final_delta.tool_calls = tool_calls
+            elif tc_buffer_active:
+                # Buffer was activated but no tool calls found (false positive).
+                # Yield the buffered content as regular text so nothing is lost.
+                buffered_text = full_text[yielded_content_len:]
+                cleaned_buffered = _clean_special_tokens(
+                    buffered_text, include_tool_tokens=True, include_gemma4_tokens=True,
+                )
+                if cleaned_buffered:
+                    yield ChatCompletionChunkResult(
+                        choices=[StreamChoice(
+                            index=0,
+                            delta=StreamDelta(content=cleaned_buffered),
+                        )]
+                    )
+                    logger.debug(
+                        "tool call buffer false positive: yielded buffered content len=%d",
+                        len(cleaned_buffered),
+                    )
 
             # Finalize metrics
             infer_metrics.prompt_tokens = last_usage.prompt_tokens

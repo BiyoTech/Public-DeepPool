@@ -1,9 +1,10 @@
 /**
  * misszhao AI assistant API wrapper.
  *
- * - sendMessage: SSE streaming chat (fetch + ReadableStream, supports custom headers)
+ * - sendMessage: SSE streaming chat with semantic event support
  * - getChatHistory: get chat history
  * - createNewChat: create new conversation
+ * - listWorkspaceFiles: browse workspace files
  */
 
 const MISSZHAO_BASE = import.meta.env.VITE_MISSZHAO_API_URL || '/api/misszhao'
@@ -30,10 +31,49 @@ export interface ChatMessage {
   created_at: string
 }
 
+// ── Semantic event types ──
+
+export interface ToolCalledEvent {
+  type: 'tool_called'
+  tool_name: string
+  arguments: string
+  call_id: string
+}
+
+export interface ToolOutputEvent {
+  type: 'tool_output'
+  output: string
+  call_id: string
+}
+
+export interface ReasoningEvent {
+  type: 'reasoning'
+  content: string
+}
+
+export interface HandoffEvent {
+  type: 'handoff'
+  source_agent: string
+  target_agent: string
+}
+
+export interface AgentUpdatedEvent {
+  type: 'agent_updated'
+  agent_name: string
+}
+
+export type AgentEvent =
+  | ToolCalledEvent
+  | ToolOutputEvent
+  | ReasoningEvent
+  | HandoffEvent
+  | AgentUpdatedEvent
+
 // ── SSE streaming chat ──
 
 export interface StreamCallbacks {
   onContent: (text: string) => void
+  onEvent: (event: AgentEvent) => void
   onDone: () => void
   onError: (error: string) => void
 }
@@ -45,9 +85,13 @@ export interface SendMessageOptions {
 }
 
 /**
- * Send SSE streaming chat request.
+ * Send SSE streaming chat request with semantic event support.
  *
- * Uses fetch + ReadableStream (not EventSource) because EventSource does not support custom headers.
+ * SSE payload types:
+ *   - {"content": "..."} — text delta
+ *   - {"event": {...}}   — semantic event (tool_called, reasoning, etc.)
+ *   - [DONE]             — end marker
+ *
  * Returns AbortController for caller to abort the stream.
  */
 export function sendMessage(
@@ -114,6 +158,11 @@ export function sendMessage(
               callbacks.onError(parsed.error)
               return
             }
+            // Semantic event
+            if (parsed.event) {
+              callbacks.onEvent(parsed.event as AgentEvent)
+            }
+            // Text delta
             if (parsed.content) {
               callbacks.onContent(parsed.content)
             }
@@ -139,8 +188,11 @@ export function sendMessage(
 
 // ── Chat history ──
 
-export async function getChatHistory(limit = 50): Promise<ChatMessage[]> {
-  const resp = await fetch(`${MISSZHAO_BASE}/chat/history?limit=${limit}`, {
+export async function getChatHistory(limit = 50, threadId?: string): Promise<ChatMessage[]> {
+  const params = new URLSearchParams({ limit: String(limit) })
+  if (threadId) params.set('thread_id', threadId)
+
+  const resp = await fetch(`${MISSZHAO_BASE}/chat/history?${params}`, {
     method: 'GET',
     headers: buildHeaders(),
   })
@@ -167,6 +219,43 @@ export async function createNewChat(): Promise<NewChatResult> {
 
   if (!resp.ok) {
     throw new Error(`Failed to create new chat (${resp.status})`)
+  }
+
+  return resp.json()
+}
+
+// ── Workspace file browsing ──
+
+export interface FileEntry {
+  name: string
+  path: string
+  is_dir: boolean
+  size: number
+  modified_at: string
+  file_type: string // "document" | "image" | "code" | "spreadsheet" | "other"
+  children: FileEntry[] | null
+}
+
+export interface WorkspaceFilesResponse {
+  files: FileEntry[]
+  workspace_path: string
+}
+
+export async function listWorkspaceFiles(
+  subPath = '',
+  recursive = true,
+): Promise<WorkspaceFilesResponse> {
+  const params = new URLSearchParams()
+  if (subPath) params.set('path', subPath)
+  params.set('recursive', String(recursive))
+
+  const resp = await fetch(`${MISSZHAO_BASE}/workspace/files?${params}`, {
+    method: 'GET',
+    headers: buildHeaders(),
+  })
+
+  if (!resp.ok) {
+    throw new Error(`Failed to list workspace files (${resp.status})`)
   }
 
   return resp.json()

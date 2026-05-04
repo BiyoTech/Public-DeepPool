@@ -7,6 +7,9 @@ This module provides:
     the underlying gRPC channel across requests, with automatic reconnect
     on transient failures
   - _retry_on_transient(): retry decorator for idempotent / read-only RPCs
+  - Token-expired detection: when an RPC receives UNAUTHENTICATED or a detail
+    containing "expired token", the caller can invoke TokenManager.refresh_token()
+    and retry once automatically.
 """
 
 from __future__ import annotations
@@ -31,9 +34,27 @@ _RETRYABLE_CODES = frozenset({
     grpc.StatusCode.DEADLINE_EXCEEDED,
 })
 
+# gRPC status codes indicating token expiry / auth failure
+_AUTH_FAILURE_CODES = frozenset({
+    grpc.StatusCode.UNAUTHENTICATED,
+    grpc.StatusCode.PERMISSION_DENIED,
+})
+
+# Substrings in gRPC error details that signal token expiry
+_TOKEN_EXPIRED_HINTS = ("expired token", "invalid or expired token", "token expired")
+
 # Default retry parameters
 _DEFAULT_MAX_RETRIES = 3
 _DEFAULT_BASE_DELAY = 1.0  # seconds
+
+
+def _is_token_expired_error(exc: grpc.RpcError) -> bool:
+    """Determine whether a gRPC error indicates an expired/invalid auth token."""
+    code = exc.code() if hasattr(exc, "code") else None
+    if code in _AUTH_FAILURE_CODES:
+        return True
+    detail = (exc.details() if hasattr(exc, "details") else str(exc)).lower()
+    return any(hint in detail for hint in _TOKEN_EXPIRED_HINTS)
 
 
 def _retry_on_transient(
@@ -151,18 +172,72 @@ class PlatformClient:
         self._stub = manager_service_pb2_grpc.ManagerServiceStub(self._channel)
         logger.info("platform grpc client created target=%s tls=%s", self._target, use_tls)
 
+    def _call_with_token_refresh(
+        self,
+        rpc_fn: Callable[..., T],
+        build_request: Callable[[str], Any],
+        rpc_name: str,
+        *,
+        use_retry: bool = True,
+    ) -> T:
+        """Execute an RPC with automatic token-refresh-and-retry on auth failure.
+
+        Flow:
+          1. Build request using current token → invoke RPC (with transient retry)
+          2. If RPC raises a token-expired error:
+             a. Ask TokenManager to refresh the token
+             b. Rebuild request with new token → retry once
+          3. If refresh fails or is unavailable, raise the original error.
+
+        Args:
+            rpc_fn:        The gRPC stub method to call.
+            build_request: A callable that receives the current token and returns
+                           the protobuf request message.
+            rpc_name:      Human-readable RPC name for logging.
+            use_retry:     Whether to wrap the RPC call with _retry_on_transient.
+        """
+        req = build_request(self._token)
+        try:
+            if use_retry:
+                return _retry_on_transient(rpc_fn, req, timeout=self._timeout)
+            return rpc_fn(req, timeout=self._timeout)
+        except grpc.RpcError as exc:
+            if not _is_token_expired_error(exc):
+                raise
+
+            # Attempt token refresh
+            logger.warning(
+                "%s: token expired, attempting refresh", rpc_name,
+            )
+            from service.token_manager import get_token_manager, TokenExpiredError
+            tm = get_token_manager()
+            if tm is None:
+                raise
+            try:
+                new_token = tm.refresh_token()
+            except TokenExpiredError:
+                raise exc  # re-raise the original gRPC error
+
+            # Update our own token and retry once
+            self._token = new_token
+            req = build_request(new_token)
+            logger.info("%s: retrying with refreshed token", rpc_name)
+            if use_retry:
+                return _retry_on_transient(rpc_fn, req, timeout=self._timeout)
+            return rpc_fn(req, timeout=self._timeout)
+
     def get_model_deploy_config(
         self, simei: str, supported_models: list[str]
     ) -> ModelDeployConfig:
         """Get single model deploy config (idempotent, retries on transient errors)."""
-        req = manager_service_pb2.GetModelDeployConfigRequest(
-            simei=simei,
-            supported_models=supported_models,
-            auth_token=self._token,
-        )
+        def _build(token: str):
+            return manager_service_pb2.GetModelDeployConfigRequest(
+                simei=simei, supported_models=supported_models, auth_token=token,
+            )
+
         try:
-            resp = _retry_on_transient(
-                self._stub.GetModelDeployConfig, req, timeout=self._timeout,
+            resp = self._call_with_token_refresh(
+                self._stub.GetModelDeployConfig, _build, "GetModelDeployConfig",
             )
         except grpc.RpcError as exc:
             detail = exc.details() if hasattr(exc, "details") else str(exc)
@@ -188,27 +263,27 @@ class PlatformClient:
     def get_multi_model_deploy_configs(
         self, simei: str, supported_models: list[str]
     ) -> list[ModelDeployConfig]:
-        """获取多模型部署配置列表。
+        """Get multi-model deploy config list from platform.
 
-        尝试调用平台的 GetMultiModelDeployConfigs RPC；若平台尚未支持该接口，
-        则 fallback 到单模型接口 get_model_deploy_config，返回单元素列表。
+        Tries batch API first; falls back to single-model API if unavailable.
 
         Args:
-            simei: 设备唯一标识
-            supported_models: 客户端支持的模型列表
+            simei: device SIMEI
+            supported_models: models the client can run
 
         Returns:
-            模型部署配置列表，可能为空（平台未分配任何模型时）。
+            List of deploy configs (may be empty if platform assigned nothing).
         """
+        def _build(token: str):
+            return manager_service_pb2.GetMultiModelDeployConfigsRequest(
+                simei=simei, supported_models=supported_models, auth_token=token,
+            )
+
         # Prefer batch API (idempotent, retries on transient errors)
         try:
-            req = manager_service_pb2.GetMultiModelDeployConfigsRequest(
-                simei=simei,
-                supported_models=supported_models,
-                auth_token=self._token,
-            )
-            resp = _retry_on_transient(
-                self._stub.GetMultiModelDeployConfigs, req, timeout=self._timeout,
+            resp = self._call_with_token_refresh(
+                self._stub.GetMultiModelDeployConfigs, _build,
+                "GetMultiModelDeployConfigs",
             )
             configs = []
             for cfg in resp.configs:
@@ -225,13 +300,13 @@ class PlatformClient:
             logger.info("got %d multi-model deploy configs from platform", len(configs))
             return configs
         except (grpc.RpcError, AttributeError) as exc:
-            # 平台尚未实现批量接口，fallback 到单模型接口
+            # Platform hasn't implemented the batch API yet — fall back
             logger.info(
                 "GetMultiModelDeployConfigs not available (%s), falling back to single-model API",
                 type(exc).__name__,
             )
 
-        # Fallback: 单模型接口
+        # Fallback: single-model API
         try:
             single = self.get_model_deploy_config(simei=simei, supported_models=supported_models)
             if single.model_name:
@@ -245,23 +320,25 @@ class PlatformClient:
         self, simei: str, device_ip: str, device_config: str,
         registered_models: list[str] | None = None,
     ) -> DeviceInfo:
-        """注册设备信息到平台。
+        """Register device info on platform.
 
         Args:
-            simei: 设备唯一标识
-            device_ip: 设备 IP
-            device_config: 设备配置 JSON 字符串
-            registered_models: 设备已注册的模型列表（独立字段）
+            simei: device SIMEI
+            device_ip: device IP
+            device_config: device config JSON string
+            registered_models: models already loaded on device
         """
-        req = manager_service_pb2.RegisterDeviceRequest(
-            simei=simei,
-            device_ip=device_ip,
-            device_config=device_config,
-            auth_token=self._token,
-            registered_models=registered_models or [],
-        )
+        def _build(token: str):
+            return manager_service_pb2.RegisterDeviceRequest(
+                simei=simei, device_ip=device_ip, device_config=device_config,
+                auth_token=token, registered_models=registered_models or [],
+            )
+
         try:
-            resp = self._stub.RegisterDevice(req, timeout=self._timeout)
+            resp = self._call_with_token_refresh(
+                self._stub.RegisterDevice, _build, "RegisterDevice",
+                use_retry=False,
+            )
         except grpc.RpcError as exc:
             detail = exc.details() if hasattr(exc, "details") else str(exc)
             logger.warning("grpc RegisterDevice failed: %s", detail)
@@ -283,16 +360,14 @@ class PlatformClient:
     def report_infer_logs(
         self, simei: str, logs: list[dict]
     ) -> int:
-        """批量上报本地推理日志到平台。
+        """Batch-report local inference logs to platform.
 
         Args:
-            simei: 设备 SIMEI
-            logs: 日志条目列表，每条包含 request_id, model_name, prompt_tokens,
-                  completion_tokens, total_tokens, reasoning_tokens, duration_ms,
-                  stream, success, error_message, created_at_ms 等字段
+            simei: device SIMEI
+            logs: log entry dicts
 
         Returns:
-            平台实际接受的条数
+            Number of entries accepted by platform.
         """
         entries = []
         for log_entry in logs:
@@ -309,21 +384,20 @@ class PlatformClient:
                 success=log_entry.get("success", True),
                 error_message=log_entry.get("error_message", ""),
                 created_at_ms=log_entry.get("created_at_ms", 0),
-                # Function Call 指标
                 tool_call_count=log_entry.get("tool_call_count", 0),
                 tool_call_success=log_entry.get("tool_call_success", True),
                 tool_call_retried=log_entry.get("tool_call_retried", False),
                 tool_call_parse_ms=log_entry.get("tool_call_parse_ms", 0),
             ))
 
-        req = manager_service_pb2.ReportInferLogsRequest(
-            auth_token=self._token,
-            simei=simei,
-            logs=entries,
-        )
+        def _build(token: str):
+            return manager_service_pb2.ReportInferLogsRequest(
+                auth_token=token, simei=simei, logs=entries,
+            )
+
         try:
-            resp = _retry_on_transient(
-                self._stub.ReportInferLogs, req, timeout=self._timeout,
+            resp = self._call_with_token_refresh(
+                self._stub.ReportInferLogs, _build, "ReportInferLogs",
             )
         except grpc.RpcError as exc:
             detail = exc.details() if hasattr(exc, "details") else str(exc)
@@ -334,22 +408,25 @@ class PlatformClient:
         return resp.accepted
 
     def update_device_status(self, simei: str, status: str) -> bool:
-        """更新设备合法性状态到平台。
+        """Update device validity status on platform.
 
         Args:
-            simei: 设备 SIMEI
-            status: 合法性状态，"active" / "blocked" / "cheating"
+            simei: device SIMEI
+            status: "active" / "blocked" / "cheating"
 
         Returns:
-            是否更新成功
+            Whether the update succeeded.
         """
-        req = manager_service_pb2.UpdateDeviceStatusRequest(
-            auth_token=self._token,
-            simei=simei,
-            status=status,
-        )
+        def _build(token: str):
+            return manager_service_pb2.UpdateDeviceStatusRequest(
+                auth_token=token, simei=simei, status=status,
+            )
+
         try:
-            resp = self._stub.UpdateDeviceStatus(req, timeout=self._timeout)
+            resp = self._call_with_token_refresh(
+                self._stub.UpdateDeviceStatus, _build, "UpdateDeviceStatus",
+                use_retry=False,
+            )
         except grpc.RpcError as exc:
             detail = exc.details() if hasattr(exc, "details") else str(exc)
             logger.error("grpc UpdateDeviceStatus failed: %s", detail)
@@ -370,15 +447,17 @@ class PlatformClient:
             device_ip: device IP (optional, empty = no change)
             registered_models: models actually loaded and serving (optional)
         """
-        req = manager_service_pb2.UpdateDeviceRequest(
-            simei=simei,
-            device_ip=device_ip,
-            device_config=device_config,
-            auth_token=self._token,
-            registered_models=registered_models or [],
-        )
+        def _build(token: str):
+            return manager_service_pb2.UpdateDeviceRequest(
+                simei=simei, device_ip=device_ip, device_config=device_config,
+                auth_token=token, registered_models=registered_models or [],
+            )
+
         try:
-            resp = self._stub.UpdateDevice(req, timeout=self._timeout)
+            resp = self._call_with_token_refresh(
+                self._stub.UpdateDevice, _build, "UpdateDevice",
+                use_retry=False,
+            )
         except grpc.RpcError as exc:
             detail = exc.details() if hasattr(exc, "details") else str(exc)
             logger.error("grpc UpdateDevice failed: %s", detail)
@@ -473,13 +552,15 @@ class PlatformClient:
         """
         token_prefix = self._token[:8] + "..." if len(self._token) > 8 else self._token
         logger.debug("grpc GetDevice simei=%s token_prefix=%s", simei, token_prefix)
-        req = manager_service_pb2.GetDeviceRequest(
-            simei=simei,
-            auth_token=self._token,
-        )
+
+        def _build(token: str):
+            return manager_service_pb2.GetDeviceRequest(
+                simei=simei, auth_token=token,
+            )
+
         try:
-            resp = _retry_on_transient(
-                self._stub.GetDevice, req, timeout=self._timeout,
+            resp = self._call_with_token_refresh(
+                self._stub.GetDevice, _build, "GetDevice",
             )
         except grpc.RpcError as exc:
             code = exc.code() if hasattr(exc, "code") else None
