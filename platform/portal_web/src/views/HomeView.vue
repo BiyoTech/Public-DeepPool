@@ -31,21 +31,28 @@
           {{ $t('home.hero.welcome', { name: authStore.user.username }) }}
         </p>
         <div class="mt-10 flex items-center justify-center gap-4 flex-wrap">
-          <router-link
-            to="/docs/getting-started/quickstart-provider"
+          <a
+            href="https://deeppool.tech/service"
             class="px-8 py-3 rounded-full bg-gradient-to-r from-dp-blue to-dp-blue-dark text-white font-medium
                    shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30
                    hover:from-dp-blue-dark hover:to-dp-blue-deeper transition-all duration-300 transform hover:-translate-y-0.5"
           >
-            {{ $t('home.hero.cta_provider') }}
-          </router-link>
-          <a
-            href="https://deeppool.tech/service"
-            class="px-8 py-3 rounded-full border-2 border-dp-blue text-dp-blue font-medium
-                   hover:bg-dp-blue hover:text-white transition-all duration-300 transform hover:-translate-y-0.5"
-          >
             {{ $t('home.hero.cta_consumer') }}
           </a>
+          <router-link
+            to="/docs/getting-started/quickstart-provider"
+            class="px-8 py-3 rounded-full border border-slate-300 text-dp-muted font-medium
+                   hover:border-dp-blue hover:text-dp-blue transition-all duration-300 transform hover:-translate-y-0.5"
+          >
+            {{ $t('home.hero.cta_provider') }}
+          </router-link>
+          <router-link
+            to="/docs/getting-started/custom-hybrid-model"
+            class="px-8 py-3 rounded-full border border-slate-300 text-dp-muted font-medium
+                   hover:border-dp-blue hover:text-dp-blue transition-all duration-300 transform hover:-translate-y-0.5"
+          >
+            {{ $t('home.hero.cta_custom_hybrid') }}
+          </router-link>
         </div>
       </div>
     </section>
@@ -227,10 +234,10 @@ const IconSmart = svgIcon('M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0
 const IconReliable = svgIcon('M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z')
 // API compatible: code bracket
 const IconApi = svgIcon('M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5')
-// Earn income: trending up
-const IconEarn = svgIcon('M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941')
-// Multi-engine: CPU chip
-const IconEngine = svgIcon('M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 002.25-2.25V6.75a2.25 2.25 0 00-2.25-2.25H6.75A2.25 2.25 0 004.5 6.75v10.5a2.25 2.25 0 002.25 2.25z')
+// Custom routing: adjustments/sliders
+const IconCustomRouting = svgIcon('M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75')
+// Global leading models: globe
+const IconGlobalModels = svgIcon('M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418')
 
 // ---- Feature Cards (6) ----
 
@@ -268,17 +275,17 @@ const features = computed(() => [
     iconColorClass: 'w-6 h-6 text-violet-600',
   },
   {
-    icon: IconEarn,
-    title: t('home.features.earn.title'),
-    desc: t('home.features.earn.desc'),
+    icon: IconCustomRouting,
+    title: t('home.features.custom_routing.title'),
+    desc: t('home.features.custom_routing.desc'),
     accentClass: 'bg-gradient-to-r from-rose-400 to-rose-600',
     iconBgClass: 'bg-rose-50 group-hover:bg-rose-100',
     iconColorClass: 'w-6 h-6 text-rose-600',
   },
   {
-    icon: IconEngine,
-    title: t('home.features.engine.title'),
-    desc: t('home.features.engine.desc'),
+    icon: IconGlobalModels,
+    title: t('home.features.global_models.title'),
+    desc: t('home.features.global_models.desc'),
     accentClass: 'bg-gradient-to-r from-cyan-400 to-cyan-600',
     iconBgClass: 'bg-cyan-50 group-hover:bg-cyan-100',
     iconColorClass: 'w-6 h-6 text-cyan-600',

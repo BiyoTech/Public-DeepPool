@@ -4,7 +4,8 @@
     "children": [
       { "title": "Introduction", "path": "getting-started/introduction" },
       { "title": "Provider Quickstart", "path": "getting-started/quickstart-provider" },
-      { "title": "Consumer Quickstart", "path": "getting-started/quickstart-consumer" }
+      { "title": "Consumer Quickstart", "path": "getting-started/quickstart-consumer" },
+      { "title": "Custom Hybrid Models", "path": "getting-started/custom-hybrid-model" }
     ]
   },
   {
@@ -19,6 +20,12 @@
     "title": "API Reference",
     "children": [
       { "title": "OpenAI-Compatible API", "path": "api-reference/openai-compatible" }
+    ]
+  },
+  {
+    "title": "Billing & Usage",
+    "children": [
+      { "title": "Billing & Pricing", "path": "billing/pricing" }
     ]
   }
 ]

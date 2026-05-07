@@ -46,6 +46,7 @@ rules:
       has_vision: true          # 最后一条 user 消息包含图片（image_url）
       max_tool_count: 5         # 工具数量 <= 该值
       min_tool_count: 1         # 工具数量 >= 该值
+      tags: ["tag1", "tag2"]    # 请求的 tag 匹配列表中任一值即命中（OR，大小写不敏感）
     targets:                    # 该规则的候选模型（必须是子模型）
       - "model-a"
       - "model-b"
@@ -69,10 +70,13 @@ default_targets:
 | `has_vision` | bool | 最后一条 user 消息包含 `image_url` 类型内容时匹配 |
 | `max_tool_count` | int | 工具数量 ≤ 该值时匹配 |
 | `min_tool_count` | int | 工具数量 ≥ 该值时匹配 |
+| `tags` | []string | 请求携带的 tag 在列表中时匹配（OR 语义，大小写不敏感） |
 
 > **注意**：Token 预估使用 `len(content) / 4` 启发式方法（约每 4 个字符 1 个 token），图片按 detail 模式估算（low=85 tokens/张，high/auto=765 tokens/张）。所有指定条件必须同时满足（AND 逻辑）。未指定的字段不参与检查。
 >
 > **视觉检测范围**：`has_vision` 仅检测**最后一条 `role: "user"` 的消息**是否包含图片，而非扫描全部 messages。多轮对话中，如果用户早期发送了图片但后续追问是纯文本，`has_vision` 为 false，避免将纯文本追问路由到昂贵的视觉模型。
+>
+> **Tag 路由**：客户端在请求体中通过 `metadata.tags` 或 `x_tags` 字段传递路由标签数组（优先级：`metadata.tags` > `x_tags`）。Tags 仅用于路由决策，不透传给上游模型。大小写不敏感匹配，请求 tags 与 condition tags 做交集匹配。
 
 ### 1.4 负载均衡策略
 
