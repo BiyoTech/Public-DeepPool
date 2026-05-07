@@ -30,6 +30,7 @@
       "subtitle": "Fusing edge devices with cloud APIs through intelligent scheduling for cost-effective, reliable LLM inference",
       "cta_provider": "Earn by Sharing Power",
       "cta_consumer": "Use API",
+      "cta_custom_hybrid": "Custom Hybrid Models",
       "welcome": "Welcome back, {name}"
     },
     "features": {
@@ -51,13 +52,13 @@
         "title": "OpenAI-Compatible API",
         "desc": "Fully compatible with OpenAI Chat Completions API. Supports streaming, Function Calling, and Reasoning Content — zero migration for existing SDKs"
       },
-      "earn": {
-        "title": "Share Power, Earn Income",
-        "desc": "Install DeepNode on your Mac or Linux machine, one-click join the pool. Idle GPUs auto-serve inference requests and earn token-based rewards"
+      "custom_routing": {
+        "title": "Custom Model Routing",
+        "desc": "Users can define custom Hybrid models via YAML, with flexible conditional routing rules based on context length, tool usage, vision content, and more"
       },
-      "engine": {
-        "title": "Multi-Engine Coverage",
-        "desc": "Apple Silicon uses MLX Metal, NVIDIA GPUs use vLLM CUDA, generic devices use llama.cpp — hardware auto-detected and matched to the best engine"
+      "global_models": {
+        "title": "Global Leading Models",
+        "desc": "Integrates top models worldwide — GPT, Claude, DeepSeek, Qwen, GLM, Kimi and more — accessible through a unified API with continuous updates"
       }
     },
     "arch": {
@@ -101,6 +102,10 @@
         "step2": "Use OpenAI SDK or HTTP, point to DeepPool endpoint",
         "step3": "Hybrid mode auto-selects the best model, pay-per-use",
         "cta": "Sign Up Now"
+      },
+      "custom_hybrid": {
+        "title": "Custom Hybrid Models",
+        "desc": "Combine multiple models into a smart-routing endpoint via YAML config"
       }
     }
   },
@@ -230,6 +235,11 @@
       "copy_failed": "Copy failed, please try again",
       "copy_no_cache": "Full key not available, please create a new key and copy it",
       "quota_unlimited": "Quota: unlimited"
+    },
+   "mymodels": {
+      "title": "My Models",
+      "empty": "No models created yet",
+      "create": "Create Model"
     },
     "params": {
       "title": "Inference Params",

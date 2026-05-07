@@ -212,7 +212,8 @@ const navItems = computed(() => [
   { path: '/', label: t('nav.home') },
   { path: '/service', label: t('nav.service') },
   { path: '/data', label: t('nav.data') },
-  { path: '/misszhao', label: t('nav.misszhao'), beta: true },
+  // 隐藏,未来再考虑
+  // { path: '/misszhao', label: t('nav.misszhao'), beta: true },
   { path: '/docs', label: t('nav.docs') },
 ])
 

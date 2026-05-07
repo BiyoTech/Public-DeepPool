@@ -23,13 +23,14 @@
   },
   "home": {
     "hero": {
-      "title": "LLM 推理算力融合调度平台",
-      "tag_cost": "低成本",
-      "tag_reliable": "高可靠",
+      "title": "LLM Token融合调度平台",
+      "tag_cost": "智能路由降成本",
+      "tag_reliable": "融合调度高可靠",
       "tag_api": "一个API KEY 一套接口调用所有模型",
-      "subtitle": "融合边缘设备与云端 API，通过智能调度实现高性价比、高可靠的大模型推理服务",
+      "subtitle": "通过智能调度实现统一API、高性价比、高可靠的大模型推理服务",
       "cta_provider": "贡献算力赚收益",
       "cta_consumer": "接入 API",
+      "cta_custom_hybrid": "自定义融合模型",
       "welcome": "欢迎回来，{name}"
     },
     "features": {
@@ -51,13 +52,13 @@
         "title": "OpenAI 兼容 API",
         "desc": "完全兼容 OpenAI Chat Completions API，支持流式输出、Function Calling、Reasoning Content，现有 SDK 零改造接入"
       },
-      "earn": {
-        "title": "一键共享算力赚收益",
-        "desc": "安装 DeepNode 客户端，Mac / Linux 设备一键接入算力池，闲置 GPU 自动贡献推理服务，按 Token 计费获得收入"
+      "custom_routing": {
+        "title": "自定义模型路由策略",
+        "desc": "用户可通过 YAML 配置自定义 Hybrid 模型，灵活定义条件路由规则，按上下文长度、工具调用、视觉内容等特征智能分发到最合适的子模型"
       },
-      "engine": {
-        "title": "多引擎全平台覆盖",
-        "desc": "Apple Silicon 走 MLX Metal 加速，NVIDIA GPU 走 vLLM CUDA，通用设备走 llama.cpp，系统自动识别硬件匹配最优引擎"
+      "global_models": {
+        "title": "支持全球领先大模型",
+        "desc": "集成 GPT、Claude、DeepSeek、Qwen、GLM、Kimi 等全球顶尖大模型，通过统一 API 一键调用，持续跟进最新模型更新"
       }
     },
     "arch": {
@@ -101,6 +102,10 @@
         "step2": "使用 OpenAI SDK 或 HTTP 请求，指向 DeepPool 端点",
         "step3": "Hybrid 模式自动选择最优模型，按量计费",
         "cta": "立即注册"
+      },
+      "custom_hybrid": {
+        "title": "自定义融合模型",
+        "desc": "通过 YAML 配置，组合多个模型为智能路由入口"
       }
     }
   },
@@ -230,6 +235,11 @@
       "copy_failed": "复制失败，请重试",
       "copy_no_cache": "该密钥完整值不可用，请创建新密钥后复制",
       "quota_unlimited": "配额: 不限"
+    },
+    "mymodels": {
+      "title": "我的模型",
+      "empty": "暂无模型，请点击上方按钮创建",
+      "create": "创建模型"
     },
     "params": {
       "title": "推理参数",

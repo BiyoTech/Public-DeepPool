@@ -87,7 +87,3 @@ response = client.chat.completions.create(
     tool_choice="auto",
 )
 ```
-
-## Billing
-
-The platform is currently in free trial. In the future, billing will be token-based. Each API Key supports independent RPM (requests per minute) and TPM (tokens per minute) rate limits.

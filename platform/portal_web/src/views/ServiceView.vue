@@ -207,8 +207,28 @@
           </div>
         </div>
 
-        <!-- 右侧：API Key 管理面板 -->
+        <!-- 右侧：API Key / 我的模型 管理面板 -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+          <!-- Tab navigation -->
+          <div class="flex border-b border-slate-100 mb-4">
+            <button
+              @click="rightPanelTab = 'apikeys'"
+              class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+              :class="rightPanelTab === 'apikeys' ? 'border-dp-blue text-dp-blue' : 'border-transparent text-dp-muted hover:text-dp-body'"
+            >
+              API Keys
+            </button>
+            <button
+              @click="rightPanelTab = 'mymodels'"
+              class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+              :class="rightPanelTab === 'mymodels' ? 'border-dp-blue text-dp-blue' : 'border-transparent text-dp-muted hover:text-dp-body'"
+            >
+              {{ $t('service.mymodels.title') || '我的模型' }}
+            </button>
+          </div>
+
+          <!-- Tab: API Keys -->
+          <div v-show="rightPanelTab === 'apikeys'">
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-bold text-dp-title">{{ $t('service.apikey.title') }}</h2>
             <button
@@ -453,6 +473,283 @@
   "top_p": {{ inferParams.topP }}{{ inferParams.reasoningEffort ? `,\n  "reasoning_effort": "${inferParams.reasoningEffort}"` : '' }}
 }'</code></pre>
           </div>
+          </div><!-- end Tab: API Keys -->
+
+          <!-- Tab: My Models (Custom Hybrid + Provider) -->
+          <div v-show="rightPanelTab === 'mymodels'">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-lg font-bold text-dp-title">{{ $t('service.mymodels.title') || '我的模型' }}</h2>
+              <button
+                @click="showCustomModelDialog = true; editingCustomModel = null; resetCustomModelForm()"
+                class="px-3 py-1.5 rounded-lg bg-dp-blue text-white text-xs font-medium hover:bg-dp-blue-dark transition-colors"
+              >
+                + 创建
+              </button>
+            </div>
+            <p class="text-xs text-dp-muted mb-3">自定义 Hybrid / Provider 模型。({{ customModels.length }}/{{ maxCustomModels }})</p>
+
+            <!-- Empty state -->
+            <div v-if="customModels.length === 0 && !customModelsLoading" class="text-center py-8">
+              <p class="text-sm text-dp-muted mb-3">还没有自定义模型</p>
+              <button
+                @click="showCustomModelDialog = true; editingCustomModel = null; resetCustomModelForm()"
+                class="px-4 py-2 rounded-lg border border-dp-blue text-dp-blue text-sm hover:bg-blue-50 transition-colors"
+              >
+                创建第一个模型
+              </button>
+            </div>
+
+            <!-- Models list -->
+            <div v-else class="space-y-3">
+              <div
+                v-for="cm in customModels"
+                :key="cm.id"
+                class="p-3 rounded-lg border border-slate-100 hover:border-slate-200 transition-all"
+              >
+                <div class="flex items-center justify-between mb-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-medium text-dp-body">{{ cm.display_name }}</span>
+                    <span
+                      class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium"
+                      :class="cm.vendor_type === 'provider' ? 'bg-emerald-50 text-emerald-600' : 'bg-purple-50 text-purple-600'"
+                    >{{ cm.vendor_type }}</span>
+                    <span v-if="cm.provider_type" class="inline-flex items-center rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">{{ cm.provider_type }}</span>
+                    <span
+                      class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium"
+                      :class="cm.enabled ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400'"
+                    >{{ cm.enabled ? '启用' : '禁用' }}</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button @click="editCustomModel(cm)" class="text-xs text-dp-blue hover:text-dp-blue-dark">编辑</button>
+                    <button @click="deleteCustomModelConfirm(cm)" class="text-xs text-red-400 hover:text-red-600">删除</button>
+                  </div>
+                </div>
+                <div class="text-xs text-dp-muted font-mono mb-1">{{ cm.model_name }}</div>
+                <div class="flex flex-wrap gap-1">
+                  <span
+                    v-for="tag in (cm.tags || [])"
+                    :key="'tag-'+tag"
+                    class="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] text-dp-blue font-medium"
+                  >{{ tag }}</span>
+                  <!-- hybrid: show child models -->
+                  <span
+                    v-if="cm.vendor_type === 'hybrid'"
+                    v-for="child in cm.child_models"
+                    :key="child"
+                    class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500"
+                  >{{ child }}</span>
+                  <!-- provider: show capabilities -->
+                  <template v-if="cm.vendor_type === 'provider'">
+                    <span v-if="cm.supports_reasoning" class="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] text-amber-600">reasoning</span>
+                    <span v-if="cm.supports_vision" class="inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] text-indigo-600">vision</span>
+                    <span v-if="cm.supports_function_call" class="inline-flex items-center rounded-full bg-teal-50 px-2 py-0.5 text-[10px] text-teal-600">tools</span>
+                  </template>
+                </div>
+              </div>
+            </div>
+          </div><!-- end Tab: My Models -->
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Model 创建/编辑弹窗 -->
+    <div v-if="showCustomModelDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+        <h3 class="text-lg font-bold text-dp-title mb-4">{{ editingCustomModel ? '编辑模型' : '创建自定义模型' }}</h3>
+
+        <!-- Vendor Type selector (create only) -->
+        <div v-if="!editingCustomModel" class="mb-4">
+          <label class="text-xs font-medium text-dp-muted mb-1.5 block">模型类型</label>
+          <div class="flex gap-3">
+            <button
+              type="button"
+              @click="cmForm.vendorType = 'hybrid'"
+              class="flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors"
+              :class="cmForm.vendorType === 'hybrid' ? 'border-dp-blue bg-blue-50 text-dp-blue' : 'border-slate-200 text-dp-muted hover:bg-slate-50'"
+            >
+              Hybrid 混合路由
+            </button>
+            <button
+              type="button"
+              @click="cmForm.vendorType = 'provider'"
+              class="flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors"
+              :class="cmForm.vendorType === 'provider' ? 'border-emerald-500 bg-emerald-50 text-emerald-600' : 'border-slate-200 text-dp-muted hover:bg-slate-50'"
+            >
+              Provider 注册端点
+            </button>
+          </div>
+          <p class="text-[10px] text-dp-placeholder mt-1">
+            {{ cmForm.vendorType === 'hybrid' ? 'Hybrid: 智能路由分发到多个子模型' : 'Provider: 注册已有的 API 端点，免计费调用' }}
+          </p>
+        </div>
+
+        <!-- Display Name (create only) -->
+        <div v-if="!editingCustomModel" class="mb-4">
+          <label class="text-xs font-medium text-dp-muted mb-1 block">模型名称</label>
+          <input
+            v-model="cmForm.displayName"
+            type="text"
+            placeholder="如 anthropic/claude-opus-4.6 (2-64位)"
+            class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm
+                   focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+          />
+          <p class="text-[10px] text-dp-placeholder mt-1">创建后模型标识为: u{{ currentUserId }}-{{ cmForm.displayName || '...' }}</p>
+        </div>
+
+        <!-- ═══ Hybrid Form ═══ -->
+        <template v-if="cmForm.vendorType === 'hybrid'">
+          <!-- Child Models multi-select -->
+          <div class="mb-4">
+            <label class="text-xs font-medium text-dp-muted mb-1 block">子模型（至少选 2 个）</label>
+            <div class="max-h-40 overflow-y-auto border border-slate-200 rounded-lg p-2 space-y-1">
+              <label
+                v-for="pm in hybridChildCandidates"
+                :key="pm.model_name"
+                class="flex items-center gap-2 px-2 py-1 rounded hover:bg-slate-50 cursor-pointer text-sm"
+              >
+                <input
+                  type="checkbox"
+                  :value="pm.model_name"
+                  v-model="cmForm.childModels"
+                  class="rounded border-slate-300 text-dp-blue focus:ring-blue-200"
+                />
+                <span class="text-dp-body">{{ pm.model_name }}</span>
+                <span class="text-[10px] text-slate-400">{{ pm.vendor_type }}</span>
+                <span v-if="pm.is_user_provider" class="text-[10px] text-emerald-500">(我的)</span>
+              </label>
+            </div>
+            <p class="text-[10px] text-dp-placeholder mt-1">已选 {{ cmForm.childModels.length }} 个（含平台模型 + 我的 Provider 模型）</p>
+          </div>
+
+          <!-- Routing Policy YAML editor -->
+          <div class="mb-4">
+            <label class="text-xs font-medium text-dp-muted mb-1 block">路由策略 (YAML)</label>
+            <textarea
+              v-model="cmForm.routingPolicy"
+              rows="8"
+              placeholder="留空使用默认 least-inflight 策略。"
+              class="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-mono text-dp-body
+                     placeholder:text-dp-placeholder resize-y
+                     focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+              style="min-height: 100px;"
+            ></textarea>
+          </div>
+        </template>
+
+        <!-- ═══ Provider Form ═══ -->
+        <template v-if="cmForm.vendorType === 'provider'">
+          <!-- Provider Type -->
+          <div class="mb-4">
+            <label class="text-xs font-medium text-dp-muted mb-1 block">Provider 类型</label>
+            <select
+              v-model="cmForm.providerType"
+              class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white
+                     focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+            >
+              <option value="">请选择</option>
+              <option v-for="pt in providerTypeOptions" :key="pt" :value="pt">{{ pt }}</option>
+            </select>
+          </div>
+
+          <!-- Endpoint -->
+          <div class="mb-4">
+            <label class="text-xs font-medium text-dp-muted mb-1 block">Endpoint (API Base URL)</label>
+            <input
+              v-model="cmForm.endpoint"
+              type="text"
+              placeholder="https://api.openai.com/v1"
+              class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm
+                     focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+
+          <!-- Upstream Model Name -->
+          <div class="mb-4">
+            <label class="text-xs font-medium text-dp-muted mb-1 block">上游模型名称</label>
+            <input
+              v-model="cmForm.upstreamModel"
+              type="text"
+              placeholder="gpt-4o / claude-3-5-sonnet-20241022"
+              class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm
+                     focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+
+          <!-- API Key -->
+          <div class="mb-4">
+            <label class="text-xs font-medium text-dp-muted mb-1 block">API Key</label>
+            <input
+              v-model="cmForm.apiKey"
+              type="password"
+              :placeholder="editingCustomModel ? '留空不修改' : '输入 API Key（加密存储）'"
+              class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm
+                     focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+            />
+            <p class="text-[10px] text-dp-placeholder mt-1">密钥将加密存储，仅用于代理转发请求</p>
+          </div>
+
+          <!-- Capability Toggles -->
+          <div class="mb-4">
+            <label class="text-xs font-medium text-dp-muted mb-2 block">模型能力</label>
+            <div class="flex flex-wrap gap-4">
+              <label class="flex items-center gap-1.5 cursor-pointer text-sm text-dp-body">
+                <input type="checkbox" v-model="cmForm.supportsReasoning" class="rounded border-slate-300 text-dp-blue focus:ring-blue-200" />
+                Reasoning
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer text-sm text-dp-body">
+                <input type="checkbox" v-model="cmForm.supportsVision" class="rounded border-slate-300 text-dp-blue focus:ring-blue-200" />
+                Vision
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer text-sm text-dp-body">
+                <input type="checkbox" v-model="cmForm.supportsFunctionCall" class="rounded border-slate-300 text-dp-blue focus:ring-blue-200" />
+                Function Call
+              </label>
+            </div>
+          </div>
+        </template>
+
+        <!-- Tags (common) -->
+        <div class="mb-4">
+          <label class="text-xs font-medium text-dp-muted mb-1 block">标签</label>
+          <div class="flex flex-wrap gap-1.5 mb-2">
+            <span
+              v-for="(tag, idx) in cmForm.tags"
+              :key="idx"
+              class="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs text-dp-blue"
+            >
+              {{ tag }}
+              <button @click="cmForm.tags.splice(idx, 1)" class="text-blue-300 hover:text-red-400 text-[10px] leading-none">&times;</button>
+            </span>
+          </div>
+          <div class="flex gap-2">
+            <input
+              v-model="cmTagInput"
+              type="text"
+              placeholder="输入标签后按回车添加"
+              class="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs
+                     focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+              @keydown.enter.prevent="addCmTag"
+            />
+          </div>
+        </div>
+
+        <!-- Error message -->
+        <div v-if="cmError" class="mb-4 px-3 py-2 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-600">
+          {{ cmError }}
+        </div>
+
+        <!-- Actions -->
+        <div class="flex justify-end gap-3">
+          <button
+            @click="showCustomModelDialog = false"
+            class="px-4 py-2 rounded-lg border border-slate-200 text-sm text-dp-muted hover:bg-slate-50 transition-colors"
+          >取消</button>
+          <button
+            @click="saveCustomModel"
+            :disabled="cmSaving"
+            class="px-4 py-2 rounded-lg bg-dp-blue text-white text-sm font-medium hover:bg-dp-blue-dark transition-colors disabled:opacity-50"
+          >{{ cmSaving ? '保存中...' : '保存' }}</button>
         </div>
       </div>
     </div>
@@ -494,8 +791,13 @@
 import { computed, ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { createAPIKey, listAPIKeys, deleteAPIKey, fetchKeySecret, type APIKey } from '@/api/apikey'
+import { listCustomModels, createCustomModel, updateCustomModel, deleteCustomModel, type CustomModel } from '@/api/custom-model'
+import { getPublicModels, type PublicModel } from '@/api/model'
 
 const { t } = useI18n()
+
+// ── Right panel tab state ──
+const rightPanelTab = ref<'apikeys' | 'mymodels'>('apikeys')
 
 const API_KEY_SELECTED_STORAGE_KEY = 'dp_service_selected_api_key_id'
 
@@ -1113,6 +1415,9 @@ function syncSelectedModel(models: GatewayModelOption[]) {
   selectedModel.value = models[0]?.id || ''
 }
 
+// Store gateway (global) models separately so we can re-merge with custom models.
+const gatewayModels = ref<GatewayModelOption[]>([])
+
 async function fetchModels() {
   modelLoadError.value = ''
   try {
@@ -1122,18 +1427,227 @@ async function fetchModels() {
     }
     const json = await res.json()
     const items = Array.isArray(json?.data) ? json.data : []
-    const models = normalizeGatewayModels(items)
-    availableModels.value = models
-    syncSelectedModel(models)
+    gatewayModels.value = normalizeGatewayModels(items)
+    mergeModelsIntoDropdown()
   } catch (error) {
     console.error('[ServiceView] load models failed', error)
+    gatewayModels.value = []
     availableModels.value = []
     selectedModel.value = ''
     modelLoadError.value = t('service.chat.load_models_failed')
   }
 }
 
+// Merge gateway models + user custom models into the unified dropdown list.
+function mergeModelsIntoDropdown() {
+  const seen = new Set(gatewayModels.value.map(m => m.id))
+  const customEntries: GatewayModelOption[] = customModels.value
+    .filter(cm => cm.enabled && !seen.has(cm.model_name))
+    .map(cm => ({
+      id: cm.model_name,
+      vendor_type: cm.vendor_type || 'hybrid',
+      provider_type: cm.provider_type || '',
+      owned_by: 'user',
+      param_scale: 0,
+      max_context_length: 0,
+      tags: cm.tags && cm.tags.length ? [...cm.tags, 'custom'] : ['custom'],
+    }))
+  const merged = [...gatewayModels.value, ...customEntries].sort((a, b) => a.id.localeCompare(b.id))
+  availableModels.value = merged
+  syncSelectedModel(merged)
+}
+
+// ── Custom Model Management ──
+
+const customModels = ref<CustomModel[]>([])
+const customModelsLoading = ref(false)
+const maxCustomModels = 10
+const showCustomModelDialog = ref(false)
+const editingCustomModel = ref<CustomModel | null>(null)
+const cmSaving = ref(false)
+const cmError = ref('')
+const publicModelsList = ref<PublicModel[]>([])
+
+// Provider type options
+const providerTypeOptions = ['openai', 'anthropic', 'gemini', 'deepseek', 'qwen', 'kimi', 'glm', 'custom']
+
+// Get user ID from localStorage for display purposes.
+const currentUserId = computed(() => {
+  const user = JSON.parse(localStorage.getItem('dp_user') || '{}')
+  return user.id || 0
+})
+
+const cmForm = ref({
+  displayName: '',
+  vendorType: 'hybrid' as 'hybrid' | 'provider',
+  // hybrid fields
+  childModels: [] as string[],
+  routingPolicy: '',
+  // provider fields
+  providerType: '',
+  endpoint: '',
+  upstreamModel: '',
+  apiKey: '',
+  supportsReasoning: false,
+  supportsVision: false,
+  supportsFunctionCall: false,
+  // common
+  tags: [] as string[],
+})
+
+const cmTagInput = ref('')
+
+// Hybrid child model candidates: platform non-hybrid models + user's own provider models.
+interface ChildCandidate {
+  model_name: string
+  vendor_type: string
+  is_user_provider?: boolean
+}
+const hybridChildCandidates = computed<ChildCandidate[]>(() => {
+  // Platform models (non-hybrid)
+  const platformModels: ChildCandidate[] = publicModelsList.value
+    .filter(m => m.vendor_type !== 'hybrid')
+    .map(m => ({ model_name: m.model_name, vendor_type: m.vendor_type }))
+
+  // User's own enabled provider models
+  const userProviders: ChildCandidate[] = customModels.value
+    .filter(cm => cm.vendor_type === 'provider' && cm.enabled)
+    .map(cm => ({ model_name: cm.model_name, vendor_type: 'provider', is_user_provider: true }))
+
+  return [...platformModels, ...userProviders]
+})
+
+function addCmTag() {
+  const tag = cmTagInput.value.trim()
+  if (tag && !cmForm.value.tags.includes(tag) && cmForm.value.tags.length < 10) {
+    cmForm.value.tags.push(tag)
+  }
+  cmTagInput.value = ''
+}
+
+function resetCustomModelForm() {
+  cmForm.value = {
+    displayName: '', vendorType: 'hybrid',
+    childModels: [], routingPolicy: '',
+    providerType: '', endpoint: '', upstreamModel: '', apiKey: '',
+    supportsReasoning: false, supportsVision: false, supportsFunctionCall: false,
+    tags: [],
+  }
+  cmError.value = ''
+}
+
+function editCustomModel(cm: CustomModel) {
+  editingCustomModel.value = cm
+  cmForm.value = {
+    displayName: cm.display_name,
+    vendorType: cm.vendor_type || 'hybrid',
+    childModels: [...(cm.child_models || [])],
+    routingPolicy: cm.routing_policy || '',
+    providerType: cm.provider_type || '',
+    endpoint: cm.endpoint || '',
+    upstreamModel: cm.upstream_model || '',
+    apiKey: '', // don't pre-fill (masked on server)
+    supportsReasoning: cm.supports_reasoning || false,
+    supportsVision: cm.supports_vision || false,
+    supportsFunctionCall: cm.supports_function_call || false,
+    tags: [...(cm.tags || [])],
+  }
+  showCustomModelDialog.value = true
+}
+
+async function fetchCustomModels() {
+  customModelsLoading.value = true
+  const res = await listCustomModels()
+  customModels.value = res.data?.data || []
+  customModelsLoading.value = false
+  // Refresh the model dropdown to include/exclude custom models.
+  mergeModelsIntoDropdown()
+}
+
+async function fetchPublicModelsForSelector() {
+  const res = await getPublicModels()
+  // Filter out hybrid models (can't be children of user hybrid).
+  publicModelsList.value = (res.data?.data || []).filter((m: PublicModel) => m.vendor_type !== 'hybrid')
+}
+
+async function saveCustomModel() {
+  cmError.value = ''
+  const form = cmForm.value
+
+  // Frontend validation.
+  if (!editingCustomModel.value) {
+    const name = form.displayName.trim()
+    if (!name) { cmError.value = '请输入模型名称'; return }
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9_./-]{1,63}$/.test(name)) {
+      cmError.value = '模型名称需 2-64 位，以字母/数字开头，支持字母/数字/下划线/短横线/点/斜杠'; return
+    }
+  }
+
+  if (form.vendorType === 'hybrid' && form.childModels.length < 2) {
+    cmError.value = '至少选择 2 个子模型'; return
+  }
+  if (form.vendorType === 'provider') {
+    if (!form.providerType) { cmError.value = '请选择 Provider 类型'; return }
+    if (!form.endpoint) { cmError.value = '请输入 Endpoint'; return }
+    if (!form.upstreamModel) { cmError.value = '请输入上游模型名称'; return }
+    if (!editingCustomModel.value && !form.apiKey) { cmError.value = '请输入 API Key'; return }
+  }
+
+  cmSaving.value = true
+  try {
+    if (editingCustomModel.value) {
+      // Build update payload based on vendor_type.
+      const payload: Record<string, any> = { tags: form.tags }
+      if (form.vendorType === 'hybrid') {
+        payload.child_models = form.childModels
+        payload.routing_policy = form.routingPolicy
+      } else {
+        payload.provider_type = form.providerType
+        payload.endpoint = form.endpoint
+        payload.upstream_model = form.upstreamModel
+        if (form.apiKey) payload.api_key = form.apiKey
+        payload.supports_reasoning = form.supportsReasoning
+        payload.supports_vision = form.supportsVision
+        payload.supports_function_call = form.supportsFunctionCall
+      }
+      await updateCustomModel(editingCustomModel.value.id, payload)
+    } else {
+      const payload: any = {
+        display_name: form.displayName.trim(),
+        vendor_type: form.vendorType,
+        tags: form.tags,
+      }
+      if (form.vendorType === 'hybrid') {
+        payload.child_models = form.childModels
+        payload.routing_policy = form.routingPolicy
+      } else {
+        payload.provider_type = form.providerType
+        payload.endpoint = form.endpoint
+        payload.upstream_model = form.upstreamModel
+        payload.api_key = form.apiKey
+        payload.supports_reasoning = form.supportsReasoning
+        payload.supports_vision = form.supportsVision
+        payload.supports_function_call = form.supportsFunctionCall
+      }
+      await createCustomModel(payload)
+    }
+    showCustomModelDialog.value = false
+    await fetchCustomModels()
+  } catch (err: any) {
+    const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message || '保存失败，请稍后重试'
+    cmError.value = msg
+  } finally {
+    cmSaving.value = false
+  }
+}
+
+async function deleteCustomModelConfirm(cm: CustomModel) {
+  if (!confirm(`确认删除模型「${cm.display_name}」？`)) return
+  await deleteCustomModel(cm.id)
+  await fetchCustomModels()
+}
+
 onMounted(async () => {
-  await Promise.all([fetchKeys(), fetchModels()])
+  await Promise.all([fetchKeys(), fetchModels(), fetchCustomModels(), fetchPublicModelsForSelector()])
 })
 </script>

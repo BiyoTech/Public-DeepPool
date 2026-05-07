@@ -87,7 +87,3 @@ response = client.chat.completions.create(
     tool_choice="auto",
 )
 ```
-
-## 计费说明
-
-当前全平台免费试运营，后续将按 Token 用量计费。每个 API Key 支持独立的 RPM（每分钟请求数）和 TPM（每分钟 Token 数）限流配置。

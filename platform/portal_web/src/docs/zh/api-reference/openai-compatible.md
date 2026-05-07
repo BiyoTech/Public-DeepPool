@@ -84,6 +84,8 @@ Content-Type: application/json
 | `reasoning_effort` | string | 否 | 推理强度控制，详见下方说明 |
 | `enable_thinking` | boolean | 否 | 启用推理模式（旧版兼容），推荐使用 `reasoning_effort` 代替 |
 | `seed` | integer | 否 | 随机种子（用于可复现输出） |
+| `metadata` | object | 否 | 请求元数据。可通过 `metadata.tags` 传递路由标签数组，用于 Hybrid 模型的 Tag 路由 |
+| `x_tags` | []string | 否 | 路由标签数组（备选方式）。`metadata.tags` 优先级更高。详见下方说明 |
 
 #### 视觉理解消息 Content 格式
 
@@ -175,6 +177,46 @@ DeepPool 支持通过 **`reasoning_effort`** 参数控制模型的思考/推理�
 
 ---
 
+### Tag 路由（Hybrid 模型）
+
+使用 Hybrid 模型时，你可以通过请求中的 **tags** 字段自定义业务路由逻辑。Gateway 会根据路由策略中配置的 `tags` 条件，将携带特定 tag 的请求路由到不同的子模型。
+
+#### 传递方式
+
+**方式 1（推荐）**：通过 `metadata.tags` 传递
+
+```json
+{
+  "model": "u42-my-hybrid",
+  "messages": [{"role": "user", "content": "分析数据趋势"}],
+  "metadata": {"tags": ["data-analysis"]}
+}
+```
+
+**方式 2**：通过顶层 `x_tags` 字段传递
+
+```json
+{
+  "model": "u42-my-hybrid",
+  "messages": [{"role": "user", "content": "Hello"}],
+  "x_tags": ["chat"]
+}
+```
+
+> **优先级**：当两者同时存在时，`metadata.tags` 优先于 `x_tags`。
+
+#### 使用说明
+
+- Tags 仅用于 Hybrid 模型的路由决策，**不会透传给上游模型**
+- 匹配**大小写不敏感**（`"Data-Analysis"` 等同于 `"data-analysis"`）
+- 匹配规则：请求 tags 与策略 condition.tags 做**交集匹配** — 只要有任一共同值即视为命中
+- 如果请求不携带 tags，且路由规则中配置了 `tags` 条件，该规则不会命中，自动 fallback 到后续规则或 `default_targets`
+- Tags 可以与其他条件（如 `has_tools`、`has_reasoning`）组合使用，所有条件取 AND 关系
+
+详细的路由策略配置请参考 [自定义 Hybrid 模型](/zh/getting-started/custom-hybrid-model)。
+
+---
+
 ### 非流式响应
 
 ```json
@@ -250,33 +292,6 @@ data: [DONE]
   }]
 }
 ```
-
-## 计费说明
-
-### Token 用量与 Cached Tokens
-
-DeepPool 的计费基于实际 token 消耗，完整兼容 OpenAI 的 Usage 格式。响应中的 `usage.prompt_tokens_details.cached_tokens` 字段标识了被缓存命中的 prompt token 数量。
-
-#### Cached Tokens 计费规则
-
-| Token 类型 | 计费倍率 | 说明 |
-|-----------|---------|------|
-| 普通 Prompt Tokens | 100% | 未命中缓存的输入 token，按模型标准输入价格计费 |
-| Cached Tokens | **20%** | 命中上下文缓存的输入 token，按标准输入价格的 **20%** 计费 |
-| Completion Tokens | 100% | 输出 token，按模型标准输出价格计费 |
-
-#### 计费公式
-
-```
-输入费用 = (prompt_tokens - cached_tokens) × input_price / 1,000,000
-         + cached_tokens × input_price × 0.2 / 1,000,000
-输出费用 = completion_tokens × output_price / 1,000,000
-总费用   = 输入费用 + 输出费用
-```
-
-> **💡 提示**：当模型支持上下文缓存（如长对话中重复的 system prompt），`cached_tokens` 会自动生效，用户无需额外配置。未命中缓存时 `cached_tokens` 为 0，计费退化为标准公式。
-
----
 
 ## 列出可用模型
 
