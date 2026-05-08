@@ -234,7 +234,8 @@
       "copy_prefix_tip": "Copied key prefix only — the full key is shown only once at creation",
       "copy_failed": "Copy failed, please try again",
       "copy_no_cache": "Full key not available, please create a new key and copy it",
-      "quota_unlimited": "Quota: unlimited"
+      "quota_unlimited": "Quota: unlimited",
+      "edit_limit": "Edit"
     },
    "mymodels": {
       "title": "My Models",

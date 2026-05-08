@@ -20,9 +20,27 @@ export interface APIKeyCreated extends APIKey {
   full_key: string
 }
 
+export interface CreateAPIKeyParams {
+  name: string
+  rate_limit_rpm?: number  // 0 = unlimited
+  rate_limit_tpm?: number  // 0 = unlimited
+}
+
+export interface UpdateAPIKeyParams {
+  rate_limit_rpm?: number  // 0 = unlimited
+  rate_limit_tpm?: number  // 0 = unlimited
+  quota_total?: number     // -1 = unlimited
+}
+
 /** Create an API Key */
-export function createAPIKey(name: string) {
-  return http.post<{ code: number; data: APIKeyCreated }>('/apikeys', { name })
+export function createAPIKey(params: CreateAPIKeyParams | string) {
+  const body = typeof params === 'string' ? { name: params } : params
+  return http.post<{ code: number; data: APIKeyCreated }>('/apikeys', body)
+}
+
+/** Update API Key rate-limit settings */
+export function updateAPIKey(id: number, params: UpdateAPIKeyParams) {
+  return http.patch<{ code: number }>(`/apikeys/${id}`, params)
 }
 
 /** List API Keys */

@@ -23,9 +23,11 @@ func NewDB(cfg config.MySQLConfig) (*sql.DB, error) {
 	driverCfg.Addr = cfg.Host + ":" + strconv.Itoa(cfg.Port)
 	driverCfg.DBName = cfg.Database
 	driverCfg.ParseTime = true
+	driverCfg.Loc = time.UTC // All time.Time values serialized/deserialized as UTC
 	driverCfg.Params = map[string]string{
 		"charset":   "utf8mb4",
 		"collation": "utf8mb4_unicode_ci",
+		"time_zone": "'+00:00'", // Force MySQL session timezone to UTC for consistency
 	}
 
 	db, err := sql.Open("mysql", driverCfg.FormatDSN())
