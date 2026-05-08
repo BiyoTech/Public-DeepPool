@@ -33,6 +33,14 @@
             {{ row.role === 'admin' ? '管理员' : '普通用户' }}
           </t-tag>
         </template>
+        <template #balance="{ row }">
+          <span class="text-sm" :class="row.balance < 0 ? 'text-red-500 font-medium' : 'text-dp-text-1'">
+            {{ row.balance.toFixed(4) }}
+          </span>
+        </template>
+        <template #tokens="{ row }">
+          <span class="text-sm text-dp-text-2">{{ formatTokenCount(row.total_tokens_used) }}</span>
+        </template>
         <template #overdraft="{ row }">
           <div class="text-sm">
             <t-tag v-if="row.allow_overdraft" theme="warning" variant="light" size="small">
@@ -102,6 +110,8 @@ interface UserRow {
   user_type: string
   allow_overdraft: boolean
   max_overdraft_yuan: number
+  balance: number
+  total_tokens_used: number
   created_at: string
 }
 
@@ -124,6 +134,8 @@ const columns = [
   { colKey: 'phone', title: '手机号', width: 150 },
   { colKey: 'email', title: '邮箱', ellipsis: true },
   { colKey: 'role', title: '角色', width: 100, cell: 'role' },
+  { colKey: 'balance', title: '余额(元)', width: 120, cell: 'balance' },
+  { colKey: 'total_tokens_used', title: '消耗Token', width: 130, cell: 'tokens' },
   { colKey: 'overdraft', title: '欠费策略', width: 180, cell: 'overdraft' },
   { colKey: 'created_at', title: '注册时间', width: 180, cell: 'created_at' },
   { colKey: 'op', title: '操作', width: 120, cell: 'op', fixed: 'right' },
@@ -186,6 +198,14 @@ async function handleSaveBilling() {
 function formatTime(t: string) {
   if (!t) return '-'
   return new Date(t).toLocaleString('zh-CN')
+}
+
+function formatTokenCount(tokens: number) {
+  if (!tokens || tokens === 0) return '0'
+  if (tokens >= 1_000_000_000) return (tokens / 1_000_000_000).toFixed(1) + 'B'
+  if (tokens >= 1_000_000) return (tokens / 1_000_000).toFixed(1) + 'M'
+  if (tokens >= 1_000) return (tokens / 1_000).toFixed(1) + 'K'
+  return String(tokens)
 }
 
 onMounted(() => fetchUsers())

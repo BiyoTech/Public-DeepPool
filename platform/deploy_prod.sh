@@ -394,6 +394,12 @@ server {
     ssl_session_cache   shared:SSL:10m;
     ssl_session_timeout 10m;
 
+    # Allow large multi-modal requests (images/files encoded as base64).
+    # Aligned with gRPC MaxCallRecvMsgSize (128 MiB) on the NodeManager hop.
+    client_max_body_size    128m;
+    client_body_buffer_size 1m;
+    client_body_timeout     300s;
+
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
     add_header X-Content-Type-Options nosniff always;
     add_header X-Frame-Options SAMEORIGIN always;
@@ -407,9 +413,11 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_request_buffering off;
         proxy_buffering off;
         proxy_cache off;
         proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
     }
 
     # Gateway proxy -> manager :8080 (SSE/streaming, TLS backend)
@@ -420,9 +428,11 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_request_buffering off;
         proxy_buffering off;
         proxy_cache off;
         proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
     }
 
     # Admin console
@@ -453,6 +463,11 @@ server {
     ssl_session_cache   shared:SSL:10m;
     ssl_session_timeout 10m;
 
+    # Allow large multi-modal requests (images/files encoded as base64).
+    client_max_body_size    128m;
+    client_body_buffer_size 1m;
+    client_body_timeout     300s;
+
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
     add_header X-Content-Type-Options nosniff always;
 
@@ -463,9 +478,11 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_request_buffering off;
         proxy_buffering off;
         proxy_cache off;
         proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
     }
 
     location /v1/ {
@@ -475,9 +492,11 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_request_buffering off;
         proxy_buffering off;
         proxy_cache off;
         proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
     }
 
     location / {

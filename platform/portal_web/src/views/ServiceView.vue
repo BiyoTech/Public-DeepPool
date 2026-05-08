@@ -309,7 +309,13 @@
                   <span class="text-[10px] text-dp-placeholder shrink-0">{{ formatTokens(key.quota_used) }}/{{ formatTokens(key.quota_total) }}</span>
                 </div>
                 <div v-else class="text-[10px] text-dp-placeholder">{{ $t('service.apikey.quota_unlimited') || '配额: 不限' }}</div>
-                <div class="text-[10px] text-dp-placeholder">RPM: {{ key.rate_limit_rpm }} · TPM: {{ formatTokens(key.rate_limit_tpm) }}</div>
+                <div class="text-[10px] text-dp-placeholder flex items-center gap-2">
+                  <span>RPM: {{ key.rate_limit_rpm === 0 ? '∞' : key.rate_limit_rpm }} · TPM: {{ key.rate_limit_tpm === 0 ? '∞' : formatTokens(key.rate_limit_tpm) }}</span>
+                  <button
+                    @click.stop="openEditRateLimit(key)"
+                    class="text-dp-blue hover:text-dp-blue-dark text-[10px]"
+                  >{{ $t('service.apikey.edit_limit') || '编辑' }}</button>
+                </div>
               </div>
               <div class="text-xs text-dp-placeholder mt-1">
                 {{ key.last_used_at
@@ -766,6 +772,29 @@
                  placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
           @keydown.enter="handleCreate"
         />
+        <!-- RPM/TPM settings -->
+        <div class="mt-3 grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-[10px] font-medium text-dp-muted block mb-1">RPM (0=∞)</label>
+            <input
+              v-model.number="newKeyRPM"
+              type="number"
+              min="0"
+              class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+          <div>
+            <label class="text-[10px] font-medium text-dp-muted block mb-1">TPM (0=∞)</label>
+            <input
+              v-model.number="newKeyTPM"
+              type="number"
+              min="0"
+              step="100000"
+              class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+        </div>
+        <p class="text-[10px] text-dp-placeholder mt-1.5">设为 0 表示不限制。默认 RPM=60, TPM=1,000K</p>
         <div class="flex gap-3 mt-4">
           <button
             @click="showCreateDialog = false; newKeyName = ''"
@@ -784,13 +813,54 @@
         </div>
       </div>
     </div>
+
+    <!-- 编辑限流弹窗 -->
+    <div v-if="editRateLimitDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4">
+        <h3 class="text-lg font-bold text-dp-title mb-4">{{ $t('service.apikey.edit_rate_limit_title') || '编辑限流配置' }}</h3>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-[10px] font-medium text-dp-muted block mb-1">RPM (0=∞)</label>
+            <input
+              v-model.number="editRPM"
+              type="number"
+              min="0"
+              class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+          <div>
+            <label class="text-[10px] font-medium text-dp-muted block mb-1">TPM (0=∞)</label>
+            <input
+              v-model.number="editTPM"
+              type="number"
+              min="0"
+              step="100000"
+              class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+        </div>
+        <p class="text-[10px] text-dp-placeholder mt-1.5">设为 0 表示不限制</p>
+        <div class="flex gap-3 mt-4">
+          <button
+            @click="editRateLimitDialog = null"
+            class="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-muted hover:bg-slate-50 transition-colors"
+          >{{ $t('service.apikey.cancel') }}</button>
+          <button
+            @click="handleSaveRateLimit"
+            :disabled="rateLimitSaving"
+            class="flex-1 py-2.5 rounded-lg bg-dp-blue text-white text-sm font-medium
+                   hover:bg-dp-blue-dark transition-colors disabled:opacity-60"
+          >{{ rateLimitSaving ? '...' : ($t('service.apikey.confirm') || '保存') }}</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { createAPIKey, listAPIKeys, deleteAPIKey, fetchKeySecret, type APIKey } from '@/api/apikey'
+import { createAPIKey, updateAPIKey, listAPIKeys, deleteAPIKey, fetchKeySecret, type APIKey, type CreateAPIKeyParams, type UpdateAPIKeyParams } from '@/api/apikey'
 import { listCustomModels, createCustomModel, updateCustomModel, deleteCustomModel, type CustomModel } from '@/api/custom-model'
 import { getPublicModels, type PublicModel } from '@/api/model'
 
@@ -986,12 +1056,20 @@ const apiKeys = ref<APIKey[]>([])
 const keysLoading = ref(false)
 const showCreateDialog = ref(false)
 const newKeyName = ref('')
+const newKeyRPM = ref(60)
+const newKeyTPM = ref(1000000)
 const creating = ref(false)
 const newlyCreatedKey = ref<string | null>(null)
 const newlyCreatedKeyId = ref<number | null>(null)
 const selectedAPIKeyId = ref<number | null>(loadSelectedAPIKeyId())
 const toast = ref<{ message: string; type: 'success' | 'info' } | null>(null)
 let toastTimer: number | null = null
+
+// Edit rate-limit dialog state
+const editRateLimitDialog = ref<APIKey | null>(null)
+const editRPM = ref(0)
+const editTPM = ref(0)
+const rateLimitSaving = ref(false)
 
 // In-memory cache for full keys fetched from server (not persisted to localStorage)
 const keySecretCache = ref<Record<string, string>>({})
@@ -1235,7 +1313,10 @@ async function handleCreate() {
 
   creating.value = true
   try {
-    const res = await createAPIKey(newKeyName.value.trim())
+    const params: CreateAPIKeyParams = { name: newKeyName.value.trim() }
+    if (newKeyRPM.value !== 60) params.rate_limit_rpm = newKeyRPM.value
+    if (newKeyTPM.value !== 1000000) params.rate_limit_tpm = newKeyTPM.value
+    const res = await createAPIKey(params)
     const data = res.data?.data
     if (data?.full_key) {
       newlyCreatedKey.value = data.full_key
@@ -1247,11 +1328,40 @@ async function handleCreate() {
 
     showCreateDialog.value = false
     newKeyName.value = ''
+    newKeyRPM.value = 60
+    newKeyTPM.value = 1000000
     await fetchKeys()
   } catch {
     // error handling
   } finally {
     creating.value = false
+  }
+}
+
+/** Open edit rate-limit dialog for an API Key. */
+function openEditRateLimit(key: APIKey) {
+  editRateLimitDialog.value = key
+  editRPM.value = key.rate_limit_rpm
+  editTPM.value = key.rate_limit_tpm
+}
+
+/** Save rate-limit changes. */
+async function handleSaveRateLimit() {
+  if (!editRateLimitDialog.value || rateLimitSaving.value) return
+  rateLimitSaving.value = true
+  try {
+    const params: UpdateAPIKeyParams = {
+      rate_limit_rpm: editRPM.value,
+      rate_limit_tpm: editTPM.value,
+    }
+    await updateAPIKey(editRateLimitDialog.value.id, params)
+    editRateLimitDialog.value = null
+    await fetchKeys()
+    showToast(t('service.apikey.limit_updated') || '限流配置已更新', 'success')
+  } catch {
+    // error handling
+  } finally {
+    rateLimitSaving.value = false
   }
 }
 

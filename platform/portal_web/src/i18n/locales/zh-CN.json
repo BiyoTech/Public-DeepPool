@@ -234,7 +234,8 @@
       "copy_prefix_tip": "已复制密钥前缀，完整密钥仅在创建时展示一次",
       "copy_failed": "复制失败，请重试",
       "copy_no_cache": "该密钥完整值不可用，请创建新密钥后复制",
-      "quota_unlimited": "配额: 不限"
+      "quota_unlimited": "配额: 不限",
+      "edit_limit": "修改"
     },
     "mymodels": {
       "title": "我的模型",
