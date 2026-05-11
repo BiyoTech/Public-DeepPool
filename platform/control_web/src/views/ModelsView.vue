@@ -42,8 +42,8 @@
           </t-tag>
         </template>
 
-        <template #provider_type="{ row }">
-          <span class="text-dp-text-2 text-sm">{{ row.provider_type || '-' }}</span>
+        <template #model_family="{ row }">
+          <span class="text-dp-text-2 text-sm">{{ row.model_family || '-' }}</span>
         </template>
 
         <template #route_target="{ row }">
@@ -171,8 +171,8 @@
           <t-select v-model="formData.vendor_type" :options="vendorOptions" />
         </t-form-item>
 
-        <t-form-item v-if="requiresProvider" label="Provider 类型">
-          <t-select v-model="formData.provider_type" :options="providerOptions" clearable />
+        <t-form-item v-if="requiresProvider" label="Model Family">
+          <t-select v-model="formData.model_family" :options="modelFamilyOptions" clearable />
         </t-form-item>
 
         <!-- Hybrid: child model selector with rich rendering -->
@@ -238,7 +238,7 @@
 
         <t-form-item v-if="requiresDeepNode" label="模型族">
           <div class="w-full space-y-2">
-            <t-select v-model="formData.provider_type" :options="modelFamilyOptions" clearable placeholder="选择模型族（影响 thinking/stop 参数适配）" />
+            <t-select v-model="formData.model_family" :options="modelFamilyOptions" clearable placeholder="选择模型族（影响 thinking/stop 参数适配）" />
             <div class="text-xs text-dp-text-3">模型族决定 Gateway 如何适配 thinking、stop 等参数格式。留空则使用默认行为。</div>
           </div>
         </t-form-item>
@@ -259,23 +259,39 @@
           <t-input v-model="formData.supported_engines" placeholder="逗号分隔，如 vllm_mlx,llamacpp" />
         </t-form-item>
 
-        <t-form-item v-if="requiresProvider" label="Provider Endpoint" :required="requiresProvider">
-          <t-input v-model="formData.endpoint" placeholder="如 https://api.openai.com/v1" />
-        </t-form-item>
-
-        <t-form-item v-if="requiresProvider" label="上游模型名" :required="requiresProvider">
-          <t-input v-model="formData.upstream_model" placeholder="如 gpt-4o-mini" />
-        </t-form-item>
-
-        <t-form-item v-if="requiresProvider" label="Provider API Key" :required="!isEdit && requiresProvider">
+        <!-- Provider: endpoint pool association (multi-endpoint dispatch) -->
+        <t-form-item v-if="requiresProvider" label="Endpoint Pool" required>
           <div class="w-full space-y-2">
-            <t-input
-              v-model="formData.api_key"
-              type="password"
-              :placeholder="providerAPIKeyPlaceholder"
-            />
+            <t-select
+              v-model="formData.endpoint_ids"
+              :loading="loadingEndpoints"
+              multiple
+              filterable
+              placeholder="Select endpoints for round-robin dispatch"
+              @popup-visible-change="onEndpointPopupChange"
+            >
+              <t-option
+                v-for="ep in endpointOptions"
+                :key="ep.id"
+                :value="ep.id"
+                :label="`${ep.name} (${ep.upstream_model})`"
+              >
+                <div class="flex items-center justify-between w-full gap-2" style="padding: 4px 0;">
+                  <div class="flex-1 min-w-0">
+                    <div class="font-medium text-sm truncate">{{ ep.name }}</div>
+                    <div class="text-[10px] text-gray-500">{{ ep.upstream_model }} · {{ ep.endpoint_url }}</div>
+                  </div>
+                  <div class="flex items-center gap-1 shrink-0">
+                    <span class="text-[10px] text-gray-400">RPM:{{ ep.rpm_limit }}</span>
+                    <span v-for="i in 5" :key="i" class="text-[9px]" :class="i <= ep.price_level ? 'text-yellow-400' : 'text-gray-600'">★</span>
+                  </div>
+                </div>
+              </t-option>
+            </t-select>
             <div class="text-xs text-dp-text-3">
-              {{ isEdit ? '留空表示保留当前密钥；页面只会展示脱敏后的 key。' : '创建 provider / hybrid 模型时必须填写。' }}
+              Select at least one endpoint for provider model dispatch. Endpoints must be created in the
+              <router-link to="/endpoints" class="text-blue-400 hover:text-blue-300">Endpoints</router-link> page first.
+              Total RPM/TPM = sum of all selected endpoints.
             </div>
           </div>
         </t-form-item>
@@ -447,13 +463,13 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { SearchIcon, AddIcon, HelpCircleIcon } from 'tdesign-icons-vue-next'
 import { MessagePlugin } from 'tdesign-vue-next'
-import { getModels, getEnabledModels, createModel, updateModel, deleteModel } from '@/api/admin'
+import { getModels, getModelDetail, getEnabledModels, createModel, updateModel, deleteModel, getEndpointsByFamily } from '@/api/admin'
 
 interface ModelRow {
   id: number
   model_name: string
   vendor_type: string
-  provider_type?: string
+  model_family?: string
   repo_id?: string
   model_base_dir?: string
   engine?: string
@@ -475,6 +491,7 @@ interface ModelRow {
   routing_policy?: string
   pricing_tiers?: Array<{ max_input_tokens: number; input_price: number; output_price: number }>
   contributor_tiers?: Array<{ max_input_tokens: number; input_price: number; output_price: number }>
+  endpoint_ids?: number[]
   tags?: string[]
   options?: Record<string, any>
   created_at?: string
@@ -492,30 +509,22 @@ const vendorOptions = [
   { label: 'Hybrid', value: 'hybrid' },
 ]
 
-const providerOptions = [
-  { label: 'OpenAI Compatible', value: 'openai' },
-  { label: 'Anthropic (Claude)', value: 'anthropic' },
+// Unified model family options — used for both DeepNode and Provider models.
+// Determines thinking/stop parameter adaptation + protocol adapter selection.
+const modelFamilyOptions = [
+  { label: 'GPT (OpenAI)', value: 'gpt' },
+  { label: 'Claude (Anthropic)', value: 'claude' },
   { label: 'Gemini (Google)', value: 'gemini' },
   { label: 'DeepSeek', value: 'deepseek' },
-  { label: 'Qwen (通义千问)', value: 'qwen' },
+  { label: 'Qwen (Alibaba)', value: 'qwen' },
   { label: 'Kimi (Moonshot)', value: 'kimi' },
-  { label: 'GLM (智谱)', value: 'glm' },
-  { label: 'Qianfan (百度)', value: 'qianfan' },
+  { label: 'GLM (Zhipu)', value: 'glm' },
+  { label: 'Qianfan (Baidu)', value: 'qianfan' },
   { label: 'MiniMax', value: 'minimax' },
-  { label: 'Custom', value: 'custom' },
-]
-
-// Model family options for DeepNode models — determines thinking/stop parameter adaptation.
-const modelFamilyOptions = [
-  { label: 'Qwen (通义千问)', value: 'qwen' },
-  { label: 'DeepSeek', value: 'deepseek' },
-  { label: 'GLM (智谱)', value: 'glm' },
   { label: 'Gemma (Google)', value: 'gemma' },
-  { label: 'Kimi (Moonshot)', value: 'kimi' },
   { label: 'LLaMA (Meta)', value: 'llama' },
   { label: 'Mistral', value: 'mistral' },
-  { label: 'OpenAI Compatible', value: 'openai' },
-  { label: 'Other', value: '' },
+  { label: 'Custom / Other', value: 'custom' },
 ]
 
 const loading = ref(true)
@@ -535,7 +544,7 @@ const columns = [
   { colKey: 'id', title: 'ID', width: 70 },
   { colKey: 'model_name', title: '模型名称', width: 220 },
   { colKey: 'vendor_type', title: '来源', width: 110, cell: 'vendor_type' },
-  { colKey: 'provider_type', title: 'Provider', width: 120, cell: 'provider_type' },
+  { colKey: 'model_family', title: 'Model Family', width: 120, cell: 'model_family' },
   { colKey: 'route_target', title: '路由配置', minWidth: 260, cell: 'route_target' },
   { colKey: 'api_key_masked', title: 'API Key', width: 160, cell: 'api_key_masked' },
   { colKey: 'param_scale', title: '参数量级', width: 100, cell: 'param_scale' },
@@ -585,7 +594,7 @@ const editingId = ref(0)
 const defaultForm = {
   model_name: '',
   vendor_type: 'deepnode',
-  provider_type: '',
+  model_family: '',
   repo_id: '',
   model_base_dir: '',
   engine: '',
@@ -605,6 +614,7 @@ const defaultForm = {
   api_key_masked: '',
   child_models: [] as string[],
   routing_policy: '',
+  endpoint_ids: [] as number[],
   pricing_tiers: [] as Array<{ max_input_tokens: number; input_price: number; output_price: number }>,
   contributor_tiers: [] as Array<{ max_input_tokens: number; input_price: number; output_price: number }>,
   tags: [] as string[],
@@ -731,6 +741,45 @@ interface ChildModelOption {
 const loadingChildModels = ref(false)
 const childModelOptions = ref<ChildModelOption[]>([])
 
+// Provider endpoint options for endpoint pool selector.
+interface EndpointOption {
+  id: number
+  name: string
+  upstream_model: string
+  endpoint_url: string
+  rpm_limit: number
+  price_level: number
+}
+const loadingEndpoints = ref(false)
+const endpointOptions = ref<EndpointOption[]>([])
+
+async function fetchEndpointOptions(modelFamily: string) {
+  if (!modelFamily) return
+  loadingEndpoints.value = true
+  try {
+    const res = await getEndpointsByFamily(modelFamily)
+    endpointOptions.value = (res?.data?.data || []).map((ep: any) => ({
+      id: ep.id,
+      name: ep.name,
+      upstream_model: ep.upstream_model,
+      endpoint_url: ep.endpoint_url,
+      rpm_limit: ep.rpm_limit,
+      price_level: ep.price_level,
+    }))
+  } catch {
+    endpointOptions.value = []
+  } finally {
+    loadingEndpoints.value = false
+  }
+}
+
+// Triggered when endpoint pool dropdown opens — fetch latest endpoints for current model_family.
+function onEndpointPopupChange(visible: boolean) {
+  if (visible && formData.model_family) {
+    fetchEndpointOptions(formData.model_family)
+  }
+}
+
 async function fetchChildModelOptions() {
   loadingChildModels.value = true
   try {
@@ -758,6 +807,7 @@ function resetForm() {
   Object.assign(formData, {
     ...defaultForm,
     child_models: [] as string[],
+    endpoint_ids: [] as number[],
     pricing_tiers: [] as Array<{ max_input_tokens: number; input_price: number; output_price: number }>,
     contributor_tiers: [] as Array<{ max_input_tokens: number; input_price: number; output_price: number }>,
     tags: [] as string[],
@@ -772,43 +822,59 @@ function openCreateDialog() {
   dialogVisible.value = true
 }
 
-function openEditDialog(row: ModelRow) {
+async function openEditDialog(row: ModelRow) {
   isEdit.value = true
   editingId.value = row.id
-  formData.model_name = row.model_name || ''
-  formData.vendor_type = row.vendor_type || 'deepnode'
-  formData.provider_type = row.provider_type || ''
-  formData.repo_id = row.repo_id || ''
-  formData.model_base_dir = row.model_base_dir || ''
-  formData.engine = row.engine || ''
-  formData.supported_engines = (row.supported_engines || []).join(',')
-  formData.min_memory_gb = row.min_memory_gb || 0
-  formData.min_gpu_memory_gb = row.min_gpu_memory_gb || 0
-  formData.priority = row.priority || 0
-  formData.supports_reasoning = row.supports_reasoning || false
-  formData.supports_function_call = row.supports_function_call || false
-  formData.supports_vision = row.supports_vision || false
-  formData.max_context_length = Math.round((row.max_context_length || 0) / 1000)
-  formData.param_scale = row.param_scale || 0
-  formData.allow_external_call = row.allow_external_call !== false
-  formData.endpoint = row.endpoint || ''
-  formData.upstream_model = row.upstream_model || ''
+
+  // For provider models, fetch full detail to get endpoint_ids (not included in list response).
+  let detailRow = row
+  if (row.vendor_type === 'provider') {
+    try {
+      const res = await getModelDetail(row.id)
+      detailRow = res?.data?.data || row
+    } catch {
+      // Fallback to list row data.
+    }
+  }
+
+  formData.model_name = detailRow.model_name || ''
+  formData.vendor_type = detailRow.vendor_type || 'deepnode'
+  formData.model_family = detailRow.model_family || ''
+  formData.repo_id = detailRow.repo_id || ''
+  formData.model_base_dir = detailRow.model_base_dir || ''
+  formData.engine = detailRow.engine || ''
+  formData.supported_engines = (detailRow.supported_engines || []).join(',')
+  formData.min_memory_gb = detailRow.min_memory_gb || 0
+  formData.min_gpu_memory_gb = detailRow.min_gpu_memory_gb || 0
+  formData.priority = detailRow.priority || 0
+  formData.supports_reasoning = detailRow.supports_reasoning || false
+  formData.supports_function_call = detailRow.supports_function_call || false
+  formData.supports_vision = detailRow.supports_vision || false
+  formData.max_context_length = Math.round((detailRow.max_context_length || 0) / 1000)
+  formData.param_scale = detailRow.param_scale || 0
+  formData.allow_external_call = detailRow.allow_external_call !== false
+  formData.endpoint = detailRow.endpoint || ''
+  formData.upstream_model = detailRow.upstream_model || ''
   formData.api_key = ''
-  formData.api_key_masked = row.api_key_masked || ''
-  formData.child_models = row.child_models || []
-  formData.routing_policy = row.routing_policy || ''
+  formData.api_key_masked = detailRow.api_key_masked || ''
+  formData.child_models = detailRow.child_models || []
+  formData.routing_policy = detailRow.routing_policy || ''
+  formData.endpoint_ids = detailRow.endpoint_ids || []
   // Convert max_input_tokens from raw token count to K unit for display
-  formData.pricing_tiers = (row.pricing_tiers || []).map((t) => ({
+  formData.pricing_tiers = (detailRow.pricing_tiers || []).map((t) => ({
     ...t,
     max_input_tokens: t.max_input_tokens ? Math.round(t.max_input_tokens / 1000) : 0,
   }))
-  formData.contributor_tiers = (row.contributor_tiers || []).map((t) => ({
+  formData.contributor_tiers = (detailRow.contributor_tiers || []).map((t) => ({
     ...t,
     max_input_tokens: t.max_input_tokens ? Math.round(t.max_input_tokens / 1000) : 0,
   }))
-  formData.options = row.options ? JSON.stringify(row.options, null, 2) : ''
-  formData.tags = row.tags || []
+  formData.options = detailRow.options ? JSON.stringify(detailRow.options, null, 2) : ''
+  formData.tags = detailRow.tags || []
   fetchChildModelOptions()
+  if (detailRow.vendor_type === 'provider' && detailRow.model_family) {
+    fetchEndpointOptions(detailRow.model_family)
+  }
   dialogVisible.value = true
 }
 
@@ -853,7 +919,7 @@ function buildPayload() {
       payload.routing_policy = formData.routing_policy.trim()
     }
   } else if (requiresDeepNode.value) {
-    payload.provider_type = formData.provider_type.trim() || ''
+    payload.model_family = formData.model_family.trim() || ''
     payload.repo_id = formData.repo_id.trim()
     payload.model_base_dir = formData.model_base_dir.trim()
     payload.engine = formData.engine.trim()
@@ -863,12 +929,8 @@ function buildPayload() {
     payload.priority = formData.priority
     payload.contributor_tiers = contributorTiersRaw.length ? contributorTiersRaw : []
   } else if (requiresProvider.value) {
-    payload.provider_type = formData.provider_type.trim() || 'custom'
-    payload.endpoint = formData.endpoint.trim()
-    payload.upstream_model = formData.upstream_model.trim()
-    if (formData.api_key.trim()) {
-      payload.api_key = formData.api_key.trim()
-    }
+    payload.model_family = formData.model_family.trim() || 'custom'
+    payload.endpoint_ids = formData.endpoint_ids
   }
 
   return payload
@@ -887,14 +949,8 @@ function validateForm() {
   if (requiresDeepNode.value && !formData.repo_id.trim()) {
     return 'DeepNode 模型必须填写 Repo ID'
   }
-  if (requiresProvider.value && !formData.endpoint.trim()) {
-    return 'Provider 模型必须填写 Endpoint'
-  }
-  if (requiresProvider.value && !formData.upstream_model.trim()) {
-    return 'Provider 模型必须填写上游模型名'
-  }
-  if (requiresProvider.value && !isEdit.value && !formData.api_key.trim()) {
-    return '创建 Provider 模型时必须填写 API Key'
+  if (requiresProvider.value && !formData.endpoint_ids.length) {
+    return 'Provider model requires at least one endpoint. Create endpoints in the Endpoints page first.'
   }
   return ''
 }

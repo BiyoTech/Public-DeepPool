@@ -40,19 +40,20 @@
             {{ $t('home.hero.cta_consumer') }}
           </a>
           <router-link
+              to="/docs/getting-started/custom-hybrid-model"
+              class="px-8 py-3 rounded-full border border-slate-300 text-dp-muted font-medium
+                   hover:border-dp-blue hover:text-dp-blue transition-all duration-300 transform hover:-translate-y-0.5"
+          >
+            {{ $t('home.hero.cta_custom_hybrid') }}
+          </router-link>
+          <router-link
             to="/docs/getting-started/quickstart-provider"
             class="px-8 py-3 rounded-full border border-slate-300 text-dp-muted font-medium
                    hover:border-dp-blue hover:text-dp-blue transition-all duration-300 transform hover:-translate-y-0.5"
           >
             {{ $t('home.hero.cta_provider') }}
           </router-link>
-          <router-link
-            to="/docs/getting-started/custom-hybrid-model"
-            class="px-8 py-3 rounded-full border border-slate-300 text-dp-muted font-medium
-                   hover:border-dp-blue hover:text-dp-blue transition-all duration-300 transform hover:-translate-y-0.5"
-          >
-            {{ $t('home.hero.cta_custom_hybrid') }}
-          </router-link>
+
         </div>
       </div>
     </section>

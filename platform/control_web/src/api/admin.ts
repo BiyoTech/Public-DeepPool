@@ -42,6 +42,11 @@ export function getModels(params: { keyword?: string; page?: number; page_size?:
   return http.get('/admin/models', { params })
 }
 
+// 获取单个模型详情（含 endpoint_ids）
+export function getModelDetail(id: number) {
+  return http.get(`/admin/models/${id}`)
+}
+
 // 获取所有已启用的模型（用于分配弹窗）
 export function getEnabledModels() {
   return http.get('/admin/models/enabled')
@@ -77,6 +82,38 @@ export function assignModelsToDevice(data: { device_id: number; model_ids: numbe
 // 批量为多台设备分配模型
 export function batchAssignModels(data: { device_ids: number[]; model_ids: number[] }) {
   return http.post('/admin/devices/batch-assign', data)
+}
+
+// ─── Provider Endpoint Management ───
+
+// List endpoints with pagination
+export function getEndpoints(params: { keyword?: string; page?: number; page_size?: number }) {
+  return http.get('/admin/endpoints', { params })
+}
+
+// Create endpoint
+export function createEndpoint(data: Record<string, any>) {
+  return http.post('/admin/endpoints', data)
+}
+
+// Get endpoint by ID
+export function getEndpoint(id: number) {
+  return http.get(`/admin/endpoints/${id}`)
+}
+
+// Update endpoint
+export function updateEndpoint(id: number, data: Record<string, any>) {
+  return http.put(`/admin/endpoints/${id}`, data)
+}
+
+// Delete endpoint
+export function deleteEndpoint(id: number) {
+  return http.delete(`/admin/endpoints/${id}`)
+}
+
+// List endpoints by model family (for model association selector)
+export function getEndpointsByFamily(modelFamily: string) {
+  return http.get(`/admin/endpoints/by-family/${modelFamily}`)
 }
 
 // ─── Consumer Operations: Token Grants ───

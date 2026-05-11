@@ -51,8 +51,18 @@
                     v-if="modelDropdownOpen"
                     class="absolute z-50 mt-1 max-h-80 w-full min-w-[480px] overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
                   >
+                    <!-- Search input inside dropdown -->
+                    <li class="sticky top-0 bg-white px-2 py-1.5 border-b border-slate-100">
+                      <input
+                        v-model="modelSearchQuery"
+                        type="text"
+                        placeholder="Search model name..."
+                        class="w-full px-3 py-1.5 rounded-md border border-slate-200 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-blue-400"
+                        @click.stop
+                      />
+                    </li>
                     <li
-                      v-for="model in availableModels"
+                      v-for="model in filteredAvailableModels"
                       :key="model.id"
                       class="flex items-center justify-between gap-2 px-3 py-2 cursor-pointer text-sm hover:bg-blue-50"
                       :class="model.id === selectedModel ? 'bg-blue-50 text-dp-blue font-medium' : 'text-dp-body'"
@@ -101,10 +111,10 @@
                 {{ vendorTypeLabel(selectedModelOption.vendor_type) }}
               </span>
               <span
-                v-if="selectedModelOption?.provider_type"
+                v-if="selectedModelOption?.model_family"
                 class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 font-medium text-emerald-600"
               >
-                {{ selectedModelOption.provider_type }}
+                {{ selectedModelOption.model_family }}
               </span>
             </div>
           </div>
@@ -519,7 +529,7 @@
                       class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium"
                       :class="cm.vendor_type === 'provider' ? 'bg-emerald-50 text-emerald-600' : 'bg-purple-50 text-purple-600'"
                     >{{ cm.vendor_type }}</span>
-                    <span v-if="cm.provider_type" class="inline-flex items-center rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">{{ cm.provider_type }}</span>
+                    <span v-if="cm.model_family" class="inline-flex items-center rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">{{ cm.model_family }}</span>
                     <span
                       class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium"
                       :class="cm.enabled ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400'"
@@ -649,12 +659,12 @@
           <div class="mb-4">
             <label class="text-xs font-medium text-dp-muted mb-1 block">Provider 类型</label>
             <select
-              v-model="cmForm.providerType"
+              v-model="cmForm.modelFamily"
               class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white
                      focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
             >
               <option value="">请选择</option>
-              <option v-for="pt in providerTypeOptions" :key="pt" :value="pt">{{ pt }}</option>
+              <option v-for="pt in modelFamilyOptions" :key="pt" :value="pt">{{ pt }}</option>
             </select>
           </div>
 
@@ -860,11 +870,13 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import { createAPIKey, updateAPIKey, listAPIKeys, deleteAPIKey, fetchKeySecret, type APIKey, type CreateAPIKeyParams, type UpdateAPIKeyParams } from '@/api/apikey'
 import { listCustomModels, createCustomModel, updateCustomModel, deleteCustomModel, type CustomModel } from '@/api/custom-model'
 import { getPublicModels, type PublicModel } from '@/api/model'
 
 const { t } = useI18n()
+const route = useRoute()
 
 // ── Right panel tab state ──
 const rightPanelTab = ref<'apikeys' | 'mymodels'>('apikeys')
@@ -884,7 +896,7 @@ interface ChatMessage {
 interface GatewayModelOption {
   id: string
   vendor_type?: string
-  provider_type?: string
+  model_family?: string
   owned_by?: string
   param_scale?: number
   max_context_length?: number
@@ -954,10 +966,19 @@ function previewImage(url: string) {
 // ── Custom model dropdown state ──
 const modelDropdownOpen = ref(false)
 const modelDropdownRef = ref<HTMLElement>()
+const modelSearchQuery = ref('')
+
+// Filtered models for the dropdown based on search query.
+const filteredAvailableModels = computed(() => {
+  const q = modelSearchQuery.value.trim().toLowerCase()
+  if (!q) return availableModels.value
+  return availableModels.value.filter(m => m.id.toLowerCase().includes(q))
+})
 
 function selectModel(id: string) {
   selectedModel.value = id
   modelDropdownOpen.value = false
+  modelSearchQuery.value = ''
 }
 
 function vendorTypeTagClass(vendorType?: string): string {
@@ -1501,7 +1522,7 @@ function normalizeGatewayModels(items: unknown[]): GatewayModelOption[] {
       return {
         id: String(record.id || '').trim(),
         vendor_type: String(record.vendor_type || '').trim(),
-        provider_type: String(record.provider_type || '').trim(),
+        model_family: String(record.model_family || '').trim(),
         owned_by: String(record.owned_by || '').trim(),
         param_scale: Number(record.param_scale || 0),
         max_context_length: Number(record.max_context_length || 0),
@@ -1556,7 +1577,7 @@ function mergeModelsIntoDropdown() {
     .map(cm => ({
       id: cm.model_name,
       vendor_type: cm.vendor_type || 'hybrid',
-      provider_type: cm.provider_type || '',
+      model_family: cm.model_family || '',
       owned_by: 'user',
       param_scale: 0,
       max_context_length: 0,
@@ -1579,7 +1600,7 @@ const cmError = ref('')
 const publicModelsList = ref<PublicModel[]>([])
 
 // Provider type options
-const providerTypeOptions = ['openai', 'anthropic', 'gemini', 'deepseek', 'qwen', 'kimi', 'glm', 'custom']
+const modelFamilyOptions = ['openai', 'anthropic', 'gemini', 'deepseek', 'qwen', 'kimi', 'glm', 'custom']
 
 // Get user ID from localStorage for display purposes.
 const currentUserId = computed(() => {
@@ -1594,7 +1615,7 @@ const cmForm = ref({
   childModels: [] as string[],
   routingPolicy: '',
   // provider fields
-  providerType: '',
+  modelFamily: '',
   endpoint: '',
   upstreamModel: '',
   apiKey: '',
@@ -1639,7 +1660,7 @@ function resetCustomModelForm() {
   cmForm.value = {
     displayName: '', vendorType: 'hybrid',
     childModels: [], routingPolicy: '',
-    providerType: '', endpoint: '', upstreamModel: '', apiKey: '',
+    modelFamily: '', endpoint: '', upstreamModel: '', apiKey: '',
     supportsReasoning: false, supportsVision: false, supportsFunctionCall: false,
     tags: [],
   }
@@ -1653,7 +1674,7 @@ function editCustomModel(cm: CustomModel) {
     vendorType: cm.vendor_type || 'hybrid',
     childModels: [...(cm.child_models || [])],
     routingPolicy: cm.routing_policy || '',
-    providerType: cm.provider_type || '',
+    modelFamily: cm.model_family || '',
     endpoint: cm.endpoint || '',
     upstreamModel: cm.upstream_model || '',
     apiKey: '', // don't pre-fill (masked on server)
@@ -1697,7 +1718,7 @@ async function saveCustomModel() {
     cmError.value = '至少选择 2 个子模型'; return
   }
   if (form.vendorType === 'provider') {
-    if (!form.providerType) { cmError.value = '请选择 Provider 类型'; return }
+    if (!form.modelFamily) { cmError.value = '请选择 Provider 类型'; return }
     if (!form.endpoint) { cmError.value = '请输入 Endpoint'; return }
     if (!form.upstreamModel) { cmError.value = '请输入上游模型名称'; return }
     if (!editingCustomModel.value && !form.apiKey) { cmError.value = '请输入 API Key'; return }
@@ -1712,7 +1733,7 @@ async function saveCustomModel() {
         payload.child_models = form.childModels
         payload.routing_policy = form.routingPolicy
       } else {
-        payload.provider_type = form.providerType
+        payload.model_family = form.modelFamily
         payload.endpoint = form.endpoint
         payload.upstream_model = form.upstreamModel
         if (form.apiKey) payload.api_key = form.apiKey
@@ -1731,7 +1752,7 @@ async function saveCustomModel() {
         payload.child_models = form.childModels
         payload.routing_policy = form.routingPolicy
       } else {
-        payload.provider_type = form.providerType
+        payload.model_family = form.modelFamily
         payload.endpoint = form.endpoint
         payload.upstream_model = form.upstreamModel
         payload.api_key = form.apiKey
@@ -1759,5 +1780,10 @@ async function deleteCustomModelConfirm(cm: CustomModel) {
 
 onMounted(async () => {
   await Promise.all([fetchKeys(), fetchModels(), fetchCustomModels(), fetchPublicModelsForSelector()])
+  // Pre-select model from route query (e.g. /service?model=gpt-4o-proxy).
+  const queryModel = route.query.model as string
+  if (queryModel && availableModels.value.some(m => m.id === queryModel)) {
+    selectedModel.value = queryModel
+  }
 })
 </script>

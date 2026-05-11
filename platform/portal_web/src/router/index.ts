@@ -22,6 +22,11 @@ const router = createRouter({
           component: () => import('@/views/DocsView.vue'),
         },
         {
+          path: 'models',
+          name: 'Models',
+          component: () => import('@/views/ModelsView.vue'),
+        },
+        {
           path: 'service',
           name: 'Service',
           meta: { requiresAuth: true },

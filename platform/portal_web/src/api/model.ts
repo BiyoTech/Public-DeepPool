@@ -26,6 +26,7 @@ export interface PublicModel {
   pricing_tiers: PricingTier[]
   contributor_tiers: PricingTier[]
   price_range?: PriceRange  // hybrid models only
+  tags?: string[]
 }
 
 /** Fetch enabled models with pricing tiers (public, no auth) */

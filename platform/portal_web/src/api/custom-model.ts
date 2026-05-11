@@ -13,7 +13,7 @@ export interface CustomModel {
   child_models: string[]
   routing_policy: string
   // provider fields
-  provider_type: string
+  model_family: string
   endpoint: string
   upstream_model: string
   api_key: string // masked in responses ("••••••")
@@ -33,7 +33,7 @@ export interface CreateCustomModelReq {
   child_models?: string[]
   routing_policy?: string
   // provider
-  provider_type?: string
+  model_family?: string
   endpoint?: string
   upstream_model?: string
   api_key?: string
@@ -48,7 +48,7 @@ export interface UpdateCustomModelReq {
   child_models?: string[]
   routing_policy?: string
   // provider
-  provider_type?: string
+  model_family?: string
   endpoint?: string
   upstream_model?: string
   api_key?: string
