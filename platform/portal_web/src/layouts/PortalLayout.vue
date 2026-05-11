@@ -210,6 +210,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 // 导航项（响应语言变化）
 const navItems = computed(() => [
   { path: '/', label: t('nav.home') },
+  { path: '/models', label: t('nav.models') },
   { path: '/service', label: t('nav.service') },
   { path: '/data', label: t('nav.data') },
   // 隐藏,未来再考虑

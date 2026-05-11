@@ -18,6 +18,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'users', name: 'Users', component: () => import('@/views/UsersView.vue') },
       { path: 'devices', name: 'Devices', component: () => import('@/views/DevicesView.vue') },
       { path: 'models', name: 'Models', component: () => import('@/views/ModelsView.vue') },
+      { path: 'endpoints', name: 'Endpoints', component: () => import('@/views/EndpointsView.vue') },
       { path: 'consumer-operations', name: 'ConsumerOperations', component: () => import('@/views/ConsumerOperationView.vue') },
       { path: 'chat', name: 'Chat', component: () => import('@/views/ChatView.vue') },
     ],
