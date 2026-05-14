@@ -21,9 +21,9 @@
 
       <!-- Body (scrollable) -->
       <div class="flex-1 overflow-y-auto px-6 py-5 space-y-4">
-        <!-- Vendor Type selector (create only) -->
+        <!-- Model Family selector (create only) -->
         <div v-if="!editingModel">
-          <label class="text-xs font-medium text-slate-500 mb-1.5 block">Model Type</label>
+          <label class="text-xs font-medium text-slate-500 mb-1.5 block">Model Family</label>
           <div class="flex gap-3">
             <button
               type="button"

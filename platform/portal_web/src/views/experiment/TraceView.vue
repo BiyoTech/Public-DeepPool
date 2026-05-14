@@ -46,7 +46,10 @@
               </span>
             </div>
             <div class="mt-2 flex flex-wrap gap-4 text-xs text-dp-muted">
-              <span>{{ $t('experiment.trace.db_type') }}: <b class="text-dp-title">{{ trace.db_type }}</b></span>
+              <span>
+                <span v-if="trace.storage_type === 'builtin'" class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-dp-blue">{{ $t('experiment.trace.storage_builtin') }}</span>
+                <span v-else class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-500">{{ trace.db_type }}</span>
+              </span>
               <span>{{ $t('experiment.trace.api_keys') }}: <b class="text-dp-title">{{ trace.api_key_ids?.length || 0 }}</b></span>
               <span>{{ $t('experiment.trace.models') }}: <b class="text-dp-title">{{ trace.model_names?.length ? trace.model_names.join(', ') : $t('experiment.trace.all_models') }}</b></span>
               <span>{{ $t('experiment.trace.created') }}: {{ trace.created_at }}</span>
@@ -205,8 +208,48 @@
             </div>
           </div>
 
-          <!-- Database config -->
+          <!-- Storage Engine Selection -->
           <div>
+            <label class="block text-sm font-medium text-dp-title mb-1.5">{{ $t('experiment.trace.storage_engine') }}</label>
+            <div class="flex gap-2">
+              <button
+                v-if="builtinAvailable"
+                type="button"
+                class="flex-1 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all"
+                :class="form.storage_type === 'builtin'
+                  ? 'border-dp-blue bg-blue-50 text-dp-blue shadow-sm'
+                  : 'border-slate-200 text-dp-muted hover:bg-slate-50'"
+                @click="form.storage_type = 'builtin'"
+              >
+                <div class="flex items-center justify-center gap-1.5">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"/>
+                  </svg>
+                  {{ $t('experiment.trace.storage_builtin') }}
+                </div>
+                <p class="text-[10px] mt-0.5 font-normal opacity-70">{{ $t('experiment.trace.storage_builtin_desc') }}</p>
+              </button>
+              <button
+                type="button"
+                class="flex-1 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all"
+                :class="form.storage_type === 'external'
+                  ? 'border-dp-blue bg-blue-50 text-dp-blue shadow-sm'
+                  : 'border-slate-200 text-dp-muted hover:bg-slate-50'"
+                @click="form.storage_type = 'external'"
+              >
+                <div class="flex items-center justify-center gap-1.5">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+                  </svg>
+                  {{ $t('experiment.trace.storage_external') }}
+                </div>
+                <p class="text-[10px] mt-0.5 font-normal opacity-70">{{ $t('experiment.trace.storage_external_desc') }}</p>
+              </button>
+            </div>
+          </div>
+
+          <!-- Database config (only shown for external storage) -->
+          <div v-if="form.storage_type === 'external'">
             <label class="block text-sm font-medium text-dp-title mb-1">{{ $t('experiment.trace.db_config') }}</label>
             <div class="mb-3">
               <label class="block text-xs font-medium text-dp-muted mb-1">{{ $t('experiment.trace.db_type') }}</label>
@@ -256,7 +299,7 @@
                   v-model="form.db_password"
                   type="password"
                   class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-dp-blue/40"
-                  :placeholder="$t('experiment.trace.db_password_placeholder')"
+                  :placeholder="editingTrace ? $t('experiment.trace.db_password_keep') : $t('experiment.trace.db_password_placeholder')"
                 />
               </div>
               <div class="col-span-2">
@@ -320,8 +363,9 @@
 import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { listTraces, createTrace as apiCreateTrace, updateTraceStatus, updateTrace as apiUpdateTrace, deleteTrace as apiDeleteTrace, testDBConnection, type TraceConfig } from '@/api/experiment'
+import { listTraces, createTrace as apiCreateTrace, updateTraceStatus, updateTrace as apiUpdateTrace, deleteTrace as apiDeleteTrace, testDBConnection, getTraceStorageOptions, type TraceConfig } from '@/api/experiment'
 import { listAPIKeys, type APIKey } from '@/api/apikey'
+import { listCustomModels } from '@/api/custom-model'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -336,6 +380,7 @@ const testing = ref(false)
 const testResult = ref<boolean | null>(null)
 const testError = ref('')
 const deleteTarget = ref<TraceConfig | null>(null)
+const builtinAvailable = ref(false)
 
 // --- Model dropdown state (search + multi-select) ---
 
@@ -386,25 +431,57 @@ function handleClickOutside(e: MouseEvent) {
 onMounted(() => { document.addEventListener('click', handleClickOutside) })
 onBeforeUnmount(() => { document.removeEventListener('click', handleClickOutside) })
 
-/** Fetch available models from gateway /v1/models endpoint. */
+/** Fetch available models from gateway /v1/models + user custom models. */
 async function fetchModels() {
   try {
     const token = localStorage.getItem('dp_token')
     const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1'
     // Gateway models endpoint is at /v1/models (not under /api/v1)
     const gatewayBase = baseUrl.replace(/\/api\/v1\/?$/, '/v1')
-    const res = await fetch(`${gatewayBase}/models`, {
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-    })
-    if (!res.ok) return
-    const json = await res.json()
-    const items = Array.isArray(json?.data) ? json.data : []
-    allModels.value = items.map((item: any) => ({
-      id: String(item.id || '').trim(),
-      vendor_type: String(item.vendor_type || ''),
-      model_family: String(item.model_family || ''),
-      tags: Array.isArray(item.tags) ? item.tags : [],
-    })).filter((m: ModelOption) => m.id).sort((a: ModelOption, b: ModelOption) => a.id.localeCompare(b.id))
+
+    // Fetch platform models and user custom models in parallel
+    const [gatewayRes, customRes] = await Promise.allSettled([
+      fetch(`${gatewayBase}/models`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      }),
+      listCustomModels(),
+    ])
+
+    const models: ModelOption[] = []
+
+    // Platform models from gateway
+    if (gatewayRes.status === 'fulfilled' && gatewayRes.value.ok) {
+      const json = await gatewayRes.value.json()
+      const items = Array.isArray(json?.data) ? json.data : []
+      for (const item of items) {
+        const id = String(item.id || '').trim()
+        if (id) {
+          models.push({
+            id,
+            vendor_type: String(item.vendor_type || ''),
+            model_family: String(item.model_family || ''),
+            tags: Array.isArray(item.tags) ? item.tags : [],
+          })
+        }
+      }
+    }
+
+    // User custom models (via manager API with session auth)
+    if (customRes.status === 'fulfilled') {
+      const customModels = customRes.value.data?.data || []
+      for (const cm of customModels) {
+        if (cm.enabled && !models.some(m => m.id === cm.model_name)) {
+          models.push({
+            id: cm.model_name,
+            vendor_type: cm.vendor_type || 'provider',
+            model_family: cm.model_family || '',
+            tags: [...(cm.tags || []), 'custom'],
+          })
+        }
+      }
+    }
+
+    allModels.value = models.sort((a, b) => a.id.localeCompare(b.id))
   } catch {
     // Silent — models list is optional for trace creation
   }
@@ -422,6 +499,7 @@ const form = reactive({
   name: '',
   api_key_ids: [] as number[],
   model_names: [] as string[],
+  storage_type: 'builtin' as 'builtin' | 'external',
   db_type: 'mysql',
   db_host: '',
   db_port: 3306,
@@ -468,12 +546,21 @@ const dbConnectionPreview = computed(() => {
 
 onMounted(async () => {
   try {
-    const [tracesRes, keysRes] = await Promise.allSettled([listTraces(), listAPIKeys(), fetchModels()])
+    const [tracesRes, keysRes, , storageRes] = await Promise.allSettled([
+      listTraces(), listAPIKeys(), fetchModels(), getTraceStorageOptions(),
+    ])
     if (tracesRes.status === 'fulfilled') {
       traces.value = tracesRes.value.data?.data || []
     }
     if (keysRes.status === 'fulfilled') {
       apiKeys.value = keysRes.value.data?.data || []
+    }
+    if (storageRes.status === 'fulfilled') {
+      builtinAvailable.value = storageRes.value.data?.data?.builtin_available ?? false
+    }
+    // Default to external if builtin is not available
+    if (!builtinAvailable.value) {
+      form.storage_type = 'external'
     }
   } finally {
     loading.value = false
@@ -527,6 +614,7 @@ function openEdit(trace: TraceConfig) {
   form.name = trace.name
   form.api_key_ids = [...(trace.api_key_ids || [])]
   form.model_names = [...(trace.model_names || [])]
+  form.storage_type = (trace.storage_type as 'builtin' | 'external') || 'external'
   form.db_type = trace.db_type || 'mysql'
   form.db_host = trace.db_host || ''
   form.db_port = trace.db_port || defaultPortForDBType(form.db_type)
@@ -546,21 +634,28 @@ async function submitForm() {
 }
 
 async function doCreateTrace() {
-  if (!form.name.trim() || form.api_key_ids.length === 0 || !canTestConnection.value) return
+  if (!form.name.trim() || form.api_key_ids.length === 0) return
+  // For external storage, validate DB fields
+  if (form.storage_type === 'external' && !canTestConnection.value) return
+
   submitting.value = true
   try {
-    const res = await apiCreateTrace({
+    const params: Record<string, any> = {
       name: form.name.trim(),
       api_key_ids: form.api_key_ids,
       model_names: form.model_names,
-      storage_type: 'external',
-      db_type: form.db_type,
-      db_host: form.db_host.trim(),
-      db_port: form.db_port,
-      db_user: form.db_user.trim(),
-      db_password: form.db_password,
-      db_name: form.db_name.trim(),
-    })
+      storage_type: form.storage_type,
+    }
+    if (form.storage_type === 'external') {
+      params.db_type = form.db_type
+      params.db_host = form.db_host.trim()
+      params.db_port = form.db_port
+      params.db_user = form.db_user.trim()
+      params.db_password = form.db_password
+      params.db_name = form.db_name.trim()
+    }
+
+    const res = await apiCreateTrace(params as any)
     if (res.data?.data) {
       traces.value.unshift(res.data.data)
     }
@@ -581,16 +676,17 @@ async function doUpdateTrace() {
       name: form.name.trim(),
       api_key_ids: form.api_key_ids,
       model_names: form.model_names,
+      // Always send DB config fields (pre-filled from existing config).
+      // Empty db_password means keep the existing password on the server side.
+      db_type: form.db_type,
+      db_host: form.db_host.trim(),
+      db_port: form.db_port,
+      db_user: form.db_user.trim(),
+      db_name: form.db_name.trim(),
     }
-    // Only include DB fields if user has filled them (re-entering connection info)
-    const hasDBInput = form.db_host.trim() || form.db_user.trim() || form.db_name.trim()
-    if (hasDBInput) {
-      params.db_type = form.db_type
-      params.db_host = form.db_host.trim()
-      params.db_port = form.db_port
-      params.db_user = form.db_user.trim()
+    // Only include db_password when user explicitly entered a new one
+    if (form.db_password) {
       params.db_password = form.db_password
-      params.db_name = form.db_name.trim()
     }
     const res = await apiUpdateTrace(editingTrace.value.id, params)
     if (res.data?.data) {
@@ -637,6 +733,7 @@ function resetForm() {
   form.name = ''
   form.api_key_ids = []
   form.model_names = []
+  form.storage_type = builtinAvailable.value ? 'builtin' : 'external'
   form.db_type = 'mysql'
   form.db_host = ''
   form.db_port = 3306

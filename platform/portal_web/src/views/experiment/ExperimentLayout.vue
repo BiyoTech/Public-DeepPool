@@ -62,9 +62,9 @@ const EvaluateIcon = { render: () => h('svg', { class: 'w-4 h-4', fill: 'none', 
 ])}
 
 const navItems = computed(() => [
-  { path: '/experiment/overview', label: t('experiment.nav.overview'), icon: OverviewIcon, badge: t('experiment.coming_soon') },
+  { path: '/experiment/overview', label: t('experiment.nav.overview'), icon: OverviewIcon },
   { path: '/experiment/trace', label: t('experiment.nav.trace'), icon: TraceIcon },
-  { path: '/experiment/judge', label: t('experiment.nav.judge'), icon: JudgeIcon, badge: t('experiment.coming_soon') },
+  { path: '/experiment/judge', label: t('experiment.nav.judge'), icon: JudgeIcon },
   { path: '/experiment/evaluate', label: t('experiment.nav.evaluate'), icon: EvaluateIcon, badge: t('experiment.coming_soon') },
 ])
 
