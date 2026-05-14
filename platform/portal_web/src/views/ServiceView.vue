@@ -288,7 +288,7 @@
                   >
                     ✓
                   </span>
-                  <span class="text-sm font-medium text-dp-body truncate">{{ key.name }}</span>
+                  <span class="text-sm font-medium text-dp-body truncate">{{ key.name }} <span class="text-dp-muted font-normal">(ID:{{ key.id }})</span></span>
                 </div>
                 <div class="flex items-center gap-3 shrink-0">
                   <button
@@ -655,9 +655,9 @@
 
         <!-- ═══ Provider Form ═══ -->
         <template v-if="cmForm.vendorType === 'provider'">
-          <!-- Provider Type -->
+          <!-- Model Family -->
           <div class="mb-4">
-            <label class="text-xs font-medium text-dp-muted mb-1 block">Provider 类型</label>
+            <label class="text-xs font-medium text-dp-muted mb-1 block">Model Family</label>
             <select
               v-model="cmForm.modelFamily"
               class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white
@@ -1599,8 +1599,8 @@ const cmSaving = ref(false)
 const cmError = ref('')
 const publicModelsList = ref<PublicModel[]>([])
 
-// Provider type options
-const modelFamilyOptions = ['openai', 'anthropic', 'gemini', 'deepseek', 'qwen', 'kimi', 'glm', 'custom']
+// Model family options
+const modelFamilyOptions = ['openai', 'anthropic', 'gemini', 'deepseek', 'qwen', 'kimi', 'glm', 'qianfan', 'minimax', 'custom']
 
 // Get user ID from localStorage for display purposes.
 const currentUserId = computed(() => {

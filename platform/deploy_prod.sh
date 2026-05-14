@@ -1,5 +1,5 @@
 #!/bin/bash
-# deploy_prod.sh — Build and deploy all platform components to production ECS server.
+# deploy_prod.sh — Build and deploy platform components to production ECS server.
 #
 # This script handles:
 #   1. Cross-compile Go services for linux/amd64
@@ -21,7 +21,12 @@
 #   /v1/     -> manager :8080
 #
 # Usage:
-#   DEEPPOOL_DOMAIN=deeppool.tech ./deploy_prod.sh
+#   DEEPPOOL_DOMAIN=deeppool.tech ./deploy_prod.sh                        # deploy all
+#   DEEPPOOL_DOMAIN=deeppool.tech ./deploy_prod.sh experiment             # deploy only experiment
+#   DEEPPOOL_DOMAIN=deeppool.tech ./deploy_prod.sh manager experiment     # deploy specific backend services
+#   DEEPPOOL_DOMAIN=deeppool.tech ./deploy_prod.sh portal_web             # deploy only portal frontend
+#   DEEPPOOL_DOMAIN=deeppool.tech ./deploy_prod.sh portal_web control_web # deploy both frontends
+#   DEEPPOOL_DOMAIN=deeppool.tech ./deploy_prod.sh manager portal_web     # mix backend + frontend
 #
 # Prerequisites:
 #   - sshpass installed locally (brew install hudochenkov/sshpass/sshpass)
@@ -79,7 +84,47 @@ LOCAL_KEY_FILE="${LOCAL_CERT_DIR}/${DOMAIN}.key"
 # ============================================================
 # Component definitions
 # ============================================================
-COMPONENTS=(manager scheduler nodemanager)
+ALL_BACKEND=(manager scheduler nodemanager experiment)
+ALL_WEB=(portal_web control_web)
+ALL_COMPONENTS=("${ALL_BACKEND[@]}" "${ALL_WEB[@]}")
+
+# Bash 3.x compatible port lookup (macOS ships with bash 3.2, no associative arrays)
+get_component_port() {
+  case "$1" in
+    manager)     echo 8080 ;;
+    scheduler)   echo 8081 ;;
+    nodemanager) echo 8082 ;;
+    experiment)  echo 8083 ;;
+    *) echo "0" ;;
+  esac
+}
+
+# Determine which components to deploy: from CLI args or all
+DEPLOY_PORTAL_WEB=false
+DEPLOY_CONTROL_WEB=false
+COMPONENTS=()  # backend components to build/deploy
+
+if [ $# -gt 0 ]; then
+  for arg in "$@"; do
+    if [ "$arg" = "portal_web" ]; then
+      DEPLOY_PORTAL_WEB=true
+    elif [ "$arg" = "control_web" ]; then
+      DEPLOY_CONTROL_WEB=true
+    elif [[ " ${ALL_BACKEND[*]} " =~ " ${arg} " ]]; then
+      COMPONENTS+=("$arg")
+    else
+      echo "[ERROR] Unknown component: ${arg}"
+      echo "  Available: ${ALL_COMPONENTS[*]}"
+      exit 1
+    fi
+  done
+  PARTIAL_DEPLOY=true
+else
+  COMPONENTS=("${ALL_BACKEND[@]}")
+  DEPLOY_PORTAL_WEB=true
+  DEPLOY_CONTROL_WEB=true
+  PARTIAL_DEPLOY=false
+fi
 
 CONTROL_WEB_DIR="control_web"
 CONTROL_WEB_REMOTE_DIR="${REMOTE_DIR}/control_web"
@@ -106,6 +151,12 @@ echo "  API domain:   ${API_DOMAIN}"
 echo "  Public host:  ${PUBLIC_HOST}"
 echo "  SSL cert:     ${LOCAL_CERT_DIR}/"
 echo "  Config dir:   ${CONFIG_PROD_DIR}"
+echo "  Components:   ${COMPONENTS[*]:-none}"
+echo "  portal_web:   ${DEPLOY_PORTAL_WEB}"
+echo "  control_web:  ${DEPLOY_CONTROL_WEB}"
+if [ "$PARTIAL_DEPLOY" = true ]; then
+echo "  Mode:         PARTIAL"
+fi
 echo "============================================================"
 echo ""
 
@@ -117,7 +168,8 @@ if ! command -v sshpass &>/dev/null; then
   exit 1
 fi
 
-# Check SSL certificate files exist locally
+# Check SSL certificate files exist locally (only for full deploy)
+if [ "$PARTIAL_DEPLOY" = false ]; then
 if [ ! -f "${LOCAL_CERT_FILE}" ] || [ ! -f "${LOCAL_KEY_FILE}" ]; then
   echo "============================================================"
   echo "[ERROR] SSL certificate files not found!"
@@ -134,6 +186,7 @@ if [ ! -f "${LOCAL_CERT_FILE}" ] || [ ! -f "${LOCAL_KEY_FILE}" ]; then
   exit 1
 fi
 echo "==> SSL certificate files found."
+fi
 
 # Verify SSH connectivity
 echo "==> Verifying SSH connectivity..."
@@ -149,6 +202,7 @@ echo "==> Cleaning previous build artifacts..."
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
+if [ ${#COMPONENTS[@]} -gt 0 ]; then
 echo "==> Cross-compiling Go services (GOOS=${GOOS} GOARCH=${GOARCH})..."
 cd "$PLATFORM_DIR"
 for comp in "${COMPONENTS[@]}"; do
@@ -156,12 +210,14 @@ for comp in "${COMPONENTS[@]}"; do
   go build -trimpath -ldflags="-s -w" -o "${BUILD_DIR}/${comp}" "./cmd/${comp}"
 done
 echo "    All Go services built successfully."
+fi
 
 # Copy production config files
 echo "==> Copying production config from ${CONFIG_PROD_DIR}..."
 cp -r "${CONFIG_PROD_DIR}" "${BUILD_DIR}/config"
 echo "    Config files copied."
 
+if [ "$DEPLOY_CONTROL_WEB" = true ]; then
 # ============================================================
 # Step 2: Build control_web
 # ============================================================
@@ -175,7 +231,9 @@ VITE_BASE=/admin/ \
 cp -r "${PLATFORM_DIR}/${CONTROL_WEB_DIR}/dist" "${BUILD_DIR}/control_web"
 echo "    control_web build completed."
 cd "$PLATFORM_DIR"
+fi
 
+if [ "$DEPLOY_PORTAL_WEB" = true ]; then
 # ============================================================
 # Step 3: Build portal_web
 # ============================================================
@@ -188,25 +246,38 @@ VITE_API_BASE_URL="https://${API_DOMAIN}/api/v1" \
 cp -r "${PLATFORM_DIR}/${PORTAL_WEB_DIR}/dist" "${BUILD_DIR}/portal_web"
 echo "    portal_web build completed."
 cd "$PLATFORM_DIR"
+fi
 
 # ============================================================
 # Build summary
 # ============================================================
 echo "==> Build artifacts summary:"
-ls -lh "${BUILD_DIR}"/manager "${BUILD_DIR}"/scheduler "${BUILD_DIR}"/nodemanager
+if [ ${#COMPONENTS[@]} -gt 0 ]; then
+for comp in "${COMPONENTS[@]}"; do
+  ls -lh "${BUILD_DIR}/${comp}"
+done
+fi
+if [ "$DEPLOY_CONTROL_WEB" = true ]; then
 echo "    control_web: $(du -sh "${BUILD_DIR}/control_web" | awk '{print $1}')"
+fi
+if [ "$DEPLOY_PORTAL_WEB" = true ]; then
 echo "    portal_web:  $(du -sh "${BUILD_DIR}/portal_web" | awk '{print $1}')"
+fi
 echo ""
 
 # ============================================================
-# Step 4: Stop existing remote services
+# Step 4: Stop existing remote services (only backend ones being deployed)
 # ============================================================
-echo "==> Stopping existing remote services..."
-do_ssh bash -s -- "$REMOTE_DIR" <<'STOP_SCRIPT'
+if [ ${#COMPONENTS[@]} -gt 0 ]; then
+COMP_LIST=$(IFS=' '; echo "${COMPONENTS[*]}")
+echo "==> Stopping existing remote services (${COMPONENTS[*]})..."
+do_ssh bash -s -- "$REMOTE_DIR" "$COMP_LIST" <<'STOP_SCRIPT'
 set -euo pipefail
 REMOTE_DIR="$1"
+shift
+COMP_LIST="$*"
 
-for comp in manager scheduler nodemanager; do
+for comp in $COMP_LIST; do
   pid=$(ps -eo pid,args | grep -E "(\./${comp}|${REMOTE_DIR}/${comp})" | grep -v -E "grep|bash|scp" | awk '{print $1}' || true)
   if [ -n "$pid" ]; then
     kill "$pid" 2>/dev/null || true
@@ -219,7 +290,7 @@ done
 echo "    Waiting for processes to exit..."
 sleep 2
 
-for comp in manager scheduler nodemanager; do
+for comp in $COMP_LIST; do
   pid=$(ps -eo pid,args | grep -E "(\./${comp}|${REMOTE_DIR}/${comp})" | grep -v -E "grep|bash|scp" | awk '{print $1}' || true)
   if [ -n "$pid" ]; then
     kill -9 "$pid" 2>/dev/null || true
@@ -228,25 +299,32 @@ for comp in manager scheduler nodemanager; do
 done
 
 sleep 1
-rm -f "${REMOTE_DIR}/manager" "${REMOTE_DIR}/scheduler" "${REMOTE_DIR}/nodemanager"
+for comp in $COMP_LIST; do
+  rm -f "${REMOTE_DIR}/${comp}"
+done
 echo "    Previous binaries removed."
 STOP_SCRIPT
+fi  # end of backend stop guard
 
 # ============================================================
 # Step 5: Upload artifacts
 # ============================================================
 echo "==> Creating remote directories..."
-do_ssh "mkdir -p ${REMOTE_DIR}/config ${REMOTE_DIR}/alipay_cert ${REMOTE_DIR}/wechat_pay_cert ${REMOTE_CERT_DIR} ${CONTROL_WEB_REMOTE_DIR} ${PORTAL_WEB_REMOTE_DIR}"
+do_ssh "mkdir -p ${REMOTE_DIR}/config"
 
-echo "==> Uploading Go binaries..."
-do_scp "${BUILD_DIR}/manager" \
-       "${BUILD_DIR}/scheduler" \
-       "${BUILD_DIR}/nodemanager" \
-       "${REMOTE_HOST}:${REMOTE_DIR}/"
+if [ ${#COMPONENTS[@]} -gt 0 ]; then
+echo "==> Uploading Go binaries (${COMPONENTS[*]})..."
+for comp in "${COMPONENTS[@]}"; do
+  do_scp "${BUILD_DIR}/${comp}" "${REMOTE_HOST}:${REMOTE_DIR}/"
+done
+fi
 
 echo "==> Uploading config files..."
 do_scp "${BUILD_DIR}/config/"*.yaml \
        "${REMOTE_HOST}:${REMOTE_DIR}/config/"
+
+if [ "$PARTIAL_DEPLOY" = false ]; then
+do_ssh "mkdir -p ${REMOTE_DIR}/alipay_cert ${REMOTE_DIR}/wechat_pay_cert ${REMOTE_CERT_DIR}"
 
 echo "==> Uploading payment certificates..."
 do_scp "${PLATFORM_DIR}/alipay_cert/"*.pem \
@@ -259,17 +337,30 @@ do_scp "${LOCAL_CERT_FILE}" "${REMOTE_HOST}:${REMOTE_CERT_FILE}"
 do_scp "${LOCAL_KEY_FILE}"  "${REMOTE_HOST}:${REMOTE_KEY_FILE}"
 do_ssh "chmod 600 ${REMOTE_CERT_DIR}/*.pem"
 echo "    SSL cert uploaded to ${REMOTE_CERT_DIR}/"
+fi
 
+if [ "$DEPLOY_CONTROL_WEB" = true ]; then
 echo "==> Uploading control_web..."
+do_ssh "mkdir -p ${CONTROL_WEB_REMOTE_DIR}"
 do_ssh "rm -rf ${CONTROL_WEB_REMOTE_DIR}/*"
 do_scp -r "${BUILD_DIR}/control_web/"* "${REMOTE_HOST}:${CONTROL_WEB_REMOTE_DIR}/"
+fi
 
+if [ "$DEPLOY_PORTAL_WEB" = true ]; then
 echo "==> Uploading portal_web..."
+do_ssh "mkdir -p ${PORTAL_WEB_REMOTE_DIR}"
 do_ssh "rm -rf ${PORTAL_WEB_REMOTE_DIR}/*"
 do_scp -r "${BUILD_DIR}/portal_web/"* "${REMOTE_HOST}:${PORTAL_WEB_REMOTE_DIR}/"
+fi
 
+if [ ${#COMPONENTS[@]} -gt 0 ]; then
 echo "==> Setting executable permissions..."
-do_ssh "chmod +x ${REMOTE_DIR}/manager ${REMOTE_DIR}/scheduler ${REMOTE_DIR}/nodemanager"
+CHMOD_LIST=""
+for comp in "${COMPONENTS[@]}"; do
+  CHMOD_LIST="$CHMOD_LIST ${REMOTE_DIR}/${comp}"
+done
+do_ssh "chmod +x $CHMOD_LIST"
+fi
 
 echo "==> Upload completed."
 echo ""
@@ -278,42 +369,18 @@ do_ssh "tree ${REMOTE_DIR} 2>/dev/null || find ${REMOTE_DIR} -type f | head -50 
 echo ""
 
 # ============================================================
-# Step 6: Enable TLS for gRPC services
+# Step 6: Start services (backend only)
 # ============================================================
-echo "==> Synchronizing gRPC TLS settings (using Alibaba Cloud SSL cert)..."
-do_ssh bash -s -- "$REMOTE_DIR" "$REMOTE_CERT_FILE" "$REMOTE_KEY_FILE" <<'TLS_SYNC_SCRIPT'
+if [ ${#COMPONENTS[@]} -gt 0 ]; then
+echo "==> Starting services (${COMPONENTS[*]})..."
+do_ssh bash -s -- "$REMOTE_DIR" "$COMP_LIST" <<'START_SCRIPT'
 set -euo pipefail
 REMOTE_DIR="$1"
-CERT_FILE="$2"
-KEY_FILE="$3"
-
-for comp in manager scheduler nodemanager; do
-  cfg="${REMOTE_DIR}/config/${comp}.yaml"
-  if [ ! -f "$cfg" ]; then
-    echo "    [SKIP] $cfg not found"
-    continue
-  fi
-
-  sed -i \
-    -e 's/enabled: false/enabled: true/' \
-    -e 's/enabled: true/enabled: true/' \
-    -e "s|cert_file: \".*\"|cert_file: \"${CERT_FILE}\"|" \
-    -e "s|key_file: \".*\"|key_file: \"${KEY_FILE}\"|" \
-    "$cfg"
-  echo "    ${comp}: gRPC TLS enabled (cert=${CERT_FILE})"
-done
-TLS_SYNC_SCRIPT
-
-# ============================================================
-# Step 7: Start services
-# ============================================================
-echo "==> Starting services..."
-do_ssh bash -s -- "$REMOTE_DIR" <<'START_SCRIPT'
-set -euo pipefail
-REMOTE_DIR="$1"
+shift
+COMP_LIST="$*"
 cd "$REMOTE_DIR"
 
-for comp in manager scheduler nodemanager; do
+for comp in $COMP_LIST; do
   nohup "${REMOTE_DIR}/${comp}" > "${REMOTE_DIR}/${comp}.log" 2>&1 &
   echo "    Started ${comp} (pid=$!)"
 done
@@ -322,9 +389,11 @@ START_SCRIPT
 for comp in "${COMPONENTS[@]}"; do
   echo "    Log: ${REMOTE_DIR}/${comp}.log"
 done
+fi  # end of backend upload/start guard
 
+if [ "$PARTIAL_DEPLOY" = false ]; then
 # ============================================================
-# Step 8: Configure Nginx ingress
+# Step 8: Configure Nginx ingress (skipped in partial deploy)
 # ============================================================
 echo "==> Configuring Nginx reverse proxy..."
 do_ssh bash -s -- \
@@ -517,6 +586,7 @@ echo "      ${PUBLIC_HOST}  /api/    -> manager :8080"
 echo "      ${PUBLIC_HOST}  /v1/     -> manager :8080"
 echo "      ${API_DOMAIN}   /api/    -> manager :8080 (CORS)"
 echo "      ${API_DOMAIN}   /v1/     -> manager :8080 (CORS)"
+fi  # end of PARTIAL_DEPLOY=false guard (nginx)
 
 # ============================================================
 # Step 9: Health checks
@@ -526,60 +596,59 @@ echo "==> Waiting for services to initialize..."
 sleep 3
 
 echo "==> Remote process status:"
+if [ ${#COMPONENTS[@]} -gt 0 ]; then
 do_ssh "ps aux | grep -E '$(IFS='|'; echo "${COMPONENTS[*]}")|nginx.*master' | grep -v grep || echo '    No active service process detected'"
+else
+do_ssh "ps aux | grep -E 'nginx.*master' | grep -v grep || echo '    No active service process detected'"
+fi
 echo ""
 
+if [ ${#COMPONENTS[@]} -gt 0 ]; then
 echo "==> Health checks:"
 for comp in "${COMPONENTS[@]}"; do
-  case $comp in
-    manager)     port=8080 ;;
-    scheduler)   port=8081 ;;
-    nodemanager) port=8082 ;;
-  esac
+  port=$(get_component_port "$comp")
   result=$(do_ssh "curl -sf -k https://127.0.0.1:${port}/health 2>/dev/null || echo 'FAIL'")
   echo "    ${comp} (:${port}): ${result}"
 done
+fi
 
+if [ "$DEPLOY_PORTAL_WEB" = true ] || [ "$DEPLOY_CONTROL_WEB" = true ]; then
+if [ "$DEPLOY_PORTAL_WEB" = true ]; then
 portal_result=$(do_ssh "curl -sf -k https://127.0.0.1/ 2>/dev/null | head -c 50 && echo '... OK' || echo 'FAIL'")
-admin_result=$(do_ssh "curl -sf -k https://127.0.0.1/admin/ 2>/dev/null | head -c 50 && echo '... OK' || echo 'FAIL'")
-api_result=$(do_ssh "curl -sf -k https://127.0.0.1/api/v1/public/stats 2>/dev/null || echo 'FAIL'")
 echo "    portal_web  (https /):       ${portal_result}"
+fi
+if [ "$DEPLOY_CONTROL_WEB" = true ]; then
+admin_result=$(do_ssh "curl -sf -k https://127.0.0.1/admin/ 2>/dev/null | head -c 50 && echo '... OK' || echo 'FAIL'")
 echo "    control_web (https /admin/): ${admin_result}"
-echo "    API proxy   (https /api/):   ${api_result}"
+fi
+fi
 echo ""
 
 # ============================================================
 # Step 10: Deployment summary
 # ============================================================
+DEPLOYED_ITEMS=""
+if [ ${#COMPONENTS[@]} -gt 0 ]; then DEPLOYED_ITEMS="${COMPONENTS[*]}"; fi
+if [ "$DEPLOY_PORTAL_WEB" = true ]; then DEPLOYED_ITEMS="$DEPLOYED_ITEMS portal_web"; fi
+if [ "$DEPLOY_CONTROL_WEB" = true ]; then DEPLOYED_ITEMS="$DEPLOYED_ITEMS control_web"; fi
+
 echo "============================================================"
 echo "  PRODUCTION deployment completed successfully!"
+echo "  Components: $DEPLOYED_ITEMS"
 echo "============================================================"
 echo ""
-echo "  Public endpoints:"
-echo "    Portal:     https://${PUBLIC_HOST}/"
-echo "    Admin:      https://${PUBLIC_HOST}/admin/"
-echo "    API:        https://${API_DOMAIN}/api/"
-echo "    Gateway:    https://${API_DOMAIN}/v1/"
+
+if [ ${#COMPONENTS[@]} -gt 0 ]; then
+echo "  Deployed service endpoints (HTTPS):"
+for comp in "${COMPONENTS[@]}"; do
+  port=$(get_component_port "$comp")
+  echo "    ${comp}: https://127.0.0.1:${port}"
+done
 echo ""
-echo "  Service endpoints (internal, HTTPS):"
-echo "    manager:     https://127.0.0.1:8080"
-echo "    scheduler:   https://127.0.0.1:8081"
-echo "    nodemanager: https://127.0.0.1:8082"
-echo ""
-echo "  gRPC endpoints (TLS):"
-echo "    manager:     :9090"
-echo "    scheduler:   :9091"
-echo "    nodemanager: :9092"
-echo ""
-echo "  SSL Certificate (Alibaba Cloud wildcard *.deeppool.tech):"
-echo "    Path:      ${REMOTE_CERT_DIR}/"
-echo "    Expires:   2026-10-29 (renew before expiry via Alibaba Cloud console)"
-echo ""
+
 echo "  Logs:"
 for comp in "${COMPONENTS[@]}"; do
   echo "    ssh ${REMOTE_HOST} 'tail -f ${REMOTE_DIR}/${comp}.log'"
 done
 echo ""
-echo "  Quick commands:"
-echo "    Restart all:  ssh ${REMOTE_HOST} 'cd ${REMOTE_DIR} && kill \$(pgrep -f \"manager|scheduler|nodemanager\") 2>/dev/null; for c in manager scheduler nodemanager; do nohup ./${c} > ${c}.log 2>&1 &; done'"
-echo "    Check status:  ssh ${REMOTE_HOST} 'ps aux | grep -E \"manager|scheduler|nodemanager\" | grep -v grep'"
+fi

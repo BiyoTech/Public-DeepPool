@@ -1,0 +1,432 @@
+syntax = "proto3";
+
+package deeppool.experiment.v1;
+
+option go_package = "deeppool/libs/proto/experiment/v1;experimentv1";
+
+// ExperimentService — Manager → Experiment gRPC interface.
+//
+// Manager acts as the HTTP gateway for all web requests, forwarding them
+// to the Experiment server via gRPC. This keeps the Experiment server
+// as a pure backend without direct HTTP exposure.
+service ExperimentService {
+  // Health check
+  rpc Health(HealthRequest) returns (HealthResponse);
+
+  // --- Judge ---
+  rpc CreateJudge(CreateJudgeRequest) returns (JudgeResponse);
+  rpc UpdateJudge(UpdateJudgeRequest) returns (JudgeResponse);
+  rpc GetJudge(GetJudgeRequest) returns (JudgeResponse);
+  rpc ListJudges(ListJudgesRequest) returns (ListJudgesResponse);
+  rpc RunJudge(RunJudgeRequest) returns (RunJudgeResponse);
+  rpc ListJudgeRuns(ListJudgeRunsRequest) returns (ListJudgeRunsResponse);
+  rpc GetJudgeRunResults(GetJudgeRunResultsRequest) returns (GetJudgeRunResultsResponse);
+  rpc DeleteJudge(DeleteJudgeRequest) returns (DeleteJudgeResponse);
+  rpc ListBuiltinScorers(ListBuiltinScorersRequest) returns (ListBuiltinScorersResponse);
+
+  // --- Dataset ---
+  rpc CreateDataset(CreateDatasetRequest) returns (DatasetResponse);
+  rpc GetDataset(GetDatasetRequest) returns (DatasetResponse);
+  rpc ListDatasets(ListDatasetsRequest) returns (ListDatasetsResponse);
+  rpc AddDatasetItems(AddDatasetItemsRequest) returns (AddDatasetItemsResponse);
+  rpc DeleteDatasetItem(DeleteDatasetItemRequest) returns (DeleteDatasetItemResponse);
+  rpc DeleteDataset(DeleteDatasetRequest) returns (DeleteDatasetResponse);
+
+  // --- Evaluation ---
+  rpc CreateEvaluation(CreateEvaluationRequest) returns (EvaluationResponse);
+  rpc GetEvaluation(GetEvaluationRequest) returns (EvaluationResponse);
+  rpc ListEvaluations(ListEvaluationsRequest) returns (ListEvaluationsResponse);
+  rpc RunEvaluation(RunEvaluationRequest) returns (RunEvaluationResponse);
+  rpc GetEvaluationResults(GetEvaluationResultsRequest) returns (GetEvaluationResultsResponse);
+  rpc DeleteEvaluation(DeleteEvaluationRequest) returns (DeleteEvaluationResponse);
+
+  // --- Trace Log Annotation (feedback + expectation) ---
+  rpc GetAnnotation(GetAnnotationRequest) returns (AnnotationResponse);
+  rpc SaveAnnotation(SaveAnnotationRequest) returns (AnnotationResponse);
+  rpc BatchGetAnnotationSummaries(BatchGetAnnotationSummariesRequest) returns (BatchGetAnnotationSummariesResponse);
+}
+
+// ── Health ──
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+  string service = 2;
+}
+
+// ── Judge ──
+
+message CreateJudgeRequest {
+  uint64 user_id = 1;
+  string name = 2;
+  string scope = 3;            // model / apikey / trace / trace_log
+  string scope_value = 4;      // entity identifier for the chosen scope
+  uint64 trace_id = 5;         // required for trace/trace_log scope
+  string judge_model = 6;
+  uint64 judge_apikey_id = 7;
+  string scorer_type = 8;      // builtin / custom
+  string scorer_name = 9;      // builtin scorer name (empty for custom)
+  string prompt_template = 10;
+}
+
+message UpdateJudgeRequest {
+  uint64 user_id = 1;
+  uint64 judge_id = 2;
+  optional string name = 3;
+  optional string scope = 4;
+  optional string scope_value = 5;
+  optional uint64 trace_id = 6;
+  optional string judge_model = 7;
+  optional uint64 judge_apikey_id = 8;
+  optional string scorer_type = 9;
+  optional string scorer_name = 10;
+  optional string prompt_template = 11;
+}
+
+message GetJudgeRequest {
+  uint64 user_id = 1;
+  uint64 judge_id = 2;
+}
+
+message ListJudgesRequest {
+  uint64 user_id = 1;
+}
+
+message RunJudgeRequest {
+  uint64 user_id = 1;
+  uint64 judge_id = 2;
+}
+
+message RunJudgeResponse {
+  bool ok = 1;
+  JudgeRunDTO run = 2;  // the newly created run
+}
+
+message DeleteJudgeRequest {
+  uint64 user_id = 1;
+  uint64 judge_id = 2;
+}
+
+message DeleteJudgeResponse {
+  bool ok = 1;
+}
+
+message JudgeDTO {
+  uint64 id = 1;
+  uint64 user_id = 2;
+  string name = 3;
+  string scope = 4;
+  string scope_value = 5;
+  uint64 trace_id = 6;
+  string judge_model = 7;
+  uint64 judge_apikey_id = 8;
+  string scorer_type = 9;
+  string scorer_name = 10;
+  string prompt_template = 11;
+  string status = 12;
+  int32 total_count = 13;
+  int32 completed_count = 14;
+  int32 failed_count = 15;
+  string created_at = 16;
+  string updated_at = 17;
+}
+
+message JudgeResponse {
+  JudgeDTO judge = 1;
+}
+
+message ListJudgesResponse {
+  repeated JudgeDTO judges = 1;
+}
+
+// Judge run: each execution of a judge task
+message JudgeRunDTO {
+  uint64 id = 1;
+  uint64 judge_id = 2;
+  string status = 3;
+  int32 total_count = 4;
+  int32 completed_count = 5;
+  int32 failed_count = 6;
+  float pass_rate = 7;
+  string created_at = 8;
+  string updated_at = 9;
+}
+
+message ListJudgeRunsRequest {
+  uint64 judge_id = 1;
+}
+
+message ListJudgeRunsResponse {
+  repeated JudgeRunDTO runs = 1;
+}
+
+message JudgeResultDTO {
+  uint64 id = 1;
+  uint64 run_id = 2;
+  uint64 judge_id = 3;
+  uint64 trace_log_id = 4;
+  string request_id = 5;
+  bool passed = 6;
+  string reason = 7;
+  string raw_output = 8;
+  int64 duration_ms = 9;
+  bool success = 10;
+  string error_message = 11;
+  string created_at = 12;
+}
+
+message GetJudgeRunResultsRequest {
+  uint64 run_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetJudgeRunResultsResponse {
+  repeated JudgeResultDTO results = 1;
+  bool has_more = 2;
+}
+
+// Builtin scorer listing
+message ListBuiltinScorersRequest {
+  string lang = 1;  // language code: "en", "zh", "zh-CN", etc. (defaults to "en")
+}
+
+message BuiltinScorerDTO {
+  string name = 1;
+  string display_name = 2;
+  string description = 3;
+  string prompt_template = 4;
+}
+
+message ListBuiltinScorersResponse {
+  repeated BuiltinScorerDTO scorers = 1;
+}
+
+// ── Dataset ──
+
+message CreateDatasetRequest {
+  uint64 user_id = 1;
+  string name = 2;
+  string description = 3;
+}
+
+message GetDatasetRequest {
+  uint64 user_id = 1;
+  uint64 dataset_id = 2;
+}
+
+message ListDatasetsRequest {
+  uint64 user_id = 1;
+}
+
+message DeleteDatasetRequest {
+  uint64 user_id = 1;
+  uint64 dataset_id = 2;
+}
+
+message DeleteDatasetResponse {
+  bool ok = 1;
+}
+
+message DatasetItemDTO {
+  uint64 id = 1;
+  uint64 dataset_id = 2;
+  string input = 3;
+  string expected_output = 4;
+  string metadata = 5;  // JSON string
+  string created_at = 6;
+}
+
+message DatasetDTO {
+  uint64 id = 1;
+  uint64 user_id = 2;
+  string name = 3;
+  string description = 4;
+  int32 item_count = 5;
+  string created_at = 6;
+  string updated_at = 7;
+  repeated DatasetItemDTO items = 8;  // populated on GetDataset
+}
+
+message DatasetResponse {
+  DatasetDTO dataset = 1;
+}
+
+message ListDatasetsResponse {
+  repeated DatasetDTO datasets = 1;
+}
+
+message AddDatasetItemsRequest {
+  uint64 user_id = 1;
+  uint64 dataset_id = 2;
+  repeated DatasetItemInput items = 3;
+}
+
+message DatasetItemInput {
+  string input = 1;
+  string expected_output = 2;
+  string metadata = 3;
+}
+
+message AddDatasetItemsResponse {
+  int32 added_count = 1;
+}
+
+message DeleteDatasetItemRequest {
+  uint64 user_id = 1;
+  uint64 dataset_id = 2;
+  uint64 item_id = 3;
+}
+
+message DeleteDatasetItemResponse {
+  bool ok = 1;
+}
+
+// ── Evaluation ──
+
+message CreateEvaluationRequest {
+  uint64 user_id = 1;
+  string name = 2;
+  uint64 dataset_id = 3;
+  string model_name = 4;
+  uint64 apikey_id = 5;
+}
+
+message GetEvaluationRequest {
+  uint64 user_id = 1;
+  uint64 evaluation_id = 2;
+}
+
+message ListEvaluationsRequest {
+  uint64 user_id = 1;
+}
+
+message RunEvaluationRequest {
+  uint64 user_id = 1;
+  uint64 evaluation_id = 2;
+}
+
+message RunEvaluationResponse {
+  bool ok = 1;
+}
+
+message DeleteEvaluationRequest {
+  uint64 user_id = 1;
+  uint64 evaluation_id = 2;
+}
+
+message DeleteEvaluationResponse {
+  bool ok = 1;
+}
+
+message EvaluationDTO {
+  uint64 id = 1;
+  uint64 user_id = 2;
+  string name = 3;
+  uint64 dataset_id = 4;
+  string model_name = 5;
+  uint64 apikey_id = 6;
+  string status = 7;
+  int32 total_count = 8;
+  int32 completed_count = 9;
+  int32 failed_count = 10;
+  float avg_score = 11;
+  string created_at = 12;
+  string updated_at = 13;
+}
+
+message EvaluationResponse {
+  EvaluationDTO evaluation = 1;
+}
+
+message ListEvaluationsResponse {
+  repeated EvaluationDTO evaluations = 1;
+}
+
+message EvaluationResultDTO {
+  uint64 id = 1;
+  uint64 evaluation_id = 2;
+  uint64 item_id = 3;
+  string model_output = 4;
+  float score = 5;
+  int64 duration_ms = 6;
+  bool success = 7;
+  string error_message = 8;
+  string created_at = 9;
+}
+
+message GetEvaluationResultsRequest {
+  uint64 evaluation_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetEvaluationResultsResponse {
+  repeated EvaluationResultDTO results = 1;
+  int64 total = 2;
+}
+
+// ── Trace Log Annotation ──
+
+message FeedbackItem {
+  string name = 1;
+  bool passed = 2;
+  string reason = 3;
+  string source = 4;  // "human" or "ai_judge"
+}
+
+message ExpectationItem {
+  string name = 1;
+  string data_type = 2;  // text / number / bool / json
+  string content = 3;
+  string reason = 4;
+}
+
+message GetAnnotationRequest {
+  uint64 user_id = 1;
+  uint64 trace_id = 2;
+  uint64 log_id = 3;
+}
+
+message SaveAnnotationRequest {
+  uint64 user_id = 1;
+  uint64 trace_id = 2;
+  uint64 log_id = 3;
+  repeated FeedbackItem feedbacks = 4;
+  ExpectationItem expectation = 5;  // nullable: omit if no expectation
+}
+
+message AnnotationDTO {
+  uint64 id = 1;
+  uint64 user_id = 2;
+  uint64 trace_id = 3;
+  uint64 log_id = 4;
+  repeated FeedbackItem feedbacks = 5;
+  ExpectationItem expectation = 6;
+  string created_at = 7;
+  string updated_at = 8;
+}
+
+message AnnotationResponse {
+  AnnotationDTO annotation = 1;
+}
+
+// Batch annotation summaries for trace log list view
+message BatchGetAnnotationSummariesRequest {
+  uint64 user_id = 1;
+  uint64 trace_id = 2;
+  repeated uint64 log_ids = 3;
+}
+
+message AnnotationSummary {
+  uint64 log_id = 1;
+  bool has_feedback = 2;
+  bool feedback_passed = 3;  // true if all feedbacks passed; false if any failed
+  int32 feedback_count = 4;
+  bool has_expectation = 5;
+}
+
+message BatchGetAnnotationSummariesResponse {
+  map<uint64, AnnotationSummary> summaries = 1;  // keyed by log_id
+}

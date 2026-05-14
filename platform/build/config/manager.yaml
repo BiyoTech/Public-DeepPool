@@ -2,18 +2,19 @@ server:
   addr: ":8080"
   grpc_addr: ":9090"
   tls:
-    enabled: false    # deploy_prod.sh will enable TLS and inject cert paths
-    cert_file: ""
-    key_file: ""
+    enabled: true
+    cert_file: "/etc/letsencrypt/live/test.deeppool.tech/fullchain.pem"
+    key_file: "/etc/letsencrypt/live/test.deeppool.tech/privkey.pem"
+    skip_verify: false
 
 log:
   level: "info"
 
 mysql:
-  host: "rm-f8z04393v8584kubu.mysql.rds.aliyuncs.com"
+  host: "127.0.0.1"
   port: 3306
-  user: "deeppool"
-  password: "AliRoot@123"
+  user: "root"
+  password: "root@123"
   database: "deeppool"
   max_open_conns: 20
   max_idle_conns: 10
@@ -47,8 +48,8 @@ admin:
     use_tls: true
     insecure_skip_verify: true  # smtp.deeppool.tech TLS cert doesn't include this hostname
   payment:
-    notify_base_url: "https://api.deeppool.tech"  # production public HTTPS URL
-    frontend_base_url: "https://deeppool.tech"    # frontend site URL for payment return redirects
+    notify_base_url: "https://api.test.deeppool.tech"  # production public HTTPS URL
+    frontend_base_url: "https://test.deeppool.tech"    # frontend site URL for payment return redirects
     wechat:
       mch_id: "1744006558"
       mch_serial_no: "369B4635C7C5A555B5433B50C866779125415B8E"
@@ -63,5 +64,16 @@ admin:
       alipay_public_key_path: "alipay_cert/alipay_public_key.pem"
       is_sandbox: false
   node_managers:
-    - name: "n_south"
-      addr: "nodemanager.deeppool.tech:9092"
+    - name: "node-prod"
+      addr: "test.deeppool.tech:9092"
+  experiment_servers:
+    - name: "experiment-1"
+      addr: "test.deeppool.tech:9093"
+  # Built-in trace log storage engine (used when user selects "builtin" storage type)
+  default_trace_db:
+    db_type: "mysql"
+    db_host: "127.0.0.1"
+    db_port: 3306
+    db_user: "root"
+    db_pass: "root@123"
+    db_name: "deeppool_trace"

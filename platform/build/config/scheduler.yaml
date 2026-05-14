@@ -11,11 +11,8 @@ log:
   level: "info"
 
 mysql:
-  host: "rm-f8z04393v8584kubu.mysql.rds.aliyuncs.com"
+  host: "127.0.0.1"
   port: 3306
-  user: "deeppool"
-  password: "AliRoot@123"
+  user: "root"
+  password: "root@123"
   database: "deeppool"
-  max_open_conns: 20
-  max_idle_conns: 10
-  conn_max_lifetime_minutes: 30

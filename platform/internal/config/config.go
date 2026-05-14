@@ -18,6 +18,15 @@ type Config struct {
 	Log            LogConfig            `yaml:"log"`
 	Admin          AdminConfig          `yaml:"admin"`
 	StreamTimeouts StreamTimeoutsConfig `yaml:"stream_timeouts"`
+	Experiment     ExperimentConfig     `yaml:"experiment"`
+}
+
+// ExperimentConfig holds experiment server specific settings.
+type ExperimentConfig struct {
+	ManagerGatewayURL   string `yaml:"manager_gateway_url"`    // Manager gateway URL for LLM calls
+	APIKeyEncryptionKey string `yaml:"api_key_encryption_key"` // 32-byte hex key for decrypting trace DSN
+	WorkerPoolSize      int    `yaml:"worker_pool_size"`       // concurrent judge/eval workers, default 5
+	TemplateDir         string `yaml:"template_dir"`           // path to scorer template YAML files directory
 }
 
 // StreamTimeoutsConfig holds global stream-level liveness timeouts shared by
@@ -60,15 +69,34 @@ type NodeManagerConfig struct {
 	Addr string `yaml:"addr"`
 }
 
+// ExperimentServerConfig holds connection info for a remote Experiment gRPC server.
+type ExperimentServerConfig struct {
+	Name string `yaml:"name"` // logical name for the experiment server instance
+	Addr string `yaml:"addr"` // gRPC dial address, e.g. "127.0.0.1:9093"
+}
+
 // AdminConfig holds management platform configuration.
 type AdminConfig struct {
-	NodeManagers            []NodeManagerConfig `yaml:"node_managers"`
+	NodeManagers            []NodeManagerConfig      `yaml:"node_managers"`
+	ExperimentServers       []ExperimentServerConfig `yaml:"experiment_servers"`
 	SuperAdmin              SuperAdminConfig    `yaml:"super_admin"`
 	InternalToken           string              `yaml:"internal_token"`             // Gateway ↔ NodeManager internal token
 	DefaultHybridPolicyPath string              `yaml:"default_hybrid_policy_path"` // path to default hybrid routing policy YAML
 	APIKeyEncryptionKey     string              `yaml:"api_key_encryption_key"`     // 32-byte hex key for AES-256-GCM encryption of API keys
 	SMTP                    SMTPConfig          `yaml:"smtp"`                       // SMTP mail server for verification codes
 	Payment                 PaymentConfig       `yaml:"payment"`                    // third-party payment gateway configuration
+	DefaultTraceDB          DefaultTraceDBConfig `yaml:"default_trace_db"`          // built-in trace log storage engine
+}
+
+// DefaultTraceDBConfig defines the platform-managed database for built-in trace log storage.
+// When a user selects "builtin" storage_type, these DB credentials are used automatically.
+type DefaultTraceDBConfig struct {
+	DBType   string `yaml:"db_type"`   // mysql / postgresql / clickhouse
+	DBHost   string `yaml:"db_host"`
+	DBPort   int    `yaml:"db_port"`
+	DBUser   string `yaml:"db_user"`
+	DBPass   string `yaml:"db_pass"`
+	DBName   string `yaml:"db_name"`
 }
 
 // PaymentConfig holds third-party payment gateway credentials.

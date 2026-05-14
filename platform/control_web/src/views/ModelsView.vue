@@ -52,18 +52,16 @@
               <div>Children: {{ row.child_models.join(', ') }}</div>
               <div v-if="row.routing_policy" class="text-dp-text-3">Has routing policy</div>
             </template>
+            <template v-else-if="row.vendor_type === 'provider'">
+              <div>Endpoint Pool ({{ row.endpoint_ids?.length || 0 }} endpoints)</div>
+            </template>
             <template v-else>
               <div v-if="row.repo_id">Repo: {{ row.repo_id }}</div>
-              <div v-if="row.upstream_model">Upstream: {{ row.upstream_model }}</div>
-              <div v-if="row.endpoint">Endpoint: {{ row.endpoint }}</div>
-              <span v-if="!row.repo_id && !row.upstream_model && !row.endpoint">-</span>
+              <span v-if="!row.repo_id">-</span>
             </template>
           </div>
         </template>
 
-        <template #api_key_masked="{ row }">
-          <span class="text-dp-text-2 text-xs font-mono">{{ row.api_key_masked || '-' }}</span>
-        </template>
 
         <template #supported_engines="{ row }">
           <span class="text-dp-text-2 text-sm">{{ formatEngines(row.supported_engines) }}</span>
@@ -546,7 +544,6 @@ const columns = [
   { colKey: 'vendor_type', title: '来源', width: 110, cell: 'vendor_type' },
   { colKey: 'model_family', title: 'Model Family', width: 120, cell: 'model_family' },
   { colKey: 'route_target', title: '路由配置', minWidth: 260, cell: 'route_target' },
-  { colKey: 'api_key_masked', title: 'API Key', width: 160, cell: 'api_key_masked' },
   { colKey: 'param_scale', title: '参数量级', width: 100, cell: 'param_scale' },
   { colKey: 'supports_reasoning', title: 'Reasoning', width: 100, cell: 'supports_reasoning' },
   { colKey: 'supports_function_call', title: 'FnCall', width: 90, cell: 'supports_function_call' },
@@ -608,10 +605,6 @@ const defaultForm = {
   max_context_length: 0,
   param_scale: 0,
   allow_external_call: true,
-  endpoint: '',
-  upstream_model: '',
-  api_key: '',
-  api_key_masked: '',
   child_models: [] as string[],
   routing_policy: '',
   endpoint_ids: [] as number[],
@@ -626,7 +619,6 @@ const formData = reactive({ ...defaultForm })
 const isHybrid = computed(() => formData.vendor_type === 'hybrid')
 const requiresDeepNode = computed(() => formData.vendor_type === 'deepnode')
 const requiresProvider = computed(() => formData.vendor_type === 'provider')
-const providerAPIKeyPlaceholder = computed(() => formData.api_key_masked || '输入新的 provider api key')
 
 // ── Help doc dialog ──
 const helpVisible = ref(false)
@@ -853,10 +845,6 @@ async function openEditDialog(row: ModelRow) {
   formData.max_context_length = Math.round((detailRow.max_context_length || 0) / 1000)
   formData.param_scale = detailRow.param_scale || 0
   formData.allow_external_call = detailRow.allow_external_call !== false
-  formData.endpoint = detailRow.endpoint || ''
-  formData.upstream_model = detailRow.upstream_model || ''
-  formData.api_key = ''
-  formData.api_key_masked = detailRow.api_key_masked || ''
   formData.child_models = detailRow.child_models || []
   formData.routing_policy = detailRow.routing_policy || ''
   formData.endpoint_ids = detailRow.endpoint_ids || []
