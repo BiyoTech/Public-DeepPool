@@ -48,5 +48,12 @@ export const useAuthStore = defineStore('auth', () => {
     router.push('/login')
   }
 
-  return { token, user, isLoggedIn, setAuth, logout }
+  /** Update local user info after profile edit (partial update). */
+  function updateUser(partial: Partial<UserInfo>) {
+    if (!user.value) return
+    user.value = { ...user.value, ...partial }
+    localStorage.setItem(USER_KEY, JSON.stringify(user.value))
+  }
+
+  return { token, user, isLoggedIn, setAuth, logout, updateUser }
 })

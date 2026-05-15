@@ -36,6 +36,7 @@ git filter-repo \
   --path platform/config/nodemanager.yaml \
   --path platform/config/experiment.yaml \
   --path platform/config/scheduler.yaml \
+  --path misszhao \
   --invert-paths \
   --force
 

@@ -28,6 +28,12 @@
     ]
   },
   {
+    "title": "Guardrails",
+    "children": [
+      { "title": "Guardrails Guide", "path": "guardrails/guardrails-guide" }
+    ]
+  },
+  {
     "title": "Billing & Usage",
     "children": [
       { "title": "Billing & Pricing", "path": "billing/pricing" }
