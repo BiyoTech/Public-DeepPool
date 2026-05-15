@@ -20,11 +20,10 @@
 
 ---
 
-## 📖 Introduction
-
+## Introduction
 DeepPool is an **AI Orchestration Gateway and Token Governance Platform** that provides a unified access layer for large language models. With a single API endpoint and a single API Key, you can call GPT, Claude, DeepSeek, Qwen, GLM, and other leading LLMs worldwide, along with intelligent routing, guardrails, usage tracking, quality evaluation, and comprehensive token governance.
 
-### ✨ Core Capabilities
+### Core Capabilities
 
 - 🔀 **Multi-Model Orchestration, Unified Gateway** — Access dozens of LLMs through a single API endpoint. Supports three model sources — DeepNode local inference, cloud Provider APIs, and Hybrid orchestration — completely transparent to callers
 - 🎯 **Custom Orchestration Policies** — Define Hybrid routing rules via YAML configuration with intelligent dispatching by context length, Function Call, vision content, reasoning requirements, etc. Round-Robin load balancing + automatic failover
@@ -32,7 +31,7 @@ DeepPool is an **AI Orchestration Gateway and Token Governance Platform** that p
 - 🛡️ **Guardrails** — LLM-based input/output content safety evaluation, pre-request interception and post-response auditing, configurable block or log-only policies, ensuring AI application security and compliance
 - 🖥️ **DeepNode Local Inference** — Download and install the DeepNode desktop client, deploy open-source models like Qwen, Gemma with one click, leverage local GPU/Apple Silicon for inference compute, data stays on-device
 
-### 🔌 More Features
+### More Features
 
 - **OpenAI API Fully Compatible** — Standard `/v1/chat/completions` interface, supports streaming SSE, Function Calling, Reasoning Content, zero-modification SDK integration
 - **API Key + Rate Limiting + Quota** — SHA-256 authentication, sliding window RPM/TPM rate limiting, Token quota management, AES-256-GCM key encryption
@@ -43,7 +42,7 @@ DeepPool is an **AI Orchestration Gateway and Token Governance Platform** that p
 
 ---
 
-## 🏗️ Architecture Overview
+## Architecture Overview
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -126,7 +125,7 @@ DeepPool is an **AI Orchestration Gateway and Token Governance Platform** that p
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 DeepPool/
@@ -167,7 +166,7 @@ DeepPool/
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
@@ -186,7 +185,7 @@ DeepPool/
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -330,7 +329,7 @@ cd .. && cargo tauri dev
 
 ---
 
-## 🔌 API Documentation
+## API Documentation
 
 DeepPool exposes an **OpenAI-compatible** inference interface. Existing OpenAI SDKs can integrate with zero cost. Supports three model types: `deepnode` (edge device inference), `provider` (cloud API proxy), `hybrid` (intelligent orchestration).
 
@@ -394,7 +393,7 @@ curl http://localhost:8080/v1/models \
 
 ---
 
-## 📦 Build
+## Build
 
 The project provides a unified build script with module-based build support:
 
@@ -426,7 +425,7 @@ dist/
 
 ---
 
-## 🚢 Deployment
+## Deployment
 
 ### Unified Deployment Script
 
@@ -527,7 +526,7 @@ The script automatically completes the following steps:
 
 ---
 
-## 🗄️ Database
+## Database
 
 Uses MySQL 8. Core tables are **idempotently created** on service startup. Incremental changes are managed via SQL scripts in the `migrations/` directory.
 
@@ -595,7 +594,7 @@ platform/migrations/
 
 ---
 
-## 🧪 Testing
+## Testing
 
 ```bash
 # Run platform backend unit tests
@@ -613,11 +612,11 @@ The project includes the following test suites:
 - **User Handler** — HTTP interface tests
 - **User Service** — Business logic tests
 
-> 📝 A full integration test manual is being prepared and will be published in this repository, covering user registration/login, model configuration, device initialization, gRPC inference (streaming/non-streaming/multi-turn), OpenAI-compatible interfaces, and other end-to-end scenarios.
+> 📝 Full integration test manual available at [mini_test.md](./mini_test.md), covering user registration/login, model configuration, device initialization, gRPC inference (streaming/non-streaming/multi-turn), OpenAI-compatible interface, and other end-to-end scenarios.
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions to DeepPool are welcome!
 
@@ -663,7 +662,7 @@ Contributions to DeepPool are welcome!
 
 ---
 
-## 📜 License
+## License
 
 This project is licensed under the [Apache License 2.0](LICENSE).
 

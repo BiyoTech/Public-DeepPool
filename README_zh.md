@@ -20,11 +20,11 @@
 
 ---
 
-## 📖 项目简介
-
+## 项目简介
+![alt text](social_publish_log.png)
 DeepPool 是一个 **AI 融合调度网关与 Token 治理平台**，为企业和开发者提供统一的大模型接入层。通过一个 API 入口、一套 API Key，即可调用 GPT、Claude、DeepSeek、Qwen、GLM 等全球主流大模型，并获得智能路由、安全护栏、用量追踪、质量评估等全方位 Token 治理能力。
 
-### ✨ 核心能力
+### 核心能力
 
 - 🔀 **多模型融合调度，统一网关** — 一个 API 入口统一接入数十种大模型，支持 DeepNode 本地推理、云端 Provider API、Hybrid 混合调度三种模型来源，对调用方完全透明
 - 🎯 **自定义融合调度策略** — 通过 YAML 配置灵活定义 Hybrid 路由规则，支持按上下文长度、Function Call、视觉内容、推理需求等条件智能分发，Round-Robin 负载均衡 + 自动故障转移
@@ -32,7 +32,7 @@ DeepPool 是一个 **AI 融合调度网关与 Token 治理平台**，为企业�
 - 🛡️ **Guardrails 安全护栏** — 基于 LLM 的输入/输出内容安全评估，支持请求前拦截和响应后审计，可配置阻断或仅记录策略，保障 AI 应用安全合规
 - 🖥️ **DeepNode 本地推理** — 下载安装 DeepNode 桌面客户端，一键部署 Qwen、Gemma 等开源模型，利用本地 GPU/Apple Silicon 提供推理算力，数据不出本地
 
-### 🔌 更多特性
+### 更多特性
 
 - **OpenAI API 完全兼容** — 标准 `/v1/chat/completions` 接口，支持流式 SSE、Function Calling、Reasoning Content，现有 SDK 零改造接入
 - **API Key + 限流 + 配额** — SHA-256 鉴权、滑动窗口 RPM/TPM 限流、Token 配额管理、AES-256-GCM 密钥加密
@@ -43,7 +43,7 @@ DeepPool 是一个 **AI 融合调度网关与 Token 治理平台**，为企业�
 
 ---
 
-## 🏗️ 架构概览
+## 架构概览
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -123,7 +123,7 @@ DeepPool 是一个 **AI 融合调度网关与 Token 治理平台**，为企业�
 
 ---
 
-## 📁 项目结构
+## 项目结构
 
 ```
 DeepPool/
@@ -164,7 +164,7 @@ DeepPool/
 
 ---
 
-## 🛠️ 技术栈
+## 技术栈
 
 | 层面 | 技术选型 |
 |------|---------| 
@@ -183,7 +183,7 @@ DeepPool/
 
 ---
 
-## 🚀 快速开始
+## 快速开始
 
 ### 前置依赖
 
@@ -327,7 +327,7 @@ cd .. && cargo tauri dev
 
 ---
 
-## 🔌 API 文档
+## API 文档
 
 DeepPool 对外暴露 **OpenAI 兼容** 的推理接口，现有 OpenAI SDK 可零成本接入。支持三种模型类型：`deepnode`（边缘设备推理）、`provider`（云端 API 代理）、`hybrid`（智能混合调度）。
 
@@ -391,7 +391,7 @@ curl http://localhost:8080/v1/models \
 
 ---
 
-## 📦 构建
+## 构建
 
 项目提供统一的构建脚本，支持按模块构建：
 
@@ -423,7 +423,7 @@ dist/
 
 ---
 
-## 🚢 部署
+## 部署
 
 ### 统一部署脚本
 
@@ -524,7 +524,7 @@ cd platform
 
 ---
 
-## 🗄️ 数据库
+## 数据库
 
 使用 MySQL 8，核心表在服务启动时**幂等创建**，增量变更通过 `migrations/` 目录下的 SQL 脚本管理。
 
@@ -592,7 +592,7 @@ platform/migrations/
 
 ---
 
-## 🧪 测试
+## 测试
 
 ```bash
 # 运行平台后端单元测试
@@ -610,11 +610,11 @@ go test ./internal/manager/...
 - **User Handler** — HTTP 接口测试
 - **User Service** — 业务逻辑测试
 
-> 📝 完整的联调测试手册正在整理中，后续会在本仓库发布，覆盖用户注册/登录、模型配置、设备初始化、gRPC 推理（流式/非流式/多轮对话）、OpenAI 兼容接口等全链路场景。
+> 📝 完整的联调测试手册见 [mini_test.md](./mini_test.md)，覆盖用户注册/登录、模型配置、设备初始化、gRPC 推理（流式/非流式/多轮对话）、OpenAI 兼容接口等全链路场景。
 
 ---
 
-## 🤝 贡献指南
+## 贡献指南
 
 欢迎参与 DeepPool 的开发！
 
@@ -660,7 +660,7 @@ go test ./internal/manager/...
 
 ---
 
-## 📜 许可证
+## 许可证
 
 本项目采用 [Apache License 2.0](LICENSE) 开源协议。
 
