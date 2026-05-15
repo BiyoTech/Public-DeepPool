@@ -65,7 +65,7 @@ const navItems = computed(() => [
   { path: '/experiment/overview', label: t('experiment.nav.overview'), icon: OverviewIcon },
   { path: '/experiment/trace', label: t('experiment.nav.trace'), icon: TraceIcon },
   { path: '/experiment/judge', label: t('experiment.nav.judge'), icon: JudgeIcon },
-  { path: '/experiment/evaluate', label: t('experiment.nav.evaluate'), icon: EvaluateIcon, badge: t('experiment.coming_soon') },
+// { path: '/experiment/evaluate', label: t('experiment.nav.evaluate'), icon: EvaluateIcon, badge: t('experiment.coming_soon') },
 ])
 
 function isActive(path: string) {

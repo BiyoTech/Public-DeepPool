@@ -25,61 +25,59 @@
   },
   "home": {
     "hero": {
-      "title": "LLM Token融合调度平台",
-      "tag_cost": "智能路由降成本",
-      "tag_reliable": "融合调度高可靠",
-      "tag_api": "一个API KEY 一套接口调用所有模型",
-      "subtitle": "通过智能调度实现统一API、高性价比、高可靠的大模型推理服务",
-      "cta_provider": "贡献算力赚收益",
+      "title": "AI 融合调度网关 & Token 治理平台",
+      "tag_gateway": "统一网关",
+      "tag_governance": "Token 治理",
+      "tag_guardrails": "安全护栏",
+      "tag_trace": "追踪评估",
+      "tag_local": "本地推理",
+      "subtitle": "一个 API 入口调用所有大模型，融合调度 + 安全护栏 + 追踪评估 + Token 治理，一站式 AI 网关",
       "cta_consumer": "接入 API",
-      "cta_custom_hybrid": "自定义融合模型",
+      "cta_custom_hybrid": "自定义调度策略",
+      "cta_docs": "查看文档",
       "welcome": "欢迎回来，{name}"
     },
     "features": {
-      "title": "为什么选择 DeepPool",
-      "subtitle": "多模型融合调度 + 边缘算力池化，让每一次推理都更快、更省、更稳",
-      "cost": {
-        "title": "极致性价比",
-        "desc": "聚合闲置边缘设备算力，结合云端 API 动态调度，推理成本相比纯云端方案降低 50%+，小模型优先本地，大模型按需上云"
-      },
-      "smart": {
-        "title": "智能模型选择",
-        "desc": "Hybrid 路由引擎根据请求特征（上下文长度、是否需要推理、是否 Function Call）自动匹配最优模型，无需手动切换"
-      },
-      "reliable": {
-        "title": "多模型容灾",
-        "desc": "Hybrid 模式下多个子模型自动故障转移：首选模型不可用时毫秒级切换备选，确保 7×24 高可用"
-      },
-      "api": {
-        "title": "OpenAI 兼容 API",
-        "desc": "完全兼容 OpenAI Chat Completions API，支持流式输出、Function Calling、Reasoning Content，现有 SDK 零改造接入"
+      "title": "五大核心能力",
+      "subtitle": "融合调度 · 自定义策略 · 追踪评估 · 安全护栏 · 本地推理，一站式 AI 网关",
+      "gateway": {
+        "title": "多模型融合调度，统一网关",
+        "desc": "一个 API 入口统一接入 GPT、Claude、DeepSeek、Qwen、GLM 等全球主流大模型，支持云端 API 代理、本地推理、混合调度三种模式，对调用方完全透明"
       },
       "custom_routing": {
-        "title": "自定义模型路由策略",
-        "desc": "用户可通过 YAML 配置自定义 Hybrid 模型，灵活定义条件路由规则，按上下文长度、工具调用、视觉内容等特征智能分发到最合适的子模型"
+        "title": "自定义融合调度策略",
+        "desc": "通过 YAML 配置灵活定义 Hybrid 路由规则，按上下文长度、Function Call、视觉内容、推理需求等条件智能分发，Round-Robin 负载均衡 + 自动故障转移"
       },
-      "global_models": {
-        "title": "支持全球领先大模型",
-        "desc": "集成 GPT、Claude、DeepSeek、Qwen、GLM、Kimi 等全球顶尖大模型，通过统一 API 一键调用，持续跟进最新模型更新"
+      "trace": {
+        "title": "请求 Trace、AI 评估与分析",
+        "desc": "完整记录推理请求/响应日志，支持人工标注反馈与期望输出，AI Judge 自动评测模型输出质量，数据驱动持续优化"
+      },
+      "guardrails": {
+        "title": "Guardrails 安全护栏",
+        "desc": "基于 LLM 的输入/输出内容安全评估，支持请求前拦截和响应后审计，可配置阻断或仅记录策略，保障 AI 应用安全合规"
+      },
+      "deepnode": {
+        "title": "DeepNode 本地推理",
+        "desc": "下载安装 DeepNode 客户端，一键部署 Qwen、Gemma 等开源模型，利用本地 GPU / Apple Silicon 提供推理算力，数据不出本地，零成本运行"
       }
     },
     "arch": {
-      "title": "工作原理",
-      "subtitle": "一个 API 入口，三种模型来源，智能路由自动选择最优路径",
+      "title": "网关工作流",
+      "subtitle": "一个 API 入口，五层能力加持，从请求到响应全链路治理",
       "step1_label": "发起请求",
-      "step1_desc": "OpenAI SDK 调用",
-      "step2_label": "Gateway 鉴权",
-      "step2_desc": "API Key + 限流 + 配额",
-      "step3_label": "智能路由",
-      "step3_desc": "条件匹配 + 负载均衡",
-      "step4_label": "推理执行",
-      "step4_desc": "边缘设备 / 云端 API",
-      "vt_deepnode_title": "边缘设备推理",
-      "vt_deepnode_desc": "Mac M 系列 / Linux GPU 本地执行，低延迟、零数据出境",
+      "step1_desc": "OpenAI 兼容 API",
+      "step2_label": "鉴权 & 护栏",
+      "step2_desc": "API Key + 限流 + Guardrails",
+      "step3_label": "融合调度",
+      "step3_desc": "条件路由 + 负载均衡",
+      "step4_label": "推理 & 追踪",
+      "step4_desc": "执行推理 + Trace 记录",
+      "vt_deepnode_title": "DeepNode 本地推理",
+      "vt_deepnode_desc": "部署 Qwen、Gemma 等模型，Mac / Linux GPU 本地执行",
       "vt_provider_title": "云端 API 代理",
-      "vt_provider_desc": "OpenAI / 百度千帆等云端大模型，按需调用，能力无上限",
-      "vt_hybrid_title": "混合智能调度",
-      "vt_hybrid_desc": "多模型组合，条件路由 + Round-Robin + 自动故障转移"
+      "vt_provider_desc": "GPT / Claude / DeepSeek 等云端大模型，按需调用",
+      "vt_hybrid_title": "Hybrid 融合调度",
+      "vt_hybrid_desc": "多模型组合，自定义策略 + 自动故障转移"
     },
     "stats": {
       "title": "平台数据",
@@ -89,30 +87,26 @@
     },
     "quickstart": {
       "title": "快速开始",
-      "provider": {
-        "title": "算力提供者",
-        "desc": "贡献闲置设备算力，加入分布式推理网络，按 Token 获得收入",
-        "step1": "注册账号并登录平台",
-        "step2": "下载 DeepNode 客户端并安装",
-        "step3": "一键启动，自动接入算力池开始赚取收益",
-        "cta": "立即注册"
-      },
       "consumer": {
-        "title": "API 使用者",
-        "desc": "通过标准 OpenAI 兼容 API 调用多种大模型推理服务",
+        "title": "API 接入",
+        "desc": "通过标准 OpenAI 兼容 API，一个入口调用所有大模型",
         "step1": "注册账号并创建 API Key",
         "step2": "使用 OpenAI SDK 或 HTTP 请求，指向 DeepPool 端点",
-        "step3": "Hybrid 模式自动选择最优模型，按量计费",
+        "step3": "融合调度自动选择最优模型，按量计费",
         "cta": "立即注册"
       },
-      "custom_hybrid": {
-        "title": "自定义融合模型",
-        "desc": "通过 YAML 配置，组合多个模型为智能路由入口"
+      "deepnode": {
+        "title": "本地推理",
+        "desc": "下载 DeepNode 客户端，在本地部署 Qwen、Gemma 等开源模型",
+        "step1": "注册账号并登录平台",
+        "step2": "下载 DeepNode 客户端并安装",
+        "step3": "选择模型一键部署，本地推理零成本",
+        "cta": "下载 DeepNode"
       }
     }
   },
   "footer": {
-    "desc": "LLM推理算力融合调度平台",
+    "desc": "AI 融合调度网关 & Token 治理平台",
     "nav_title": "导航",
     "contact_title": "联系我们",
     "copyright": "© 2025 DeepPool. All rights reserved."
@@ -237,12 +231,77 @@
       "copy_failed": "复制失败，请重试",
       "copy_no_cache": "该密钥完整值不可用，请创建新密钥后复制",
       "quota_unlimited": "配额: 不限",
-      "edit_limit": "修改"
+      "edit_limit": "修改",
+      "edit_rate_limit_title": "修改限流配置",
+      "limit_updated": "限流配置已更新",
+      "tab_settings": "基础设置",
+      "tab_data": "数据",
+      "tab_guardrails": "Guardrails 护栏",
+      "detail_name": "名称",
+      "detail_rate_limit": "限流配置",
+      "detail_rate_limit_hint": "0 表示不限制",
+      "detail_quota": "配额",
+      "save": "保存",
+      "name_updated": "名称已更新",
+      "guardrails_title": "Guardrails 护栏",
+      "guardrails_coming_soon": "输入/输出内容安全护栏功能即将上线",
+      "guardrails_empty": "尚未配置护栏规则",
+      "guardrails_add": "添加护栏",
+      "guardrails_create_title": "创建护栏",
+      "guardrails_edit_title": "编辑护栏",
+      "guardrails_name": "名称",
+      "guardrails_name_placeholder": "输入护栏名称",
+      "guardrails_phase": "执行阶段",
+      "guardrails_phase_input": "输入（请求前）",
+      "guardrails_phase_output": "输出（响应后）",
+      "guardrails_action": "动作",
+      "guardrails_action_block": "阻断请求",
+      "guardrails_action_log": "仅记录",
+      "guardrails_prompt": "评估 Prompt",
+      "guardrails_prompt_placeholder": "描述 LLM 评估器的评估标准...",
+      "guardrails_template": "内置模板",
+      "guardrails_template_custom": "自定义",
+      "guardrails_evaluator_model": "评估模型",
+      "guardrails_evaluator_model_placeholder": "选择用于评估的模型",
+      "guardrails_evaluator_apikey": "评估 API Key",
+      "guardrails_evaluator_apikey_placeholder": "选择评估器使用的 API Key",
+      "guardrails_storage_type": "结果存储",
+      "guardrails_storage_builtin": "预置数据库",
+      "guardrails_storage_external": "自定义数据库",
+      "guardrails_db_type": "数据库类型",
+      "guardrails_db_host": "主机地址",
+      "guardrails_db_port": "端口",
+      "guardrails_db_user": "用户名",
+      "guardrails_db_password": "密码",
+      "guardrails_db_name": "数据库名",
+      "guardrails_created": "护栏已创建",
+      "guardrails_updated": "护栏已更新",
+      "guardrails_deleted": "护栏已删除",
+      "guardrails_enabled": "已启用",
+      "guardrails_disabled": "已禁用",
+      "guardrails_confirm_delete": "确定要删除此护栏规则吗？",
+      "guardrails_results_tab": "评估记录",
+      "guardrails_results_empty": "暂无评估记录",
+      "guardrails_results_request_id": "请求 ID",
+      "guardrails_results_flagged": "已标记",
+      "guardrails_results_confidence": "置信度",
+      "guardrails_results_blocked": "已阻断",
+      "guardrails_results_duration": "耗时",
+      "guardrails_results_time": "时间",
+      "guardrails_results_reason": "原因",
+      "guardrails_output_stream_warning": "启用输出护栏将禁用该 API Key 的流式响应（stream=true）。响应将在护栏评估完成后完整返回。",
+      "guardrails_output_stream_notice": "该 API Key 已启用输出护栏，流式响应已自动禁用。",
+      "chart_requests": "请求次数",
+      "chart_tokens": "总 Token 数",
+      "chart_prompt_tokens": "Prompt Tokens",
+      "chart_completion_tokens": "Completion Tokens",
+      "chart_users": "请求用户数"
     },
     "mymodels": {
       "title": "我的模型",
       "empty": "暂无模型，请点击上方按钮创建",
-      "create": "创建模型"
+      "create": "创建模型",
+      "create_custom": "自定义模型"
     },
     "params": {
       "title": "推理参数",

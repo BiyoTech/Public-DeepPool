@@ -3,18 +3,18 @@ server:
   grpc_addr: ":9090"
   tls:
     enabled: true
-    cert_file: "/etc/letsencrypt/live/test.deeppool.tech/fullchain.pem"
-    key_file: "/etc/letsencrypt/live/test.deeppool.tech/privkey.pem"
+    cert_file: "/etc/ssl/deeppool/deeppool.tech.pem"
+    key_file: "/etc/ssl/deeppool/deeppool.tech.key"
     skip_verify: false
 
 log:
   level: "info"
 
 mysql:
-  host: "127.0.0.1"
+  host: "rm-f8z04393v8584kubu.mysql.rds.aliyuncs.com"
   port: 3306
-  user: "root"
-  password: "root@123"
+  user: "deeppool"
+  password: "AliRoot@123"
   database: "deeppool"
   max_open_conns: 20
   max_idle_conns: 10
@@ -35,7 +35,7 @@ admin:
   api_key_encryption_key: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
   super_admin:
     username: "admin"
-    password: "admin@123"
+    password: "admin@1016?123"
     phone: "10000000000"
     email: "admin@deeppool.io"
   # SMTP mail server for sending verification codes (email login / password reset)
@@ -48,8 +48,8 @@ admin:
     use_tls: true
     insecure_skip_verify: true  # smtp.deeppool.tech TLS cert doesn't include this hostname
   payment:
-    notify_base_url: "https://api.test.deeppool.tech"  # production public HTTPS URL
-    frontend_base_url: "https://test.deeppool.tech"    # frontend site URL for payment return redirects
+    notify_base_url: "https://api.deeppool.tech"  # production public HTTPS URL
+    frontend_base_url: "https://deeppool.tech"    # frontend site URL for payment return redirects
     wechat:
       mch_id: "1744006558"
       mch_serial_no: "369B4635C7C5A555B5433B50C866779125415B8E"
@@ -64,16 +64,24 @@ admin:
       alipay_public_key_path: "alipay_cert/alipay_public_key.pem"
       is_sandbox: false
   node_managers:
-    - name: "node-prod"
-      addr: "test.deeppool.tech:9092"
+    - name: "n_south"
+      addr: "nodemanager.deeppool.tech:9092"
   experiment_servers:
     - name: "experiment-1"
-      addr: "test.deeppool.tech:9093"
+      addr: "nodemanager.deeppool.tech:9093"
   # Built-in trace log storage engine (used when user selects "builtin" storage type)
   default_trace_db:
     db_type: "mysql"
-    db_host: "127.0.0.1"
+    db_host: "rm-f8z04393v8584kubu.mysql.rds.aliyuncs.com"
     db_port: 3306
-    db_user: "root"
-    db_pass: "root@123"
+    db_user: "deeppool"
+    db_pass: "AliRoot@123"
     db_name: "deeppool_trace"
+  # Built-in guardrail result storage engine (used when guardrail selects "builtin" storage type)
+  default_guardrail_db:
+    db_type: "mysql"
+    db_host: "rm-f8z04393v8584kubu.mysql.rds.aliyuncs.com"
+    db_port: 3306
+    db_user: "deeppool"
+    db_pass: "AliRoot@123"
+    db_name: "deeppool_guardrails"

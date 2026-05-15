@@ -1,0 +1,84 @@
+server:
+  addr: ":8080"
+  grpc_addr: ":9090"
+  tls:
+    enabled: false
+    cert_file: ""
+    key_file: ""
+    skip_verify: false
+
+log:
+  level: "debug"
+
+mysql:
+  host: "127.0.0.1"
+  port: 3306
+  user: "root"
+  password: "YOUR_MYSQL_PASSWORD"
+  database: "deeppool"
+  max_open_conns: 20
+  max_idle_conns: 10
+  conn_max_lifetime_minutes: 30
+
+# Stream-level liveness timeouts shared with NodeManager.
+stream_timeouts:
+  first_token_timeout_seconds: 10
+  inter_chunk_idle_timeout_seconds: 20
+
+admin:
+  default_hybrid_policy_path: "config/default_hybrid_policy.yaml"
+  # 32-byte hex string for AES-256-GCM encryption of API keys (exactly 64 hex chars)
+  # Generate with: openssl rand -hex 32
+  api_key_encryption_key: "YOUR_64_HEX_CHARS_ENCRYPTION_KEY"
+  super_admin:
+    username: "admin"
+    password: "YOUR_ADMIN_PASSWORD"
+    phone: "10000000000"
+    email: "admin@example.com"
+  # SMTP mail server for sending verification codes
+  smtp:
+    host: "smtp.example.com"
+    port: 465
+    user: "noreply@example.com"
+    password: "YOUR_SMTP_PASSWORD"
+    from: "DeepPool <noreply@example.com>"
+    use_tls: true
+    insecure_skip_verify: false
+  payment:
+    notify_base_url: "https://api.example.com"
+    frontend_base_url: "https://example.com"
+    wechat:
+      mch_id: "YOUR_WECHAT_MCH_ID"
+      mch_serial_no: "YOUR_WECHAT_MCH_SERIAL_NO"
+      mch_api_key_v3: "YOUR_WECHAT_MCH_API_KEY_V3"
+      mch_private_key_path: "wechat_pay_cert/apiclient_key.pem"
+      wx_pub_key_id: "YOUR_WECHAT_PUB_KEY_ID"
+      wx_pub_key_path: "wechat_pay_cert/pub_key.pem"
+      app_id: "YOUR_WECHAT_APP_ID"
+    alipay:
+      app_id: "YOUR_ALIPAY_APP_ID"
+      private_key_path: "alipay_cert/alipay_app_private_key.pem"
+      alipay_public_key_path: "alipay_cert/alipay_public_key.pem"
+      is_sandbox: false
+  node_managers:
+    - name: "nodemanager-1"
+      addr: "localhost:9092"
+  experiment_servers:
+    - name: "experiment-1"
+      addr: "localhost:9093"
+  # Built-in trace log storage engine (used when user selects "builtin" storage type)
+  default_trace_db:
+    db_type: "mysql"
+    db_host: "localhost"
+    db_port: 3306
+    db_user: "root"
+    db_pass: "YOUR_MYSQL_PASSWORD"
+    db_name: "deeppool_trace"
+  # Built-in guardrail result storage engine (used when guardrail selects "builtin" storage type)
+  default_guardrail_db:
+    db_type: "mysql"
+    db_host: "localhost"
+    db_port: 3306
+    db_user: "root"
+    db_pass: "YOUR_MYSQL_PASSWORD"
+    db_name: "deeppool_guardrails"

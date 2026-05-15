@@ -27,6 +27,7 @@ export interface CreateAPIKeyParams {
 }
 
 export interface UpdateAPIKeyParams {
+  name?: string
   rate_limit_rpm?: number  // 0 = unlimited
   rate_limit_tpm?: number  // 0 = unlimited
   quota_total?: number     // -1 = unlimited

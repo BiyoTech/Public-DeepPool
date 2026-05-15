@@ -1,0 +1,32 @@
+server:
+  grpc_addr: ":9093"
+  tls:
+    enabled: false
+    cert_file: ""
+    key_file: ""
+    skip_verify: false
+
+log:
+  level: "info"
+
+mysql:
+  host: "127.0.0.1"
+  port: 3306
+  user: "root"
+  password: "YOUR_MYSQL_PASSWORD"
+  database: "deeppool"
+  max_open_conns: 10
+  max_idle_conns: 5
+  conn_max_lifetime_minutes: 30
+
+# Experiment-specific configuration
+experiment:
+  # Manager gateway URL for LLM calls (judge/evaluate use this to invoke models)
+  manager_gateway_url: "https://localhost/v1"
+  # AES-256 encryption key (must match manager's key for decrypting trace DSN)
+  # Generate with: openssl rand -hex 32
+  api_key_encryption_key: "YOUR_64_HEX_CHARS_ENCRYPTION_KEY"
+  # Maximum concurrent workers for async judge/evaluate execution
+  worker_pool_size: 5
+  # Directory containing judge scorer template YAML files
+  template_dir: "internal/experiment/template"

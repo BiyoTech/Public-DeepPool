@@ -2,57 +2,103 @@
 
 ## 1. 产品定位
 
-DeepPool 是一个**分布式 LLM 推理算力池平台**。核心理念是将分散的个人设备（Mac M 系列、Linux GPU 服务器等）组织成统一的推理算力网络，对外通过标准 **OpenAI 兼容 API** 提供 LLM 推理服务。
+DeepPool 是一个 **AI 融合调度网关 & Token 治理平台**。为企业和开发者提供统一的大模型接入层，通过一个 API 入口、一套 API Key，即可调用 GPT、Claude、DeepSeek、Qwen、GLM 等全球主流大模型，并获得智能路由、安全护栏、用量追踪、质量评估等全方位 Token 治理能力。
 
-**核心价值链**：设备贡献者安装 DeepNode 桌面客户端 → 本地自动部署推理引擎 → 通过 gRPC 隧道接入平台 → 平台对外暴露 OpenAI API → 外部调用方发起推理请求 → 平台路由到空闲设备 → 设备执行推理并回传结果。
+### 五大核心能力
+
+| # | 能力 | 说明 |
+|---|------|------|
+| 1 | **多模型融合调度，统一网关** | 一个 API 入口统一接入数十种大模型，支持 DeepNode 本地推理、云端 Provider API、Hybrid 混合调度三种模型来源 |
+| 2 | **自定义融合调度策略** | 通过 YAML 配置灵活定义 Hybrid 路由规则，按上下文长度、Function Call、视觉内容、推理需求等条件智能分发 |
+| 3 | **请求 Trace、AI 评估与分析** | 完整记录推理请求/响应日志，支持人工标注反馈与期望输出，AI Judge 自动评测模型输出质量 |
+| 4 | **Guardrails 安全护栏** | 基于 LLM 的输入/输出内容安全评估，支持请求前拦截和响应后审计，可配置阻断或仅记录策略 |
+| 5 | **DeepNode 本地推理** | 下载安装 DeepNode 客户端，一键部署 Qwen、Gemma 等开源模型，利用本地 GPU/Apple Silicon 提供推理算力 |
+
+**核心价值链**：
+
+```
+调用方发起请求 → Gateway 鉴权限流 → Guardrails 输入护栏 → 融合调度路由
+  → 推理执行 (DeepNode/Provider/Hybrid) → Guardrails 输出护栏
+  → Trace 日志记录 → Token 用量统计 → 响应返回
+```
 
 ---
 
 ## 2. 系统全景架构
 
 ```
-                        ┌──────────────────────────────────────────────────────────────┐
-                        │                    DeepPool Platform                          │
-                        │                                                              │
-  ┌───────────┐         │   ┌──────────────────────────────────┐  ┌────────────────┐   │
-  │ 外部调用方 │─ HTTP ──│──▶│      Manager :8080 / :9090        │  │  Scheduler     │   │
-  │ (OpenAI   │         │   │                                  │  │ :8081 / :9091  │   │
-  │  兼容API) │         │   │  ┌─────────────────────────────┐ │  │ (Token 调度,   │   │
-  └───────────┘         │   │  │ Gateway 模块                 │ │  │  规划中)       │   │
-                        │   │  │ · API Key 鉴权 + 限流 + 配额  │ │  └────────────────┘   │
-  ┌───────────┐         │   │  │ · 按 model 路由:             │ │                      │
-  │ portal_web│─/api/v1─│──▶│  │   deepnode → gRPC(NodeMgr)  │ │                      │
-  │  :5174    │         │   │  │   provider → HTTP(Cloud API) │ │                      │
-  └───────────┘         │   │  │   hybrid → 智能分发+Fallback  │ │                      │
-                        │   │  │ · SSE 流式透传代理            │ │                      │
-  ┌───────────┐         │   │  └───────┬──────────┬───────────┘ │                      │
-  │ 云端 API  │◀─ HTTP ─│──│──────────│──────────│ P.rovider 代理│                      │
-  │ (OpenAI   │         │   │          │          │             │                      │
-  │  百度千帆) │         │   │  用户管理 · 设备管理 · 模型仓库 CRUD │                      │
-  └───────────┘         │   └──────────┼──────────┼─────────────┘                      │
-                        │              │ gRPC     │ gRPC                                │
-                        │              ▼          ▼                                    │
-                        │   ┌────────────────┐  ┌────────────────┐                     │
-                        │   │ NodeManager-A  │  │ NodeManager-B  │                     │
-                        │   │ :8082 / :9092  │  │ :8083 / :9093  │  ...×N              │
-                        │   │ gRPC 隧道管理   │  │ gRPC 隧道管理   │                     │
-                        │   │ Least-Conn 调度 │  │ Least-Conn 调度 │                     │
-                        │   └──────┬─────────┘  └──────┬─────────┘                     │
-                        └──────────┼───────────────────┼───────────────────────────────┘
-                                   │ gRPC BidiStream   │
-                    ┌──────────────┼───────────────────┼──────────────┐
-                    │              ▼                   ▼              │
-                    │  ┌────────────────────────────────────────────┐ │
-                    │  │         DeepNode (桌面客户端)               │ │
-                    │  │                                            │ │
-                    │  │  ┌──────────┐  ┌──────────┐  ┌──────────┐ │ │
-                    │  │  │ Tauri    │  │  Vue 3   │  │ Python   │ │ │
-                    │  │  │ (Rust)   │  │  前端 UI  │  │ 推理服务  │ │ │
-                    │  │  │ 桌面外壳  │  │          │  │ 本地引擎  │ │ │
-                    │  │  └──────────┘  └──────────┘  └──────────┘ │ │
-                    │  └────────────────────────────────────────────┘ │
-                    │     DeepNode ×N（多个设备节点组成算力池）          │
-                    └────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                         DeepPool Platform                                    │
+│                                                                              │
+│  ┌────────────────────────────────────────────────────────────────────────┐  │
+│  │                    Manager :8080 / :9090                                │  │
+│  │                                                                        │  │
+│  │  ┌──────────────────────────────────────────────────────────────────┐  │  │
+│  │  │              Gateway (AI 融合调度网关)                             │  │  │
+│  │  │                                                                  │  │  │
+│  │  │  ┌─────────────────── 请求处理流水线 ──────────────────────────┐  │  │  │
+│  │  │  │                                                            │  │  │  │
+│  │  │  │  Auth → RateLimit → Quota → Guardrails(输入)               │  │  │  │
+│  │  │  │    → FusionRoute → Inference → Guardrails(输出) → Trace    │  │  │  │
+│  │  │  │                                                            │  │  │  │
+│  │  │  └────────────────────────────────────────────────────────────┘  │  │  │
+│  │  │                                                                  │  │  │
+│  │  │  ┌────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │  │  │
+│  │  │  │  DeepNode   │  │  Provider   │  │       Hybrid            │  │  │  │
+│  │  │  │  本地推理   │  │  云端 API   │  │  融合调度               │  │  │  │
+│  │  │  │  gRPC →     │  │  HTTP →     │  │  条件路由 + RR + FO     │  │  │  │
+│  │  │  │  NodeMgr    │  │  Cloud API  │  │                         │  │  │  │
+│  │  │  └──────┬──────┘  └──────┬──────┘  └────────────┬────────────┘  │  │  │
+│  │  │         │                │                      │               │  │  │
+│  │  └─────────┼────────────────┼──────────────────────┼───────────────┘  │  │
+│  │            │                │                      │                  │  │
+│  │  ┌─────────────────────────────────────────────────────────────────┐  │  │
+│  │  │  Token 治理层                                                   │  │  │
+│  │  │  · Guardrails 安全护栏 (LLM 评估, 阻断/审计)                     │  │  │
+│  │  │  · Trace 追踪 (异步写入用户外部 DB, TraceMatcher + TraceWriter)   │  │  │
+│  │  │  · AI Judge 评测 (Experiment 服务, 自动评估输出质量)              │  │  │
+│  │  │  · Token 用量统计 (按 Key/模型/日 汇总, 阶梯计费)                │  │  │
+│  │  └─────────────────────────────────────────────────────────────────┘  │  │
+│  │                                                                        │  │
+│  │  用户管理 · 模型仓库 · API Key 管理 · 钱包 · 支付                      │  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+│                                                                              │
+│  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐                 │
+│  │ NodeManager-A  │  │ NodeManager-B  │  │ Experiment     │                 │
+│  │ :8082 / :9092  │  │ :8083 / :9093  │  │ gRPC :9093     │                 │
+│  │ gRPC 隧道管理   │  │ gRPC 隧道管理   │  │ AI Judge       │                 │
+│  │ Least-Conn 调度 │  │ Least-Conn 调度 │  │ Trace 标注     │                 │
+│  └──────┬─────────┘  └──────┬─────────┘  └────────────────┘                 │
+└─────────┼───────────────────┼────────────────────────────────────────────────┘
+          │ gRPC BidiStream   │
+          ▼                   ▼
+┌─────────────────────────────────────────────────────┐
+│              DeepNode (桌面客户端)                    │
+│  本地部署 Qwen、Gemma 等开源模型                     │
+│                                                     │
+│  ┌───────────┐  ┌───────────┐  ┌────────────────┐  │
+│  │  Tauri UI  │  │  FastAPI   │  │ Inference      │  │
+│  │  Vue 3     │  │  :8765     │  │ Engine         │  │
+│  │            │  │            │  │ MLX/vLLM/GGUF  │  │
+│  └───────────┘  └───────────┘  └────────────────┘  │
+│     DeepNode ×N（多个设备节点提供本地推理算力）       │
+└─────────────────────────────────────────────────────┘
+
+外部接入:
+  ┌───────────┐                    ┌───────────┐
+  │ 外部调用方 │─ POST /v1/chat ──▶│  Gateway   │
+  │ (OpenAI   │                    │  :8080     │
+  │  兼容API) │                    └───────────┘
+  └───────────┘
+  ┌───────────┐                    ┌───────────┐
+  │ portal_web│─ /api/v1/ ────────▶│  Manager   │
+  │  :5174    │                    │  :8080     │
+  └───────────┘                    └───────────┘
+  ┌───────────┐                    ┌───────────┐
+  │ 云端 API  │◀── HTTP 代理 ──────│  Provider  │
+  │ GPT/Claude│                    │  代理模块  │
+  │ DeepSeek  │                    └───────────┘
+  └───────────┘
 ```
 
 ---
@@ -80,18 +126,17 @@ DeepPool/
 │   └── go.mod                       #   module: deeppool/libs
 │
 ├── platform/                        # 平台后端
-│   ├── cmd/                         #   三个微服务入口
+│   ├── cmd/                         #   微服务入口
 │   │   ├── manager/main.go
 │   │   ├── nodemanager/main.go
-│   │   └── scheduler/main.go
+│   │   └── experiment/main.go
 │   ├── config/                      #   YAML 配置文件
 │   ├── internal/                    #   内部实现
 │   │   ├── config/                  #     统一配置加载
 │   │   ├── common/                  #     公共模块（错误、中间件、响应）
 │   │   ├── storage/mysql/           #     MySQL 连接池 + 自动建表
 │   │   ├── manager/                 #     Manager 业务实现
-│   │   ├── nodemanager/             #     NodeManager 业务实现
-│   │   └── scheduler/               #     Scheduler（占位）
+│   │   └── nodemanager/             #     NodeManager 业务实现
 │   ├── web/                         #   管控前端（Vue 3，初始骨架）
 │   ├── deploy_dev.sh                #   一键远程部署脚本
 │   └── go.mod                       #   module: deeppool/platform
@@ -109,17 +154,17 @@ DeepPool/
 
 ### 4.1 微服务划分
 
-平台后端由三个独立可部署的 Go 微服务组成，每个服务同时暴露 HTTP 和 gRPC 两个端口：
+平台后端由独立可部署的 Go 微服务组成，每个服务同时暴露 HTTP 和 gRPC 两个端口：
 
 | 服务 | HTTP | gRPC | 职责 |
 |------|------|------|------|
 | **Manager** | `:8080` | `:9090` | 用户管理、设备管理、模型配置下发 |
-| **Scheduler** | `:8081` | `:9091` | Token 流量调度（规划中） |
 | **NodeManager** | `:8082` | `:9092` | 设备长连接管理、推理任务分发、OpenAI 兼容网关 |
+| **Experiment** | — | `:9093` | AI 评判 (Judge)、数据集评测、Trace 标注 |
 
-### 4.2 Manager — 用户/设备管理 + OpenAI 兼容 Gateway
+### 4.2 Manager — 用户/设备管理 + AI 融合调度网关
 
-Manager 是平台的统一入口，对内管理用户、设备、模型和 API Key，**对外直接暴露 OpenAI 兼容推理网关**。Gateway 模块内嵌在 Manager 进程中，通过 gRPC 转发请求到 NodeManager 或通过 HTTP 代理到云端 Provider。
+Manager 是平台的统一入口，对内管理用户、设备、模型和 API Key，**对外直接暴露 AI 融合调度网关**。Gateway 模块内嵌在 Manager 进程中，提供完整的请求处理流水线：鉴权 → 限流 → 配额 → Guardrails 输入护栏 → 融合调度路由 → 推理执行 → Guardrails 输出护栏 → Trace 日志记录。
 
 #### 分层架构
 
@@ -134,20 +179,26 @@ manager/
 ├── service/                    # 业务逻辑层
 │   ├── user_service.go
 │   ├── model_service.go        # 模型 CRUD + 设备自动分配 + hybrid 校验
-│   └── apikey_service.go       # API Key 鉴权 + AES-256-GCM 加密
+│   ├── apikey_service.go       # API Key 鉴权 + AES-256-GCM 加密
+│   ├── guardrail_service.go    # Guardrails 规则 CRUD + 评估结果存储
+│   └── trace_service.go        # Trace 配置管理 + 日志查询
 ├── handler/                    # HTTP 路由（前端 / Admin）
 │   ├── user_handler.go
 │   ├── model_handler.go        # 模型仓库 Admin CRUD
-│   └── apikey_handler.go
+│   ├── apikey_handler.go
+│   └── guardrail_handler.go    # Guardrails 规则管理 + 评估记录查询
 ├── grpchandler/                # gRPC 服务（服务间 / 客户端通信）
 │   └── manager_grpc.go
-└── gateway/                    # ★ OpenAI 兼容推理网关
-    ├── proxy.go                #   统一入口：鉴权 → 限流 → 配额 → 路由
+└── gateway/                    # ★ AI 融合调度网关
+    ├── proxy.go                #   统一入口：鉴权 → 限流 → 配额 → 护栏 → 路由 → 追踪
     ├── provider.go             #   云端 Provider HTTP 代理
     ├── router.go               #   NodeManager 节点路由器（健康检查 + 轮询）
     ├── dispatch.go             #   Hybrid 混合模型分发 + 故障转移
     ├── routing_policy.go       #   YAML 路由策略引擎 + PolicyCache
-    └── rate_limiter.go         #   滑动窗口限流（RPM + TPM）
+    ├── rate_limiter.go         #   滑动窗口限流（RPM + TPM）
+    ├── guardrail_evaluator.go  #   ★ Guardrails 运行时评估器（LLM 驱动）
+    ├── trace_matcher.go        #   ★ Trace 匹配器（内存缓存 + 周期刷新）
+    └── trace_writer.go         #   ★ Trace 异步写入器（外部 DB 连接池）
 ```
 
 #### 模型三分类体系（VendorType）
@@ -219,7 +270,7 @@ Gateway 是 Manager 内嵌的核心模块，负责将外部 `/v1/chat/completion
 客户端 POST /v1/chat/completions (Bearer API Key)
   │
   ├─ 1. API Key 鉴权 (SHA-256 哈希查库)
-  │     → 返回: KeyID, UserID, RPM/TPM 限流配置, 配额信息
+  │     → 返回: KeyID, UserID, RPM/TPM 限流配置, 配额信息, Guardrails 规则
   │
   ├─ 2. RPM 限流检查 (滑动窗口, 1s 精度, 60s 窗口)
   │
@@ -229,18 +280,35 @@ Gateway 是 Manager 内嵌的核心模块，负责将外部 `/v1/chat/completion
   │
   ├─ 5. 解析 body → 提取 model + stream
   │
-  ├─ 6. 查库获取模型配置 (ModelService.GetModelByName)
+  ├─ 6. ★ Guardrails 输入护栏 (GuardrailEvaluator.RunInputGuardrails)
+  │     → 对 input phase 的规则逐条评估
+  │     → flagged + action=block → 返回 400 拒绝请求
+  │     → flagged + action=log → 记录但放行
+  │     → 异步写入评估结果到 guardrail_results 表
   │
-  ├─ 7. 路由决策 (resolveBackend)
+  ├─ 7. 查库获取模型配置 (ModelService.GetModelByName)
+  │
+  ├─ 8. 融合调度路由 (resolveBackend)
   │     ├─ VendorTypeHybrid  → handleHybridChat (智能分发 + 故障转移)
   │     ├─ VendorTypeProvider → handleProviderChat (HTTP 代理)
   │     └─ VendorTypeDeepNode → NodeRouter.Route → gRPC 转发
   │
-  ├─ 8. 响应转换
+  ├─ 9. 响应转换
   │     ├─ DeepNode: gRPC proto → OpenAI JSON
   │     └─ Provider: 上游 JSON → 改写 model 字段 → 透传
   │
-  └─ 9. 异步用量记录
+  ├─ 10. ★ Guardrails 输出护栏 (GuardrailEvaluator.RunOutputGuardrails)
+  │      → 对 output phase 的规则逐条评估
+  │      → flagged + action=block → 替换响应为安全提示
+  │      → flagged + action=log → 记录但正常返回
+  │      → 注意: 启用输出护栏时自动禁用流式响应
+  │
+  ├─ 11. ★ Trace 日志记录 (TraceMatcher.Match → TraceWriter.Write)
+  │      → TraceMatcher 内存缓存匹配 (api_key_id + model_name)
+  │      → 匹配成功 → 异步写入完整请求/响应到用户外部 DB
+  │      → best-effort: 写入失败仅记录日志，不阻塞响应
+  │
+  └─ 12. 异步用量记录
         ├─ IncrQuotaUsed (更新配额)
         ├─ RecordTokens (更新 TPM 计数器)
         └─ InferLogService.RecordGatewayUsage (写 token_usage_daily 表)
@@ -267,6 +335,78 @@ RateLimiter
 ├── TPM (Tokens/Min): 请求前检查是否超限; 请求完成后记录实际消耗
 └── 线程安全: sync.RWMutex + 分桶计数
 ```
+
+---
+
+### 4.3.4 Guardrails — 安全护栏
+
+Guardrails 是网关的内容安全层，基于 LLM 对请求输入和模型输出进行实时安全评估。
+
+#### 架构设计
+
+```
+GuardrailEvaluator
+├── 按 API Key 维度配置护栏规则
+├── 支持两个执行阶段:
+│     ├─ input  (请求前): 评估用户输入内容
+│     └─ output (响应后): 评估模型输出内容
+├── 两种动作策略:
+│     ├─ block: 标记为危险时阻断请求/替换响应
+│     └─ log:   标记为危险时仅记录，不影响请求流程
+├── 评估方式: 自引用 Gateway 调用 LLM 模型进行内容评估
+├── 评估结果: {flagged, confidence, reason} JSON 结构
+└── 异步存储: 评估结果异步写入 guardrail_results 表
+```
+
+#### 关键特性
+
+| 特性 | 说明 |
+|------|------|
+| **LLM 驱动评估** | 使用用户配置的评估模型 + 自定义 Prompt 进行内容安全判断 |
+| **双阶段护栏** | 输入阶段拦截危险请求，输出阶段审计模型响应 |
+| **流式自动禁用** | 启用输出护栏时自动禁用流式响应，等待完整响应后评估 |
+| **超时保护** | 单次评估 15s 超时，最多重试 1 次 |
+| **异步存储** | 评估结果异步写入，不影响主请求延迟 |
+
+---
+
+### 4.3.5 Trace — 推理日志追踪
+
+Trace 功能在网关层实现完整的推理请求/响应日志采集，为后续的 AI 评估和分析提供数据基础。
+
+#### 架构设计
+
+```
+TraceMatcher (in-memory cache)
+├── 周期性从 DB 加载活跃 Trace 配置 (10s 间隔)
+├── 内存 map: api_key_id → []{trace_id, db_type, dsn, model_names}
+├── 匹配逻辑: api_key_id 存在 AND (模型列表为空 OR model_name 在列表中)
+└── 支持 ForceRefresh (Trace 状态变更时立即刷新)
+
+          │ 匹配成功
+          ▼
+TraceWriter (async, best-effort)
+├── 缓冲通道 (chan *TraceLogEntry, 解耦网关热路径)
+├── 多 Worker 并发消费
+├── 外部 DB 连接池 (sync.Map, 按 DSN 缓存)
+├── 支持 MySQL / PostgreSQL / ClickHouse
+└── 写入失败仅记录日志，不阻塞不重试
+```
+
+#### TraceLogEntry 字段
+
+| 字段 | 说明 |
+|------|------|
+| TraceID | 关联的 Trace 配置 ID |
+| RequestID | 请求唯一标识 |
+| APIKeyID / UserID | 调用方信息 |
+| ModelName | 使用的模型名称 |
+| UserQuery | 用户输入 (截断 200 字符) |
+| RequestBody / ResponseBody | 完整请求/响应 JSON |
+| IsStream / FirstTokenMs | 流式标识 / TTFT |
+| PromptTokens / CompletionTokens / ReasoningTokens | Token 用量明细 |
+| DurationMs | 请求总耗时 |
+| Success / ErrorMessage | 成功/失败状态 |
 
 ---
 
@@ -459,11 +599,7 @@ Gateway gRPC 请求到达 → 按 model 查找在线设备 (ConnectionHub.FindBy
       流式   → 返回 chan *StreamChunk, goroutine 转发 chunk
 ```
 
-### 4.7 Scheduler（规划中）
-
-当前仅有健康检查端点，规划用于 Token 流量调度与计费。
-
-### 4.8 公共模块
+### 4.7 公共模块
 
 | 模块 | 文件 | 职责 |
 |------|------|------|
@@ -820,36 +956,49 @@ elif Linux:
 
 从 Protobuf 定义到 HTTP 接口，全面对齐 OpenAI Chat Completions API。外部调用方无需任何适配即可接入，只需将 base_url 指向 DeepPool Manager。支持 function calling、streaming SSE、reasoning_content 等高级特性。
 
-### 10.2 模型三分类与统一路由
+### 10.2 模型三分类与统一融合调度
 
-系统将模型分为 `deepnode`（边缘设备）、`provider`（云端 API）、`hybrid`（混合调度）三种类型，通过统一的 Gateway 入口处理。调用方只需指定 model 名称，底层是边缘推理还是云端代理完全透明。这一设计使得：
-- **同一模型可同时有边缘和云端两个来源**（hybrid 类型实现自动 failover）
+系统将模型分为 `deepnode`（本地推理）、`provider`（云端 API）、`hybrid`（融合调度）三种类型，通过统一的 Gateway 入口处理。调用方只需指定 model 名称，底层是本地推理还是云端代理完全透明。这一设计使得：
+- **同一模型可同时有本地和云端两个来源**（hybrid 类型实现自动 failover）
 - **新增 provider 只需在管控台注册**，无需修改任何代码
 - **调用方体验一致**：无论实际后端是什么，API 行为和响应格式完全一致
 
-### 10.3 Hybrid 智能调度与故障转移
+### 10.3 Hybrid 融合调度与故障转移
 
 Hybrid 模型是生产环境的推荐做法，核心优势：
-- **条件路由**：根据请求特征（token 数、是否 FC、是否推理）自动选择最优子模型
+- **条件路由**：根据请求特征（token 数、是否 FC、是否推理、是否视觉）自动选择最优子模型
 - **Round-Robin 负载均衡**：同一组 targets 间轮询，避免单点压力
 - **自动 Failover**：首选子模型失败时自动切换到下一个，全部失败才返回 503
 - **YAML 策略可热更新**：路由策略存储在 DB，PolicyCache 每 10 秒 polling 同步，修改后 ~10 秒生效
 - **防递归保护**：子模型不允许也是 hybrid 类型，避免无限嵌套
 
-### 10.4 两层调度架构
+### 10.4 全链路 Token 治理
 
-推理请求经历两层调度，各层职责清晰：
+网关在请求全链路提供多层次治理能力：
 
 ```
-Layer 1 — Gateway (Manager 内)
+Layer 1 — 接入控制
+  职责: API Key 鉴权 + RPM/TPM 限流 + Token 配额
+  粒度: API Key 维度
+
+Layer 2 — 安全护栏 (Guardrails)
+  职责: 输入/输出内容安全评估
+  策略: LLM 驱动评估, 阻断/审计
+  粒度: API Key + 规则维度
+
+Layer 3 — 融合调度
   职责: 模型级路由 (deepnode/provider/hybrid)
   策略: 路由策略匹配 + Round-Robin + Failover
   粒度: 模型维度
 
-Layer 2 — NodeManager (DispatchService)
-  职责: 设备级调度 (哪台设备执行)
-  策略: Least Connections + 轮询打散
-  粒度: 设备维度
+Layer 4 — 追踪与评估 (Trace + AI Judge)
+  职责: 完整日志采集 + AI 自动评测 + 人工标注
+  策略: 异步 best-effort 写入用户外部 DB
+  粒度: API Key + 模型维度
+
+Layer 5 — 用量统计
+  职责: Token 用量日汇总 + 阶梯计费 + 成本分析
+  粒度: API Key + 模型 + 日期
 ```
 
 ### 10.5 gRPC 双向流隧道
@@ -893,20 +1042,20 @@ Function Call 解析采用注册表架构，每种模型（GLM/Kimi/DeepSeek/Qwe
 
 ```
 1. gen_proto    → protoc 生成 Go + Python 的 protobuf/gRPC 代码
-2. build_platform → go build 编译三个微服务 + npm build 编译管控前端
-3. build_deepnode → PyInstaller 打包 Python → cargo tauri build 生成桌面安装包
+2. build_backend → go build 编译平台微服务 (manager, nodemanager, experiment)
+3. build_portal_web / build_control_web → npm build 编译前端
 ```
 
 ### 11.2 开发模式 (dev.sh)
 
-同时启动所有组件：Manager + Scheduler + NodeManager + LocalServer + Tauri Dev
+同时启动所有组件：Manager + NodeManager + Experiment + LocalServer + Tauri Dev
 
 ### 11.3 远程部署 (deploy_dev.sh)
 
 ```
 交叉编译 linux/amd64 (CGO_ENABLED=0)
  → SCP 上传至 root@<server>:/opt/deeppool/
- → nohup 启动三个服务
+ → nohup 启动后端服务
  → 健康检查验证
 ```
 
@@ -916,6 +1065,5 @@ Function Call 解析采用注册表架构，每种模型（GLM/Kimi/DeepSeek/Qwe
 |------|------|
 | `run_platformserver.sh manager` | 单独启动 Manager |
 | `run_platformserver.sh nodemanager` | 单独启动 NodeManager |
-| `run_platformserver.sh scheduler` | 单独启动 Scheduler |
 | `run_platformweb.sh` | 单独启动管控前端 (Vite dev server) |
 | `run_client.sh` | 启动 DeepNode（Python LocalServer + Tauri Dev） |

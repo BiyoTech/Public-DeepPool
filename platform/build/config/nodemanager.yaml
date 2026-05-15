@@ -3,19 +3,22 @@ server:
   grpc_addr: ":9092"
   tls:
     enabled: true
-    cert_file: "/etc/letsencrypt/live/test.deeppool.tech/fullchain.pem"
-    key_file: "/etc/letsencrypt/live/test.deeppool.tech/privkey.pem"
+    cert_file: "/etc/ssl/deeppool/deeppool.tech.pem"
+    key_file: "/etc/ssl/deeppool/deeppool.tech.key"
     skip_verify: false
 
 log:
   level: "info"
 
 mysql:
-  host: "127.0.0.1"
+  host: "rm-f8z04393v8584kubu.mysql.rds.aliyuncs.com"
   port: 3306
-  user: "root"
-  password: "root@123"
+  user: "deeppool"
+  password: "AliRoot@123"
   database: "deeppool"
+  max_open_conns: 20
+  max_idle_conns: 10
+  conn_max_lifetime_minutes: 30
 
 # Stream-level liveness timeouts shared with the Gateway. Applied to:
 #   - NodeManager DispatchStream (DeepNode chunk channel)

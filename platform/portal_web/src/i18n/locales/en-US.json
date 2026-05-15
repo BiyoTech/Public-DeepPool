@@ -25,61 +25,59 @@
   },
   "home": {
     "hero": {
-      "title": "LLM Inference Fusion Scheduling Platform",
-      "tag_cost": "Low Cost",
-      "tag_reliable": "High Reliability",
-      "tag_api": "Unified API Standard",
-      "subtitle": "Fusing edge devices with cloud APIs through intelligent scheduling for cost-effective, reliable LLM inference",
-      "cta_provider": "Earn by Sharing Power",
+      "title": "AI Fusion Gateway & Token Governance",
+      "tag_gateway": "Unified Gateway",
+      "tag_governance": "Token Governance",
+      "tag_guardrails": "Guardrails",
+      "tag_trace": "Trace & Eval",
+      "tag_local": "Local Inference",
+      "subtitle": "One API to access all LLMs — fusion scheduling, guardrails, trace & evaluation, and token governance in one gateway",
       "cta_consumer": "Use API",
-      "cta_custom_hybrid": "Custom Hybrid Models",
+      "cta_custom_hybrid": "Custom Scheduling",
+      "cta_docs": "Documentation",
       "welcome": "Welcome back, {name}"
     },
     "features": {
-      "title": "Why DeepPool",
-      "subtitle": "Multi-model hybrid scheduling + edge computing pooling — every inference faster, cheaper, and more reliable",
-      "cost": {
-        "title": "Extreme Cost Efficiency",
-        "desc": "Aggregate idle edge device power with on-demand cloud APIs. Cut inference costs 50%+ vs pure cloud — small models run locally, large models scale to cloud"
-      },
-      "smart": {
-        "title": "Smart Model Selection",
-        "desc": "Hybrid routing engine auto-matches the optimal model based on request features: context length, reasoning needs, and function calling — no manual switching"
-      },
-      "reliable": {
-        "title": "Multi-Model Failover",
-        "desc": "Hybrid mode auto-failover across child models: when the primary is unavailable, seamlessly switch to backup in milliseconds for 24/7 availability"
-      },
-      "api": {
-        "title": "OpenAI-Compatible API",
-        "desc": "Fully compatible with OpenAI Chat Completions API. Supports streaming, Function Calling, and Reasoning Content — zero migration for existing SDKs"
+      "title": "Five Core Capabilities",
+      "subtitle": "Fusion scheduling · Custom strategies · Trace & eval · Guardrails · Local inference — all-in-one AI gateway",
+      "gateway": {
+        "title": "Multi-Model Fusion Gateway",
+        "desc": "One API endpoint to access GPT, Claude, DeepSeek, Qwen, GLM and all major LLMs. Supports cloud API proxy, local inference, and hybrid scheduling — fully transparent to callers"
       },
       "custom_routing": {
-        "title": "Custom Model Routing",
-        "desc": "Users can define custom Hybrid models via YAML, with flexible conditional routing rules based on context length, tool usage, vision content, and more"
+        "title": "Custom Scheduling Strategies",
+        "desc": "Define flexible Hybrid routing rules via YAML config. Route by context length, Function Call, vision content, reasoning needs and more, with Round-Robin load balancing + auto failover"
       },
-      "global_models": {
-        "title": "Global Leading Models",
-        "desc": "Integrates top models worldwide — GPT, Claude, DeepSeek, Qwen, GLM, Kimi and more — accessible through a unified API with continuous updates"
+      "trace": {
+        "title": "Request Trace, AI Eval & Analysis",
+        "desc": "Full request/response logging, manual feedback & expected output annotation, AI Judge auto-evaluation of model output quality — data-driven continuous optimization"
+      },
+      "guardrails": {
+        "title": "Guardrails",
+        "desc": "LLM-powered input/output content safety evaluation. Supports pre-request blocking and post-response auditing with configurable block or log-only policies for AI safety compliance"
+      },
+      "deepnode": {
+        "title": "DeepNode Local Inference",
+        "desc": "Download and install DeepNode client to deploy Qwen, Gemma and other open-source models locally. Leverage local GPU / Apple Silicon for inference — data stays local, zero cost"
       }
     },
     "arch": {
-      "title": "How It Works",
-      "subtitle": "One API endpoint, three model sources, intelligent routing picks the optimal path",
+      "title": "Gateway Workflow",
+      "subtitle": "One API endpoint, five layers of capability, full-chain governance from request to response",
       "step1_label": "Send Request",
-      "step1_desc": "OpenAI SDK call",
-      "step2_label": "Gateway Auth",
-      "step2_desc": "API Key + Rate Limit + Quota",
-      "step3_label": "Smart Routing",
+      "step1_desc": "OpenAI-Compatible API",
+      "step2_label": "Auth & Guard",
+      "step2_desc": "API Key + Rate Limit + Guardrails",
+      "step3_label": "Fusion Route",
       "step3_desc": "Condition match + Load balance",
-      "step4_label": "Inference",
-      "step4_desc": "Edge device / Cloud API",
-      "vt_deepnode_title": "Edge Device Inference",
-      "vt_deepnode_desc": "Mac M-series / Linux GPU local execution, low latency, zero data egress",
+      "step4_label": "Infer & Trace",
+      "step4_desc": "Execute inference + Trace logging",
+      "vt_deepnode_title": "DeepNode Local Inference",
+      "vt_deepnode_desc": "Deploy Qwen, Gemma models locally on Mac / Linux GPU",
       "vt_provider_title": "Cloud API Proxy",
-      "vt_provider_desc": "OpenAI, Qianfan and other cloud LLMs, on-demand, unlimited capacity",
-      "vt_hybrid_title": "Hybrid Smart Dispatch",
-      "vt_hybrid_desc": "Multi-model combo: condition routing + round-robin + auto failover"
+      "vt_provider_desc": "GPT / Claude / DeepSeek and other cloud LLMs, on-demand",
+      "vt_hybrid_title": "Hybrid Fusion Scheduling",
+      "vt_hybrid_desc": "Multi-model combo, custom strategies + auto failover"
     },
     "stats": {
       "title": "Platform Stats",
@@ -89,30 +87,26 @@
     },
     "quickstart": {
       "title": "Quick Start",
-      "provider": {
-        "title": "Computing Provider",
-        "desc": "Share your idle device power, join the distributed inference network, earn token-based income",
-        "step1": "Register and log in to the platform",
-        "step2": "Download and install DeepNode client",
-        "step3": "One-click start, auto-join the pool and start earning",
-        "cta": "Sign Up Now"
-      },
       "consumer": {
-        "title": "API Consumer",
-        "desc": "Access multi-model LLM inference via standard OpenAI-compatible API",
+        "title": "API Integration",
+        "desc": "Access all major LLMs through a standard OpenAI-compatible API with one endpoint",
         "step1": "Register and create your API Key",
         "step2": "Use OpenAI SDK or HTTP, point to DeepPool endpoint",
-        "step3": "Hybrid mode auto-selects the best model, pay-per-use",
+        "step3": "Fusion scheduling auto-selects the best model, pay-per-use",
         "cta": "Sign Up Now"
       },
-      "custom_hybrid": {
-        "title": "Custom Hybrid Models",
-        "desc": "Combine multiple models into a smart-routing endpoint via YAML config"
+      "deepnode": {
+        "title": "Local Inference",
+        "desc": "Download DeepNode client to deploy Qwen, Gemma and other open-source models locally",
+        "step1": "Register and log in to the platform",
+        "step2": "Download and install DeepNode client",
+        "step3": "Select a model, one-click deploy, zero-cost local inference",
+        "cta": "Download DeepNode"
       }
     }
   },
   "footer": {
-    "desc": "LLM inference computing power fusion scheduling platform",
+    "desc": "AI Fusion Gateway & Token Governance Platform",
     "nav_title": "Navigation",
     "contact_title": "Contact Us",
     "copyright": "© 2025 DeepPool. All rights reserved."
@@ -237,12 +231,77 @@
       "copy_failed": "Copy failed, please try again",
       "copy_no_cache": "Full key not available, please create a new key and copy it",
       "quota_unlimited": "Quota: unlimited",
-      "edit_limit": "Edit"
+      "edit_limit": "Edit",
+      "edit_rate_limit_title": "Edit Rate Limit",
+      "limit_updated": "Rate limit updated",
+      "tab_settings": "Settings",
+      "tab_data": "Data",
+      "tab_guardrails": "Guardrails",
+      "detail_name": "Name",
+      "detail_rate_limit": "Rate Limit",
+      "detail_rate_limit_hint": "0 means unlimited",
+      "detail_quota": "Quota",
+      "save": "Save",
+      "name_updated": "Name updated",
+      "guardrails_title": "Guardrails",
+      "guardrails_coming_soon": "Input/output content safety guardrails coming soon",
+      "guardrails_empty": "No guardrail rules configured yet",
+      "guardrails_add": "Add Guardrail",
+      "guardrails_create_title": "Create Guardrail",
+      "guardrails_edit_title": "Edit Guardrail",
+      "guardrails_name": "Name",
+      "guardrails_name_placeholder": "Enter guardrail name",
+      "guardrails_phase": "Phase",
+      "guardrails_phase_input": "Input",
+      "guardrails_phase_output": "Output",
+      "guardrails_action": "Action",
+      "guardrails_action_block": "Block",
+      "guardrails_action_log": "Log Only",
+      "guardrails_prompt": "Evaluation Prompt",
+      "guardrails_prompt_placeholder": "Describe the evaluation criteria for the LLM evaluator...",
+      "guardrails_template": "Built-in Template",
+      "guardrails_template_custom": "Custom",
+      "guardrails_evaluator_model": "Evaluator Model",
+      "guardrails_evaluator_model_placeholder": "Select model for evaluation",
+      "guardrails_evaluator_apikey": "Evaluator API Key",
+      "guardrails_evaluator_apikey_placeholder": "Select API Key for evaluator",
+      "guardrails_storage_type": "Result Storage",
+      "guardrails_storage_builtin": "Built-in Database",
+      "guardrails_storage_external": "External Database",
+      "guardrails_db_type": "Database Type",
+      "guardrails_db_host": "Host",
+      "guardrails_db_port": "Port",
+      "guardrails_db_user": "Username",
+      "guardrails_db_password": "Password",
+      "guardrails_db_name": "Database Name",
+      "guardrails_created": "Guardrail created",
+      "guardrails_updated": "Guardrail updated",
+      "guardrails_deleted": "Guardrail deleted",
+      "guardrails_enabled": "Enabled",
+      "guardrails_disabled": "Disabled",
+      "guardrails_confirm_delete": "Are you sure you want to delete this guardrail?",
+      "guardrails_results_tab": "Results",
+      "guardrails_results_empty": "No evaluation results yet",
+      "guardrails_results_request_id": "Request ID",
+      "guardrails_results_flagged": "Flagged",
+      "guardrails_results_confidence": "Confidence",
+      "guardrails_results_blocked": "Blocked",
+      "guardrails_results_duration": "Duration",
+      "guardrails_results_time": "Time",
+      "guardrails_results_reason": "Reason",
+      "guardrails_output_stream_warning": "Enabling an Output guardrail will disable streaming (stream=true) for all requests using this API Key. Responses will be returned in full after guardrail evaluation completes.",
+      "guardrails_output_stream_notice": "This API Key has Output guardrails enabled. Streaming responses are automatically disabled.",
+      "chart_requests": "Requests",
+      "chart_tokens": "Total Tokens",
+      "chart_prompt_tokens": "Prompt Tokens",
+      "chart_completion_tokens": "Completion Tokens",
+      "chart_users": "Users"
     },
    "mymodels": {
       "title": "My Models",
       "empty": "No models created yet",
-      "create": "Create Model"
+      "create": "Create Model",
+      "create_custom": "Custom Model"
     },
     "params": {
       "title": "Inference Params",
