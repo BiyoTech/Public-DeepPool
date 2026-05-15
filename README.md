@@ -1,5 +1,6 @@
 <p align="center">
   <h1 align="center"><img src="platform/portal_web/public/logo-28.png" alt="DeepPool Logo" width="36" valign="middle"> DeepPool</h1>
+  <p align="center"><img src="social_publish_log.png" alt="DeepPool" width="600" valign="middle"></p>
   <p align="center">
     <strong>AI Orchestration Gateway & Token Governance Platform</strong>
   </p>
