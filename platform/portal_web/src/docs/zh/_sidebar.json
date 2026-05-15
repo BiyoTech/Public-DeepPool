@@ -4,7 +4,6 @@
     "children": [
       { "title": "DeepPool 介绍", "path": "getting-started/introduction" },
       { "title": "算力提供者指南", "path": "getting-started/quickstart-provider" },
-      { "title": "API 使用者指南", "path": "getting-started/quickstart-consumer" },
       { "title": "自定义 Hybrid 模型", "path": "getting-started/custom-hybrid-model" }
     ]
   },
@@ -20,6 +19,12 @@
     "title": "API 参考",
     "children": [
       { "title": "OpenAI 兼容 API", "path": "api-reference/openai-compatible" }
+    ]
+  },
+  {
+    "title": "评估分析",
+    "children": [
+      { "title": "评估分析使用指南", "path": "experiment/experiment-guide" }
     ]
   },
   {

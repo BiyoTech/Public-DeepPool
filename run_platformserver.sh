@@ -18,10 +18,6 @@ case "$COMPONENT" in
     echo "启动 manager 服务... (log_level=$DEEPPOOL_LOG_LEVEL)"
     go run ./cmd/manager
     ;;
-  scheduler)
-    echo "启动 scheduler 服务... (log_level=$DEEPPOOL_LOG_LEVEL)"
-    go run ./cmd/scheduler
-    ;;
   nodemanager)
     echo "启动 nodemanager 服务... (region=${DEEPPOOL_REGION:-default}, log_level=$DEEPPOOL_LOG_LEVEL)"
     go run ./cmd/nodemanager
@@ -31,7 +27,7 @@ case "$COMPONENT" in
     go run ./cmd/experiment
     ;;
   *)
-    echo "用法: $0 [manager|scheduler|nodemanager|experiment]"
+    echo "用法: $0 [manager|nodemanager|experiment]"
     exit 1
     ;;
 esac

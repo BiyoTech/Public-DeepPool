@@ -45,6 +45,17 @@
           <p class="text-[10px] text-slate-400 mt-1">
             {{ form.vendorType === 'hybrid' ? 'Hybrid: intelligent routing across multiple child models' : 'Provider: register your own API endpoint (free of charge)' }}
           </p>
+          <router-link
+            v-if="form.vendorType === 'hybrid'"
+            to="/docs/getting-started/custom-hybrid-model"
+            class="inline-flex items-center gap-1 mt-1.5 text-[11px] text-blue-500 hover:text-blue-600 transition"
+            @click.stop
+          >
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
+            </svg>
+            Learn about Hybrid models →
+          </router-link>
         </div>
 
         <!-- Display Name (create only) -->

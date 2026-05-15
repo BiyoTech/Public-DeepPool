@@ -46,12 +46,26 @@ dist/
 *.pem
 *.key
 
+# Sensitive: certificates, production/test configs (excluded for open-source)
+platform/ssl_cert/
+platform/wechat_pay_cert/
+platform/alipay_cert/
+platform/config_prod/
+platform/config_test/
+
+# Real config files with secrets — only .example files are tracked
+platform/config/manager.yaml
+platform/config/nodemanager.yaml
+platform/config/experiment.yaml
+platform/config/scheduler.yaml
+
 # Archives / large files
 *.tar.gz
 *.zip
 
-# CodeBuddy
 .codebuddy/
+.claude/
+.codex/
 .idea/
 manager
 nodemanager

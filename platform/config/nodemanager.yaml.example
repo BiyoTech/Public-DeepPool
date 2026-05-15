@@ -1,0 +1,23 @@
+server:
+  addr: ":8082"
+  grpc_addr: ":9092"
+  tls:
+    enabled: false
+    cert_file: ""
+    key_file: ""
+    skip_verify: false
+
+log:
+  level: "debug"
+
+mysql:
+  host: "127.0.0.1"
+  port: 3306
+  user: "root"
+  password: "YOUR_MYSQL_PASSWORD"
+  database: "deeppool"
+
+# Stream-level liveness timeouts shared with the Gateway.
+stream_timeouts:
+  first_token_timeout_seconds: 10
+  inter_chunk_idle_timeout_seconds: 20

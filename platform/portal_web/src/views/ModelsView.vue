@@ -12,7 +12,7 @@
           class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition shadow-sm"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-          Create Custom Model
+          {{ $t('service.mymodels.create_custom') }}
         </button>
       </div>
 
@@ -75,7 +75,7 @@
           @click="showCreateDialog = true"
           class="inline-flex items-center gap-1 mt-4 text-sm text-blue-600 hover:text-blue-700"
         >
-          Create your first custom model →
+          {{ $t('service.mymodels.create_custom') }} →
         </button>
       </div>
 
@@ -95,7 +95,19 @@
             >
               {{ vendorLabel(model.vendor_type) }}
             </span>
-            <span v-if="model._isCustom" class="text-[10px] text-violet-500 font-medium">Custom</span>
+            <div class="flex items-center gap-1.5">
+              <button
+                v-if="model._isCustom"
+                class="p-1 rounded-md text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-blue-50 hover:text-blue-600 transition-all"
+                title="Edit"
+                @click.stop="openEdit(model)"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/>
+                </svg>
+              </button>
+              <span v-if="model._isCustom" class="text-[10px] text-violet-500 font-medium">Custom</span>
+            </div>
           </div>
 
           <!-- Model Name -->
@@ -269,11 +281,20 @@
       />
     </Transition>
 
-    <!-- Custom Model Create Dialog (reusable component) -->
+    <!-- Custom Model Create Dialog -->
     <CustomModelDialog
       :visible="showCreateDialog"
       :custom-models="rawCustomModels"
       @close="showCreateDialog = false"
+      @saved="onCustomModelSaved"
+    />
+
+    <!-- Custom Model Edit Dialog -->
+    <CustomModelDialog
+      :visible="showEditDialog"
+      :editing-model="editingCustomModel"
+      :custom-models="rawCustomModels"
+      @close="showEditDialog = false; editingCustomModel = null"
       @saved="onCustomModelSaved"
     />
   </div>
@@ -296,7 +317,8 @@ interface DisplayModel {
   price_range?: PriceRange
   tags?: string[]
   _isCustom: boolean
-  _displayName: string // user-friendly name for custom models
+  _displayName: string
+  _customModelId?: number // custom model ID for edit lookup
 }
 
 const loading = ref(true)
@@ -308,6 +330,8 @@ const activeVendorFilter = ref('all')
 const activeSourceFilter = ref('all')
 const detailModel = ref<DisplayModel | null>(null)
 const showCreateDialog = ref(false)
+const editingCustomModel = ref<CustomModel | null>(null)
+const showEditDialog = ref(false)
 
 const sourceFilters = [
   { label: 'All', value: 'all' },
@@ -383,6 +407,7 @@ async function fetchModels() {
         tags: cm.tags || [],
         _isCustom: true,
         _displayName: cm.display_name || cm.model_name,
+        _customModelId: cm.id,
       }))
   } catch {
     presetModels.value = []
@@ -395,6 +420,15 @@ async function fetchModels() {
 
 function openDetail(model: DisplayModel) {
   detailModel.value = model
+}
+
+// Open edit drawer for a custom model
+function openEdit(model: DisplayModel) {
+  if (!model._isCustom || !model._customModelId) return
+  const raw = rawCustomModels.value.find(cm => cm.id === model._customModelId)
+  if (!raw) return
+  editingCustomModel.value = raw
+  showEditDialog.value = true
 }
 
 function vendorLabel(vt: string): string {
@@ -419,6 +453,7 @@ function formatCtx(value: number): string {
 
 // Called when CustomModelDialog saves successfully — refresh the list.
 function onCustomModelSaved() {
+  editingCustomModel.value = null
   fetchModels()
 }
 

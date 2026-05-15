@@ -1,0 +1,135 @@
+# ============================================================================
+# Hybrid Routing Policy: 5-Model Global Flagship Mix
+# ============================================================================
+#
+# Child models (registered as Provider sub-models):
+#   1. qwen3.6-plus          — cheapest, 1M ctx, tool-call, MoE 72B/18B active
+#   2. ernie-5.0              — 128K ctx, native omni-modal (vision+audio+video), tool-call
+#   3. kimi-k2.6              — 256K ctx, native multi-modal (vision+video), agent-strong
+#   4. gpt-5.4                — 1M ctx, vision, tool-call, balanced price
+#   5. gpt-5.5                — 1M ctx, strongest overall, tool-call, 40% token efficiency
+#
+# ┌───────────────────┬──────────┬──────────┬────────────────────────────────────┐
+# │ Model             │ Context  │ Vision   │ Pricing ($/M tokens, in→out)       │
+# ├───────────────────┼──────────┼──────────┼────────────────────────────────────┤
+# │ qwen3.6-plus      │ 1M       │ ❌       │ $0.30 → $1.80  (≤256K) 💰cheapest │
+# │ ernie-5.0         │ 128K     │ ✅ omni  │ $0.86 → $1.43  (≤32K input)       │
+# │                   │          │          │ $1.43 → $5.71  (32K-128K)         │
+# │ kimi-k2.6         │ 256K     │ ✅ img+vid│ $0.95 → $4.00  (cache miss)       │
+# │ gpt-5.4           │ 1M       │ ✅       │ $2.50 → $15.00                    │
+# │ gpt-5.5           │ 1M       │ ✅       │ $5.00 → $30.00 (most expensive)   │
+# └───────────────────┴──────────┴──────────┴────────────────────────────────────┘
+#
+# Routing philosophy:
+#   - Cost-first: default to cheapest (qwen3.6-plus)
+#   - Vision/multi-modal → ernie-5.0 (omni) or kimi-k2.6 (img+video)
+#   - Ultra-long context >256K → qwen3.6-plus / gpt-5.4 / gpt-5.5 (only these have 1M)
+#   - Heavy agent/tool-calling → kimi-k2.6 (agent-specialized) → gpt-5.5
+#   - Deep reasoning → gpt-5.5 (strongest) → gpt-5.4 → ernie-5.0
+#   - Short simple → qwen3.6-plus (cheapest)
+# ============================================================================
+
+load_balance: least-inflight
+max_inflight_per_deepnode_child: 2
+
+rules:
+  # ── Rule 1: Vision requests (image/video in last user message) ──
+  # ernie-5.0 is the cheapest with vision; kimi-k2.6 supports image+video natively.
+  # GPT-5.4/5.5 also support vision but are much more expensive.
+  - name: "vision_requests"
+    condition:
+      has_vision: true
+    targets:
+      - "ernie-5.0"
+      - "kimi-k2.6"
+      - "gpt-5.4"
+      - "gpt-5.5"
+
+  # ── Rule 2: Ultra-long context >256K ──
+  # Only qwen3.6-plus, gpt-5.4, gpt-5.5 support 1M context.
+  # ernie-5.0 (128K) and kimi-k2.6 (256K) cannot handle this.
+  - name: "ultra_long_context_gt_256k"
+    condition:
+      min_input_tokens: 256001
+    targets:
+      - "qwen3.6-plus"
+      - "gpt-5.4"
+      - "gpt-5.5"
+
+  # ── Rule 3: Long context 128K-256K ──
+  # ernie-5.0 is capped at 128K, exclude it.
+  - name: "long_context_128k_to_256k"
+    condition:
+      min_input_tokens: 128001
+      max_input_tokens: 256000
+    targets:
+      - "qwen3.6-plus"
+      - "kimi-k2.6"
+      - "gpt-5.4"
+
+  # ── Rule 4: Deep reasoning (enable_thinking=true) ──
+  # gpt-5.5 is strongest; ernie-5.0 has thinking mode; gpt-5.4 as fallback.
+  # qwen3.6-plus also supports thinking chain.
+  - name: "reasoning_tasks"
+    condition:
+      has_reasoning: true
+    targets:
+      - "gpt-5.5"
+      - "ernie-5.0"
+      - "gpt-5.4"
+      - "qwen3.6-plus"
+
+  # ── Rule 5: Heavy agent/tool-calling (≥3 tools) ──
+  # kimi-k2.6 is specialized for multi-step agent workflows.
+  # gpt-5.5 excels at tool-use (+8pp over 5.4 on MCP Atlas).
+  - name: "heavy_tool_calling"
+    condition:
+      has_tools: true
+      min_tool_count: 3
+    targets:
+      - "kimi-k2.6"
+      - "gpt-5.5"
+      - "qwen3.6-plus"
+
+  # ── Rule 6: Simple tool-calling (1-2 tools) ──
+  # Prefer cheapest models that support function-call.
+  - name: "simple_tool_calling"
+    condition:
+      has_tools: true
+      max_tool_count: 2
+    targets:
+      - "qwen3.6-plus"
+      - "ernie-5.0"
+      - "kimi-k2.6"
+
+  # ── Rule 7: Short simple requests (≤2000 tokens, no tools) ──
+  # Route to cheapest model.
+  - name: "short_simple_requests"
+    condition:
+      max_input_tokens: 2000
+      has_tools: false
+    targets:
+      - "qwen3.6-plus"
+      - "ernie-5.0"
+
+  # ── Rule 8: Medium context general (2K-128K, no tools, no reasoning) ──
+  # Cost-optimized ordering for standard text tasks.
+  - name: "medium_context_general"
+    condition:
+      min_input_tokens: 2001
+      max_input_tokens: 128000
+      has_tools: false
+      has_reasoning: false
+    targets:
+      - "qwen3.6-plus"
+      - "ernie-5.0"
+      - "kimi-k2.6"
+
+# ── Default fallback ──
+# Cost-ascending order: cheapest first, premium last.
+default_targets:
+  - "qwen3.6-plus"
+  - "ernie-5.0"
+  - "kimi-k2.6"
+  - "gpt-5.4"
+  - "gpt-5.5"

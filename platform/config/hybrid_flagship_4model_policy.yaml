@@ -1,0 +1,108 @@
+# ============================================================================
+# Hybrid Routing Policy: 4-Model Flagship Mix
+# ============================================================================
+#
+# Child models (must be registered as Provider sub-models):
+#   1. deepseek-v3.2        — cost leader, 128K ctx, tool-call+reasoning
+#   2. deepseek-v4-pro      — 1M ctx, strongest reasoning, 2.5x promo pricing
+#   3. qwen3.6-max-preview  — 262K ctx, top-tier agent/coding, mid-high price
+#   4. glm-5.1              — 200K ctx, strong coding, function-call, expensive
+#
+# ┌─────────────────────────┬──────────┬───────────────────────────────────────┐
+# │ Model                   │ Context  │ Pricing (¥/M tokens, input→output)    │
+# ├─────────────────────────┼──────────┼───────────────────────────────────────┤
+# │ deepseek-v3.2           │ 128K     │ ~2.0 → ~3.0  (cheapest)              │
+# │ deepseek-v4-pro (promo) │ 1M       │ 3.0 → 6.0    (2.5折, til 2026/05/31)│
+# │ qwen3.6-max-preview     │ 262K     │ ~9.0 → ~54.0 (≤128K) / higher >128K │
+# │ glm-5.1                 │ 200K     │ 6.0 → 24.0   (most expensive)        │
+# └─────────────────────────┴──────────┴───────────────────────────────────────┘
+#
+# Routing philosophy:
+#   - Short/simple requests  → cheapest model (deepseek-v3.2)
+#   - Vision requests        → models with vision support (none of these 4 has
+#                              native vision; consider adding a VL sub-model)
+#   - Ultra-long context     → deepseek-v4-pro (only one with 1M ctx)
+#   - Long context (>128K)   → glm-5.1 or qwen3.6-max-preview
+#   - Tool-calling / agent   → deepseek-v3.2 (cheap) → qwen3.6 (stronger)
+#   - Deep reasoning         → deepseek-v4-pro → glm-5.1 (both support thinking)
+#   - Default                → cost-optimized ordering
+# ============================================================================
+
+load_balance: least-inflight
+max_inflight_per_deepnode_child: 2
+
+rules:
+  # ── Rule 1: Ultra-long context (>128K tokens) ──
+  # Only deepseek-v4-pro (1M), qwen3.6-max-preview (262K), glm-5.1 (200K)
+  # can handle this. deepseek-v3.2 is capped at 128K.
+  # Prefer v4-pro (cheapest among the three for long ctx).
+  - name: "ultra_long_context_gt_128k"
+    condition:
+      min_input_tokens: 128001
+    targets:
+      - "deepseek-v4-pro"
+      - "qwen3.6-max-preview"
+      - "glm-5.1"
+
+  # ── Rule 2: Deep reasoning tasks ──
+  # When enable_thinking=true, route to models with strong reasoning.
+  # deepseek-v4-pro has the best reasoning at promo price;
+  # glm-5.1 also supports thinking mode.
+  - name: "reasoning_tasks"
+    condition:
+      has_reasoning: true
+    targets:
+      - "deepseek-v4-pro"
+      - "glm-5.1"
+      - "qwen3.6-max-preview"
+
+  # ── Rule 3: Heavy tool-calling (≥3 tools, likely agent workflow) ──
+  # qwen3.6-max-preview excels at agent/tool-use;
+  # deepseek-v3.2 is cheaper for simpler tool scenarios.
+  - name: "heavy_tool_calling"
+    condition:
+      has_tools: true
+      min_tool_count: 3
+    targets:
+      - "qwen3.6-max-preview"
+      - "deepseek-v4-pro"
+      - "deepseek-v3.2"
+
+  # ── Rule 4: Simple tool-calling (1-2 tools) ──
+  # Prefer cheaper deepseek-v3.2 for basic function-call scenarios.
+  - name: "simple_tool_calling"
+    condition:
+      has_tools: true
+      max_tool_count: 2
+    targets:
+      - "deepseek-v3.2"
+      - "qwen3.6-max-preview"
+
+  # ── Rule 5: Short simple requests (≤2000 tokens, no tools) ──
+  # Route to the cheapest model to minimize cost.
+  - name: "short_simple_requests"
+    condition:
+      max_input_tokens: 2000
+      has_tools: false
+    targets:
+      - "deepseek-v3.2"
+
+  # ── Rule 6: Medium context (2K-128K, no tools, no reasoning) ──
+  # General-purpose requests, cost-optimized ordering.
+  - name: "medium_context_general"
+    condition:
+      min_input_tokens: 2001
+      max_input_tokens: 128000
+      has_tools: false
+      has_reasoning: false
+    targets:
+      - "deepseek-v3.2"
+      - "deepseek-v4-pro"
+
+# ── Default fallback ──
+# When no rule matches, use cost-optimized ordering with full fallback chain.
+default_targets:
+  - "deepseek-v3.2"
+  - "deepseek-v4-pro"
+  - "qwen3.6-max-preview"
+  - "glm-5.1"
