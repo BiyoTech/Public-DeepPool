@@ -37,9 +37,25 @@ export interface ChangeEmailParams {
   code: string
 }
 
+export interface UpdateProfileParams {
+  username?: string
+  password?: string
+  email?: string
+}
+
 /** Login with account + password */
 export function loginApi(data: LoginParams) {
   return http.post('/users/login', data)
+}
+
+/** Get current user profile */
+export function getProfileApi() {
+  return http.get<{ code: number; data: any }>('/users/profile')
+}
+
+/** Update current user profile (username, password, email) */
+export function updateProfileApi(data: UpdateProfileParams) {
+  return http.put<{ code: number; data: any }>('/users/profile', data)
 }
 
 /** Login with email + verification code */

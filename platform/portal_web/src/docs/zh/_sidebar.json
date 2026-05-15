@@ -28,6 +28,12 @@
     ]
   },
   {
+    "title": "安全护栏",
+    "children": [
+      { "title": "安全护栏使用指南", "path": "guardrails/guardrails-guide" }
+    ]
+  },
+  {
     "title": "计费与用量",
     "children": [
       { "title": "计费说明", "path": "billing/pricing" }

@@ -110,17 +110,19 @@
                 </div>
               </div>
 
-              <!-- 底部链接 -->
+              <!-- Footer links -->
               <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
                 <router-link to="/data" class="text-xs text-dp-blue hover:text-dp-blue-dark transition-colors">
                   {{ $t('wallet.view_data') }}
                 </router-link>
-                <button
-                  class="text-xs text-dp-muted hover:text-dp-title transition-colors"
-                  @click="authStore.logout()"
-                >
-                  {{ $t('nav.logout') }}
-                </button>
+                <div class="flex items-center gap-3">
+                  <button class="text-xs text-dp-muted hover:text-dp-title transition-colors" @click="openProfileDialog">
+                    {{ $t('nav.settings') }}
+                  </button>
+                  <button class="text-xs text-dp-muted hover:text-dp-title transition-colors" @click="authStore.logout()">
+                    {{ $t('nav.logout') }}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -129,7 +131,81 @@
     </div>
   </header>
 
-  <!-- 主内容区域（导航栏高度偏移） -->
+  <!-- Profile Edit Dialog -->
+  <div v-if="showProfileDialog" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="text-lg font-bold text-dp-title">{{ $t('profile.title') }}</h3>
+        <button @click="closeProfileDialog" class="p-1 rounded-lg hover:bg-slate-100">
+          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Success toast inside dialog -->
+      <div v-if="profileSuccess" class="mb-4 px-4 py-2.5 rounded-lg bg-green-50 text-green-700 text-sm">{{ profileSuccess }}</div>
+      <!-- Error message -->
+      <div v-if="profileError" class="mb-4 px-4 py-2.5 rounded-lg bg-red-50 text-red-600 text-sm">{{ profileError }}</div>
+
+      <div class="space-y-5">
+        <!-- ── Section: Username ── -->
+        <div class="p-4 rounded-xl border border-slate-100 space-y-3">
+          <label class="text-xs font-medium text-dp-muted block">{{ $t('profile.username') }}</label>
+          <input v-model="pf.username" type="text"
+            class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-dp-body focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100" />
+          <button @click="handleSaveUsername" :disabled="profileSaving || !pf.username.trim() || pf.username === authStore.user?.username"
+            class="w-full py-2 rounded-lg bg-dp-blue text-white text-sm font-medium hover:bg-dp-blue-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+            {{ $t('profile.save') }}
+          </button>
+        </div>
+
+        <!-- ── Section: Change Email (requires verification code) ── -->
+        <div class="p-4 rounded-xl border border-slate-100 space-y-3">
+          <label class="text-xs font-medium text-dp-muted block">{{ $t('profile.change_email') }}</label>
+          <p class="text-[10px] text-dp-placeholder">{{ $t('profile.current_email') }}: {{ authStore.user?.email }}</p>
+          <input v-model="pf.newEmail" type="email" :placeholder="$t('profile.new_email_placeholder')"
+            class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-dp-body placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100" />
+          <div class="flex gap-2">
+            <input v-model="pf.emailCode" type="text" maxlength="6" :placeholder="$t('profile.code_placeholder')"
+              class="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm text-dp-body placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100" />
+            <button type="button" :disabled="emailCooldown > 0 || sendingEmailCode || !pf.newEmail.trim()" @click="handleSendEmailCode"
+              class="shrink-0 px-3 py-2 rounded-lg text-xs font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              :class="emailCooldown > 0 ? 'bg-slate-100 text-dp-muted' : 'bg-blue-50 text-dp-blue hover:bg-blue-100'">
+              {{ emailCooldown > 0 ? `${emailCooldown}s` : $t('profile.send_code') }}
+            </button>
+          </div>
+          <button @click="handleSaveEmail" :disabled="profileSaving || !pf.newEmail.trim() || !pf.emailCode.trim()"
+            class="w-full py-2 rounded-lg bg-dp-blue text-white text-sm font-medium hover:bg-dp-blue-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+            {{ $t('profile.save') }}
+          </button>
+        </div>
+
+        <!-- ── Section: Change Password (requires verification code to current email) ── -->
+        <div class="p-4 rounded-xl border border-slate-100 space-y-3">
+          <label class="text-xs font-medium text-dp-muted block">{{ $t('profile.change_password') }}</label>
+          <p class="text-[10px] text-dp-placeholder">{{ $t('profile.password_verify_hint') }}</p>
+          <div class="flex gap-2">
+            <input v-model="pf.pwdCode" type="text" maxlength="6" :placeholder="$t('profile.code_placeholder')"
+              class="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm text-dp-body placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100" />
+            <button type="button" :disabled="pwdCooldown > 0 || sendingPwdCode" @click="handleSendPwdCode"
+              class="shrink-0 px-3 py-2 rounded-lg text-xs font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              :class="pwdCooldown > 0 ? 'bg-slate-100 text-dp-muted' : 'bg-blue-50 text-dp-blue hover:bg-blue-100'">
+              {{ pwdCooldown > 0 ? `${pwdCooldown}s` : $t('profile.send_code') }}
+            </button>
+          </div>
+          <input v-model="pf.newPassword" type="password" :placeholder="$t('profile.new_password_placeholder')"
+            class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-dp-body placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100" />
+          <input v-model="pf.confirmPassword" type="password" :placeholder="$t('profile.confirm_password_placeholder')"
+            class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-dp-body placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100" />
+          <button @click="handleSavePassword" :disabled="profileSaving || !pf.pwdCode.trim() || !pf.newPassword.trim()"
+            class="w-full py-2 rounded-lg bg-dp-blue text-white text-sm font-medium hover:bg-dp-blue-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+            {{ $t('profile.save') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main content area -->
   <main class="pt-16 min-h-screen">
     <router-view />
   </main>
@@ -192,6 +268,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { getWallet } from '@/api/wallet'
 import { getUsageSummary } from '@/api/usage'
+import { updateProfileApi, sendEmailCodeApi, changeEmailApi, resetPasswordApi } from '@/api/auth'
 import LangSwitch from '@/components/LangSwitch.vue'
 import DeepPoolLogo from '@/components/DeepPoolLogo.vue'
 
@@ -262,5 +339,170 @@ function formatTokens(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M'
   if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K'
   return String(n)
+}
+
+// ── Profile edit dialog ──
+
+const showProfileDialog = ref(false)
+const profileSaving = ref(false)
+const profileError = ref('')
+const profileSuccess = ref('')
+
+const pf = reactive({
+  username: '',
+  // Email change
+  newEmail: '',
+  emailCode: '',
+  // Password change
+  pwdCode: '',
+  newPassword: '',
+  confirmPassword: '',
+})
+
+// Cooldown timers for verification codes
+const emailCooldown = ref(0)
+const pwdCooldown = ref(0)
+const sendingEmailCode = ref(false)
+const sendingPwdCode = ref(false)
+let emailCdTimer: ReturnType<typeof setInterval> | null = null
+let pwdCdTimer: ReturnType<typeof setInterval> | null = null
+
+function startCooldown(ref: typeof emailCooldown, timerRef: { value: ReturnType<typeof setInterval> | null }) {
+  ref.value = 60
+  if (timerRef.value) clearInterval(timerRef.value)
+  timerRef.value = setInterval(() => {
+    ref.value--
+    if (ref.value <= 0 && timerRef.value) {
+      clearInterval(timerRef.value)
+      timerRef.value = null
+    }
+  }, 1000)
+}
+
+function openProfileDialog() {
+  const u = authStore.user
+  pf.username = u?.username || ''
+  pf.newEmail = ''
+  pf.emailCode = ''
+  pf.pwdCode = ''
+  pf.newPassword = ''
+  pf.confirmPassword = ''
+  profileError.value = ''
+  profileSuccess.value = ''
+  showProfileDialog.value = true
+}
+
+function closeProfileDialog() {
+  showProfileDialog.value = false
+  profileError.value = ''
+  profileSuccess.value = ''
+}
+
+function clearMessages() {
+  profileError.value = ''
+  profileSuccess.value = ''
+}
+
+/** Save username via PUT /users/profile. */
+async function handleSaveUsername() {
+  clearMessages()
+  if (!pf.username.trim() || pf.username === authStore.user?.username) return
+  profileSaving.value = true
+  try {
+    const res = await updateProfileApi({ username: pf.username.trim() })
+    const updated = res.data?.data
+    if (updated) authStore.updateUser({ username: updated.username })
+    profileSuccess.value = t('profile.username_updated')
+  } catch (err: any) {
+    profileError.value = err?.response?.data?.message || err?.message || 'Update failed'
+  } finally {
+    profileSaving.value = false
+  }
+}
+
+/** Send verification code to the new email address. */
+async function handleSendEmailCode() {
+  clearMessages()
+  const email = pf.newEmail.trim()
+  if (!email) return
+  sendingEmailCode.value = true
+  try {
+    await sendEmailCodeApi({ email, purpose: 'change_email' })
+    startCooldown(emailCooldown, { value: emailCdTimer } as any)
+  } catch (err: any) {
+    const msg = err?.response?.data?.message || ''
+    if (msg.includes('already sent') || msg.includes('please wait')) {
+      startCooldown(emailCooldown, { value: emailCdTimer } as any)
+    }
+    profileError.value = msg || t('profile.send_code_failed')
+  } finally {
+    sendingEmailCode.value = false
+  }
+}
+
+/** Save new email via POST /users/change-email with verification code. */
+async function handleSaveEmail() {
+  clearMessages()
+  if (!pf.newEmail.trim() || !pf.emailCode.trim()) return
+  profileSaving.value = true
+  try {
+    await changeEmailApi({ new_email: pf.newEmail.trim(), code: pf.emailCode.trim() })
+    authStore.updateUser({ email: pf.newEmail.trim() })
+    pf.newEmail = ''
+    pf.emailCode = ''
+    profileSuccess.value = t('profile.email_updated')
+  } catch (err: any) {
+    profileError.value = err?.response?.data?.message || err?.message || 'Update failed'
+  } finally {
+    profileSaving.value = false
+  }
+}
+
+/** Send verification code to current email for password reset. */
+async function handleSendPwdCode() {
+  clearMessages()
+  const email = authStore.user?.email
+  if (!email) return
+  sendingPwdCode.value = true
+  try {
+    await sendEmailCodeApi({ email, purpose: 'reset_password' })
+    startCooldown(pwdCooldown, { value: pwdCdTimer } as any)
+  } catch (err: any) {
+    const msg = err?.response?.data?.message || ''
+    if (msg.includes('already sent') || msg.includes('please wait')) {
+      startCooldown(pwdCooldown, { value: pwdCdTimer } as any)
+    }
+    profileError.value = msg || t('profile.send_code_failed')
+  } finally {
+    sendingPwdCode.value = false
+  }
+}
+
+/** Save new password via POST /users/reset-password with email verification code. */
+async function handleSavePassword() {
+  clearMessages()
+  if (!pf.pwdCode.trim() || !pf.newPassword.trim()) return
+  if (pf.newPassword.length < 8) {
+    profileError.value = t('profile.password_min_length')
+    return
+  }
+  if (pf.newPassword !== pf.confirmPassword) {
+    profileError.value = t('profile.password_mismatch')
+    return
+  }
+  const email = authStore.user?.email
+  if (!email) return
+  profileSaving.value = true
+  try {
+    await resetPasswordApi({ email, code: pf.pwdCode.trim(), new_password: pf.newPassword })
+    pf.pwdCode = ''
+    pf.newPassword = ''
+    pf.confirmPassword = ''
+    profileSuccess.value = t('profile.password_updated')
+  } catch (err: any) {
+    profileError.value = err?.response?.data?.message || err?.message || 'Update failed'
+  } finally {
+    profileSaving.value = false
+  }
 }
 </script>
