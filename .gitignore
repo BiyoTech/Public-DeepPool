@@ -67,7 +67,6 @@ platform/config/scheduler.yaml
 .claude/
 .codex/
 .idea/
-sync_opensource.sh
 manager
 nodemanager
 scheduler
