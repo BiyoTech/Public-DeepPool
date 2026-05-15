@@ -87,6 +87,12 @@ EXCLUDES=(
   --exclude='manager'
   --exclude='nodemanager'
   --exclude='scheduler'
+  # Open-source repo only files — do not delete
+  --exclude='.github/'
+  --exclude='CODE_OF_CONDUCT.md'
+  --exclude='CONTRIBUTING.md'
+  --exclude='SECURITY.md'
+  --exclude='release_note.md'
 )
 
 echo "==> Syncing files from $SRC to $DEST ..."
