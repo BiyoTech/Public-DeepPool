@@ -10,7 +10,8 @@
     "login": "Login",
     "register": "Sign Up",
     "logout": "Logout",
-    "settings": "Settings"
+    "settings": "Settings",
+    "star_github": "GitHub"
   },
   "wallet": {
     "balance": "Available Balance",

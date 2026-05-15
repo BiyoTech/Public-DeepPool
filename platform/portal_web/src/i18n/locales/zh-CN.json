@@ -10,7 +10,8 @@
     "login": "登录",
     "register": "注册",
     "logout": "退出",
-    "settings": "设置"
+    "settings": "设置",
+    "star_github": "GitHub"
   },
   "wallet": {
     "balance": "可用余额",
