@@ -1,96 +1,100 @@
 <p align="center">
-  <h1 align="center">🌊 DeepPool</h1>
+  <h1 align="center"><img src="platform/portal_web/public/logo-28.png" alt="DeepPool Logo" width="36" valign="middle"> DeepPool</h1>
   <p align="center">
-    <strong>AI 融合调度网关 & Token 治理平台</strong>
+    <strong>AI Orchestration Gateway & Token Governance Platform</strong>
   </p>
   <p align="center">
-    统一接入全球主流大模型，提供智能融合调度、请求追踪与评估分析、安全护栏、Token 用量治理的一站式 AI 网关。
+    A unified gateway to the world's leading LLMs — intelligent routing, request tracing & evaluation, guardrails, and token governance in one platform.
   </p>
   <p align="center">
-    <a href="#快速开始">快速开始</a> •
-    <a href="#架构概览">架构概览</a> •
-    <a href="#项目结构">项目结构</a> •
-    <a href="#部署">部署</a> •
-    <a href="#api-文档">API 文档</a> •
-    <a href="#贡献指南">贡献指南</a>
+    <a href="https://deeppool.tech">🌐 Try DeepPool</a> •
+    <a href="#quick-start">Quick Start</a> •
+    <a href="#architecture-overview">Architecture</a> •
+    <a href="#project-structure">Project Structure</a> •
+    <a href="#deployment">Deployment</a> •
+    <a href="#api-documentation">API Docs</a> •
+    <a href="#contributing">Contributing</a>
   </p>
 </p>
 
 ---
 
-## 📖 项目简介
+## 📖 Introduction
 
-DeepPool 是一个 **AI 融合调度网关与 Token 治理平台**，为企业和开发者提供统一的大模型接入层。通过一个 API 入口、一套 API Key，即可调用 GPT、Claude、DeepSeek、Qwen、GLM 等全球主流大模型，并获得智能路由、安全护栏、用量追踪、质量评估等全方位 Token 治理能力。
+DeepPool is an **AI Orchestration Gateway and Token Governance Platform** that provides a unified access layer for large language models. With a single API endpoint and a single API Key, you can call GPT, Claude, DeepSeek, Qwen, GLM, and other leading LLMs worldwide, along with intelligent routing, guardrails, usage tracking, quality evaluation, and comprehensive token governance.
 
-### ✨ 核心能力
+### ✨ Core Capabilities
 
-- 🔀 **多模型融合调度，统一网关** — 一个 API 入口统一接入数十种大模型，支持 DeepNode 本地推理、云端 Provider API、Hybrid 混合调度三种模型来源，对调用方完全透明
-- 🎯 **自定义融合调度策略** — 通过 YAML 配置灵活定义 Hybrid 路由规则，支持按上下文长度、Function Call、视觉内容、推理需求等条件智能分发，Round-Robin 负载均衡 + 自动故障转移
-- 📊 **请求 Trace、AI 评估与分析** — 完整记录推理请求/响应日志，支持人工标注反馈与期望输出，AI Judge 自动评测模型输出质量，数据驱动持续优化
-- 🛡️ **Guardrails 安全护栏** — 基于 LLM 的输入/输出内容安全评估，支持请求前拦截和响应后审计，可配置阻断或仅记录策略，保障 AI 应用安全合规
-- 🖥️ **DeepNode 本地推理** — 下载安装 DeepNode 桌面客户端，一键部署 Qwen、Gemma 等开源模型，利用本地 GPU/Apple Silicon 提供推理算力，数据不出本地
+- 🔀 **Multi-Model Orchestration, Unified Gateway** — Access dozens of LLMs through a single API endpoint. Supports three model sources — DeepNode local inference, cloud Provider APIs, and Hybrid orchestration — completely transparent to callers
+- 🎯 **Custom Orchestration Policies** — Define Hybrid routing rules via YAML configuration with intelligent dispatching by context length, Function Call, vision content, reasoning requirements, etc. Round-Robin load balancing + automatic failover
+- 📊 **Request Tracing, AI Evaluation & Analysis** — Complete inference request/response logging, human annotation feedback & expected output, AI Judge auto-evaluation of model output quality, data-driven continuous optimization
+- 🛡️ **Guardrails** — LLM-based input/output content safety evaluation, pre-request interception and post-response auditing, configurable block or log-only policies, ensuring AI application security and compliance
+- 🖥️ **DeepNode Local Inference** — Download and install the DeepNode desktop client, deploy open-source models like Qwen, Gemma with one click, leverage local GPU/Apple Silicon for inference compute, data stays on-device
 
-### 🔌 更多特性
+### 🔌 More Features
 
-- **OpenAI API 完全兼容** — 标准 `/v1/chat/completions` 接口，支持流式 SSE、Function Calling、Reasoning Content，现有 SDK 零改造接入
-- **API Key + 限流 + 配额** — SHA-256 鉴权、滑动窗口 RPM/TPM 限流、Token 配额管理、AES-256-GCM 密钥加密
-- **Token 用量治理** — 按 API Key / 模型 / 时间维度的用量统计、成本分析、阶梯计费
-- **多推理引擎支持** — MLX（Apple Metal）、vLLM（CUDA）、llama.cpp（CPU），自动检测并选择最优引擎
-- **gRPC 双向流隧道** — 单一 TCP 长连接承载注册/心跳/任务/结果，轻松穿透 NAT
-- **安全设计** — 参数化查询、bcrypt 密码哈希、Token 鉴权、输入校验
+- **OpenAI API Fully Compatible** — Standard `/v1/chat/completions` interface, supports streaming SSE, Function Calling, Reasoning Content, zero-modification SDK integration
+- **API Key + Rate Limiting + Quota** — SHA-256 authentication, sliding window RPM/TPM rate limiting, Token quota management, AES-256-GCM key encryption
+- **Token Usage Governance** — Usage statistics, cost analysis, tiered billing by API Key / model / time dimensions
+- **Multi-Inference Engine Support** — MLX (Apple Metal), vLLM (CUDA), llama.cpp (CPU), auto-detect and select optimal engine
+- **gRPC Bidirectional Stream Tunnel** — Single TCP long connection carrying registration/heartbeat/task/result, easy NAT traversal
+- **Security Design** — Parameterized queries, bcrypt password hashing, Token authentication, input validation
 
 ---
 
-## 🏗️ 架构概览
+## 🏗️ Architecture Overview
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│                      外部调用方                                │
+│                      External Callers                         │
 │              POST /v1/chat/completions                        │
 └─────────────────────────┬────────────────────────────────────┘
                           │ HTTP (OpenAI API, Bearer API Key)
                           ▼
 ┌──────────────────────────────────────────────────────────────┐
-│              DeepPool Gateway (AI 融合调度网关)                │
+│              DeepPool Gateway (AI Orchestration Gateway)      │
 │                                                              │
 │  ┌──────────────────────────────────────────────────────┐   │
-│  │                   请求处理流水线                        │   │
-│  │  Auth → RateLimit → Quota → Guardrails(输入)          │   │
-│  │    → Route → Inference → Guardrails(输出) → Trace     │   │
+│  │                   Request Pipeline                    │   │
+│  │  Auth → RateLimit → Quota → Guardrails(Input)        │   │
+│  │    → Route → Inference → Guardrails(Output) → Trace  │   │
 │  └──────────────────────────────────────────────────────┘   │
 │                                                              │
 │  ┌────────────┐ ┌─────────────┐ ┌─────────────────┐        │
 │  │  DeepNode   │ │  Provider   │ │    Hybrid       │        │
-│  │  本地推理   │ │  云端 API   │ │  融合调度       │        │
-│  │  gRPC →     │ │  HTTP →     │ │  条件路由 +     │        │
-│  │  NodeMgr    │ │  Cloud API  │ │  Round-Robin +  │        │
-│  │             │ │             │ │  Failover       │        │
+│  │  Local      │ │  Cloud API  │ │  Orchestration  │        │
+│  │  gRPC →     │ │  HTTP →     │ │  Conditional    │        │
+│  │  NodeMgr    │ │  Cloud API  │ │  Route +        │        │
+│  │             │ │             │ │  Round-Robin +   │        │
+│  │             │ │             │ │  Failover        │        │
 │  └──────┬──────┘ └──────┬──────┘ └────────┬────────┘        │
 │         │               │                 │                  │
 │  ┌──────────────────────────────────────────────────────┐   │
-│  │  Token 治理层                                         │   │
-│  │  用量统计 · 成本分析 · Trace 追踪 · AI 评估 · 护栏   │   │
+│  │  Token Governance Layer                               │   │
+│  │  Usage Stats · Cost Analysis · Tracing · AI Eval ·   │   │
+│  │  Guardrails                                          │   │
 │  └──────────────────────────────────────────────────────┘   │
 │                                                              │
-│  用户管理 · 模型仓库 · API Key 管理 · 钱包                  │
+│  User Management · Model Registry · API Key Mgmt · Wallet   │
 │                        ┌──────────────┐                      │
 │                        │   MySQL 8    │                      │
-│                        │  数据存储     │                      │
+│                        │  Data Store  │                      │
 │                        └──────────────┘                      │
 └────────────┬───────────────┬─────────────────────────────────┘
              │ gRPC          │ HTTPS
              ▼               ▼
 ┌────────────────────┐  ┌─────────────────────┐
-│  NodeManager ×N    │  │  云端 API            │
-│  分片连接表        │  │  OpenAI / Claude     │
-│  Least-Conn 调度   │  │  DeepSeek / Qwen     │
-│  gRPC 隧道管理     │  │  GLM / Kimi / ...    │
+│  NodeManager ×N    │  │  Cloud APIs          │
+│  Shard Conn Table  │  │  OpenAI / Claude     │
+│  Least-Conn Sched  │  │  DeepSeek / Qwen     │
+│  gRPC Tunnel Mgmt  │  │  GLM / Kimi / ...    │
 └────────┬───────────┘  └─────────────────────┘
-         │ gRPC 双向流
+         │ gRPC Bidirectional Stream
          ▼
 ┌─────────────────────────────────────────────────────┐
-│              DeepNode (桌面客户端)                    │
-│  本地部署 Qwen、Gemma 等开源模型                     │
+│              DeepNode (Desktop Client)               │
+│  Local deployment of Qwen, Gemma, and other         │
+│  open-source models                                  │
 │                                                     │
 │  ┌───────────┐  ┌───────────┐  ┌────────────────┐  │
 │  │  Tauri UI  │  │  FastAPI   │  │ Inference      │  │
@@ -100,121 +104,121 @@ DeepPool 是一个 **AI 融合调度网关与 Token 治理平台**，为企业�
 └─────────────────────────────────────────────────────┘
 ```
 
-### 网关能力矩阵
+### Gateway Capability Matrix
 
-| 能力 | 说明 |
-|------|------|
-| **融合调度** | 统一接入 DeepNode / Provider / Hybrid 三种模型来源，智能路由 |
-| **自定义策略** | YAML 配置条件路由规则，按请求特征分发到最优子模型 |
-| **Trace 追踪** | 完整记录推理请求/响应，支持按 API Key、模型、时间筛选 |
-| **AI 评估** | AI Judge 自动评测 + 人工标注反馈，数据驱动质量优化 |
-| **Guardrails** | LLM 驱动的输入/输出安全护栏，支持阻断和审计 |
-| **Token 治理** | 用量统计、配额管理、阶梯计费、成本分析 |
+| Capability | Description |
+|-----------|-------------|
+| **Orchestration** | Unified access to DeepNode / Provider / Hybrid model sources with intelligent routing |
+| **Custom Policies** | YAML-configured conditional routing rules, dispatch by request characteristics to optimal sub-model |
+| **Trace** | Complete inference request/response logging, filterable by API Key, model, time |
+| **AI Evaluation** | AI Judge auto-evaluation + human annotation feedback, data-driven quality optimization |
+| **Guardrails** | LLM-driven input/output safety guardrails, supporting block and audit modes |
+| **Token Governance** | Usage statistics, quota management, tiered billing, cost analysis |
 
-### 模型三分类
+### Model Three-Tier Classification
 
-| VendorType | 说明 | 路由方式 |
-|-----------|------|---------| 
-| **deepnode** | 本地设备推理（Qwen、Gemma 等） | Gateway → gRPC → NodeManager → 设备隧道 |
-| **provider** | 云端 API（OpenAI、Claude、DeepSeek 等） | Gateway → HTTP 代理 → 云端 API |
-| **hybrid** | 融合调度（组合多个子模型） | 条件路由 + Round-Robin + 自动 Failover |
+| VendorType | Description | Routing |
+|-----------|-------------|---------|
+| **deepnode** | Local device inference (Qwen, Gemma, etc.) | Gateway → gRPC → NodeManager → Device Tunnel |
+| **provider** | Cloud API (OpenAI, Claude, DeepSeek, etc.) | Gateway → HTTP Proxy → Cloud API |
+| **hybrid** | Orchestration (combining multiple sub-models) | Conditional Routing + Round-Robin + Auto Failover |
 
 ---
 
-## 📁 项目结构
+## 📁 Project Structure
 
 ```
 DeepPool/
-├── libs/                          # 共享协议层
-│   └── proto/                     # Protobuf 定义 + 生成代码
-│       ├── llm_infer.proto        #   LLM 推理协议 (对齐 OpenAI)
-│       ├── manager_service.proto  #   Manager 管理服务协议
-│       └── node_tunnel.proto      #   设备隧道双向流协议
+├── libs/                          # Shared protocol layer
+│   └── proto/                     # Protobuf definitions + generated code
+│       ├── llm_infer.proto        #   LLM inference protocol (OpenAI-aligned)
+│       ├── manager_service.proto  #   Manager service protocol
+│       └── node_tunnel.proto      #   Device tunnel bidirectional stream protocol
 │
-├── platform/                      # 平台后端 + Web 前端
+├── platform/                      # Platform backend + Web frontend
 │   ├── cmd/
-│   │   ├── manager/               #   Manager 服务入口
-│   │   ├── nodemanager/           #   NodeManager 服务入口
-│   │   └── experiment/            #   Experiment 服务入口
+│   │   ├── manager/               #   Manager service entry
+│   │   ├── nodemanager/           #   NodeManager service entry
+│   │   └── experiment/            #   Experiment service entry
 │   ├── internal/
-│   │   ├── config/                #   统一配置加载
-│   │   ├── common/                #   公共中间件、错误码、响应封装
-│   │   ├── storage/mysql/         #   MySQL 连接池 + 幂等建表
-│   │   ├── modules/health/        #   健康检查模块
-│   │   ├── manager/               #   Manager 业务 (handler/service/repository)
-│   │   └── nodemanager/           #   NodeManager 业务 (隧道/分发/OpenAI)
-│   ├── config/                    #   YAML 配置文件
-│   ├── control_web/               #   管控后台前端 (Vue 3 + TDesign)
-│   ├── portal_web/                #   用户门户前端 (Vue 3 + TDesign)
-│   └── deploy.sh                  #   统一远程部署脚本
+│   │   ├── config/                #   Unified config loading
+│   │   ├── common/                #   Shared middleware, error codes, response wrapping
+│   │   ├── storage/mysql/         #   MySQL connection pool + idempotent table creation
+│   │   ├── modules/health/        #   Health check module
+│   │   ├── manager/               #   Manager business logic (handler/service/repository)
+│   │   └── nodemanager/           #   NodeManager business logic (tunnel/dispatch/OpenAI)
+│   ├── config/                    #   YAML config files
+│   ├── control_web/               #   Admin dashboard frontend (Vue 3 + TDesign)
+│   ├── portal_web/               #   User portal frontend (Vue 3 + TDesign)
+│   └── deploy.sh                  #   Unified remote deployment script
 │
 ├── clients/
-│   └── deepnode/                  # DeepNode 桌面客户端
-│       ├── app/                   #   前端 UI (Vue 3 + TypeScript)
-│       ├── src-tauri/             #   Tauri 2.0 原生层 (Rust)
-│       └── localserver/           #   本地推理服务 (Python 3.13 + FastAPI)
+│   └── deepnode/                  # DeepNode desktop client
+│       ├── app/                   #   Frontend UI (Vue 3 + TypeScript)
+│       ├── src-tauri/             #   Tauri 2.0 native layer (Rust)
+│       └── localserver/           #   Local inference service (Python 3.13 + FastAPI)
 │
-├── build.sh                       # 全量构建脚本
-├── dev.sh                         # 开发模式启动
+├── build.sh                       # Full build script
+├── dev.sh                         # Dev mode launcher
 ├── go.work                        # Go Workspace
 └── package.json                   # npm Workspace
 ```
 
 ---
 
-## 🛠️ 技术栈
+## 🛠️ Tech Stack
 
-| 层面 | 技术选型 |
-|------|---------| 
-| **平台后端** | Go 1.23，标准库 `net/http`（零框架），gRPC |
-| **推理网关** | Gateway 内嵌 Manager，API Key 鉴权（SHA-256）、滑动窗口限流（RPM/TPM）、配额管理、Guardrails 护栏 |
-| **数据库** | MySQL 8（InnoDB, utf8mb4_unicode_ci） |
-| **序列化 / RPC** | Protocol Buffers 3，gRPC（含双向流） |
-| **密码学** | bcrypt（密码）、AES-256-GCM（API Key 加密）、SHA-256（设备指纹 + API Key 哈希） |
-| **管控前端** | Vue 3 + TDesign + Pinia + Tailwind CSS |
-| **门户前端** | Vue 3 + TDesign + markdown-it + vue-i18n |
-| **桌面客户端** | Tauri 2.0 (Rust) + Vue 3 + TypeScript |
-| **本地推理服务** | Python 3.13, FastAPI + uvicorn, grpcio |
-| **推理引擎** | MLX（Apple Metal）、vLLM（CUDA）、llama.cpp（CPU） |
-| **Function Call** | 注册表架构 ToolCallParser（支持 GLM/Kimi/DeepSeek/Qwen/Gemma4/Llama/Mistral） |
-| **模型管理** | HuggingFace Hub（支持国内镜像） |
+| Layer | Technology |
+|-------|-----------|
+| **Platform Backend** | Go 1.23, stdlib `net/http` (zero framework), gRPC |
+| **Inference Gateway** | Gateway-embedded Manager, API Key auth (SHA-256), sliding window rate limiting (RPM/TPM), quota management, Guardrails |
+| **Database** | MySQL 8 (InnoDB, utf8mb4_unicode_ci) |
+| **Serialization / RPC** | Protocol Buffers 3, gRPC (with bidirectional streams) |
+| **Cryptography** | bcrypt (passwords), AES-256-GCM (API Key encryption), SHA-256 (device fingerprint + API Key hash) |
+| **Admin Frontend** | Vue 3 + TDesign + Pinia + Tailwind CSS |
+| **Portal Frontend** | Vue 3 + TDesign + markdown-it + vue-i18n |
+| **Desktop Client** | Tauri 2.0 (Rust) + Vue 3 + TypeScript |
+| **Local Inference Service** | Python 3.13, FastAPI + uvicorn, grpcio |
+| **Inference Engines** | MLX (Apple Metal), vLLM (CUDA), llama.cpp (CPU) |
+| **Function Call** | Registry-architecture ToolCallParser (supports GLM/Kimi/DeepSeek/Qwen/Gemma4/Llama/Mistral) |
+| **Model Management** | HuggingFace Hub (with mirror support) |
 
 ---
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 前置依赖
+### Prerequisites
 
-| 依赖 | 版本要求 | 用途 |
-|------|---------|------|
-| **Go** | ≥ 1.23 | 平台后端编译 |
-| **Node.js** | ≥ 18 | 前端构建 |
-| **MySQL** | ≥ 8.0 | 数据存储 |
-| **Python** | ≥ 3.13 | DeepNode 本地推理服务 |
-| **protoc** | ≥ 3.x | Protobuf 编译（仅修改 proto 时需要） |
-| **Rust / Cargo** | latest stable | Tauri 桌面客户端构建（可选） |
+| Dependency | Version | Purpose |
+|-----------|---------|---------|
+| **Go** | ≥ 1.23 | Platform backend compilation |
+| **Node.js** | ≥ 18 | Frontend build |
+| **MySQL** | ≥ 8.0 | Data storage |
+| **Python** | ≥ 3.13 | DeepNode local inference service |
+| **protoc** | ≥ 3.x | Protobuf compilation (only needed when modifying proto) |
+| **Rust / Cargo** | latest stable | Tauri desktop client build (optional) |
 
-### 1. 克隆仓库
+### 1. Clone Repository
 
 ```bash
-git clone https://github.com/your-org/DeepPool.git
+git clone https://github.com/BiyoTech/Public-DeepPool.git
 cd DeepPool
 ```
 
-### 2. 准备数据库
+### 2. Prepare Database
 
-创建 MySQL 数据库（表会在服务启动时自动创建）：
+Create a MySQL database (tables are auto-created on service startup):
 
 ```sql
 CREATE DATABASE deeppool CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-### 3. 修改配置
+### 3. Configure
 
-编辑平台配置文件，填入数据库连接信息：
+Edit the platform configuration file with your database connection info:
 
 ```bash
-# 编辑 Manager 配置
+# Edit Manager config
 vim platform/config/manager.yaml
 ```
 
@@ -231,93 +235,93 @@ mysql:
   database: "deeppool"
 ```
 
-> **提示**：NodeManager 配置结构类似，位于 `platform/config/nodemanager.yaml`。
+> **Tip**: NodeManager config structure is similar, located at `platform/config/nodemanager.yaml`.
 
-### 4. 启动平台服务
+### 4. Start Platform Services
 
-**方式一：一键开发模式（推荐）**
+**Option A: One-click dev mode (recommended)**
 
 ```bash
-# 启动所有平台组件 + 前端开发服务器 + DeepNode 客户端
+# Start all platform components + frontend dev servers + DeepNode client
 ./dev.sh all
 ```
 
-`dev.sh` 支持按模块启动：
+`dev.sh` supports module-based startup:
 
 ```bash
-./dev.sh platform      # 仅启动后端服务 (Manager)
-./dev.sh platformweb   # 仅启动前端开发服务器
-./dev.sh client        # 仅启动 DeepNode 客户端
-./dev.sh all           # 全部启动（默认）
+./dev.sh platform      # Start backend services only (Manager)
+./dev.sh platformweb   # Start frontend dev servers only
+./dev.sh client        # Start DeepNode client only
+./dev.sh all           # Start everything (default)
 ```
 
-**方式二：分别启动各后端组件**
+**Option B: Start backend components individually**
 
-使用 `run_platformserver.sh` 启动指定的后端服务：
+Use `run_platformserver.sh` to start specific backend services:
 
 ```bash
-# Terminal 1 — 启动 Manager（默认）
+# Terminal 1 — Start Manager (default)
 ./run_platformserver.sh manager
 
-# Terminal 2 — 启动 NodeManager
+# Terminal 2 — Start NodeManager
 ./run_platformserver.sh nodemanager
 
-# Terminal 3 — 启动 Experiment
+# Terminal 3 — Start Experiment
 ./run_platformserver.sh experiment
 ```
 
-> 支持通过环境变量 `DEEPPOOL_LOG_LEVEL` 控制日志级别（默认 `debug`）。
+> Supports `DEEPPOOL_LOG_LEVEL` environment variable to control log level (default: `debug`).
 
-**方式三：分别启动前端开发服务器**
+**Option C: Start frontend dev servers individually**
 
-使用 `run_platformweb.sh` 启动前端：
+Use `run_platformweb.sh` to start frontends:
 
 ```bash
-# 同时启动管控后台 + 用户门户（默认）
+# Start both admin dashboard + user portal (default)
 ./run_platformweb.sh all
 
-# 仅启动管控后台 (端口 5173)
+# Start admin dashboard only (port 5173)
 ./run_platformweb.sh control
 
-# 仅启动用户门户 (端口 5174)
+# Start user portal only (port 5174)
 ./run_platformweb.sh portal
 ```
 
-| 前端 | 端口 | 说明 |
-|------|------|------|
-| control_web | 5173 | 管控后台（管理员使用） |
-| portal_web | 5174 | 用户门户（终端用户使用） |
+| Frontend | Port | Description |
+|----------|------|-------------|
+| control_web | 5173 | Admin dashboard (for administrators) |
+| portal_web | 5174 | User portal (for end users) |
 
-### 5. 验证服务
+### 5. Verify Services
 
 ```bash
-# 健康检查
+# Health check
 curl http://localhost:8080/api/v1/health
-# 期望: {"code":0,"message":"ok","data":{"status":"healthy"}}
+# Expected: {"code":0,"message":"ok","data":{"status":"healthy"}}
 
 curl http://localhost:8082/api/v1/health
-# 期望: {"code":0,"message":"ok","data":{"status":"healthy"}}
+# Expected: {"code":0,"message":"ok","data":{"status":"healthy"}}
 ```
 
-### 6. 启动 DeepNode 客户端（设备节点）
+### 6. Start DeepNode Client (Device Node)
 
 ```bash
 cd clients/deepnode
 
-# 创建 Python 虚拟环境并安装依赖
+# Create Python virtual environment and install dependencies
 python3.13 -m venv venv
 source venv/bin/activate
 pip install -r localserver/requirements.txt
 
-# 启动本地推理服务
+# Start local inference service
 cd localserver && python main.py &
 
-# 启动 Tauri 桌面应用（需要 Rust 环境）
+# Start Tauri desktop app (requires Rust)
 cd ../app && npm install
 cd .. && cargo tauri dev
 ```
 
-> **独立运行模式**（无需 Tauri，通过浏览器访问）：
+> **Standalone mode** (no Tauri, browser access):
 > ```bash
 > cd clients/deepnode
 > ./run_standalone.sh
@@ -325,41 +329,41 @@ cd .. && cargo tauri dev
 
 ---
 
-## 🔌 API 文档
+## 🔌 API Documentation
 
-DeepPool 对外暴露 **OpenAI 兼容** 的推理接口，现有 OpenAI SDK 可零成本接入。支持三种模型类型：`deepnode`（边缘设备推理）、`provider`（云端 API 代理）、`hybrid`（智能混合调度）。
+DeepPool exposes an **OpenAI-compatible** inference interface. Existing OpenAI SDKs can integrate with zero cost. Supports three model types: `deepnode` (edge device inference), `provider` (cloud API proxy), `hybrid` (intelligent orchestration).
 
 ### Chat Completions
 
 ```bash
-# 非流式请求
+# Non-streaming request
 curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <your-api-key>" \
   -d '{
     "model": "Qwen/Qwen3-0.6B-8bit",
     "messages": [
-      {"role": "user", "content": "你好，请介绍一下你自己"}
+      {"role": "user", "content": "Hello, please introduce yourself"}
     ],
     "stream": false
   }'
 ```
 
 ```bash
-# 流式请求 (SSE)
+# Streaming request (SSE)
 curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <your-api-key>" \
   -d '{
     "model": "Qwen/Qwen3-0.6B-8bit",
     "messages": [
-      {"role": "user", "content": "写一首关于分布式计算的诗"}
+      {"role": "user", "content": "Write a poem about distributed computing"}
     ],
     "stream": true
   }'
 ```
 
-### 使用 OpenAI Python SDK
+### Using OpenAI Python SDK
 
 ```python
 from openai import OpenAI
@@ -380,7 +384,7 @@ for chunk in response:
         print(chunk.choices[0].delta.content, end="")
 ```
 
-### 查看可用模型
+### List Available Models
 
 ```bash
 curl http://localhost:8080/v1/models \
@@ -389,9 +393,9 @@ curl http://localhost:8080/v1/models \
 
 ---
 
-## 📦 构建
+## 📦 Build
 
-项目提供统一的构建脚本，支持按模块构建：
+The project provides a unified build script with module-based build support:
 
 ```bash
 # Build all components
@@ -407,7 +411,7 @@ curl http://localhost:8080/v1/models \
 ./build.sh web
 ```
 
-### 构建产物
+### Build Artifacts
 
 ```
 dist/
@@ -421,246 +425,246 @@ dist/
 
 ---
 
-## 🚢 部署
+## 🚢 Deployment
 
-### 统一部署脚本
+### Unified Deployment Script
 
-项目提供统一的 `deploy.sh` 脚本，支持通过参数灵活控制部署目标：
+The project provides a unified `deploy.sh` script with flexible parameter-based deployment control:
 
 ```bash
 cd platform
 
-# 查看帮助
+# View help
 ./deploy.sh --help
 
-# 生产环境全量部署（本地 SSL 证书 + 密码认证）
+# Production full deployment (local SSL cert + password auth)
 ./deploy.sh --domain deeppool.tech --server root@<your-server-ip> --password '<your-password>' \
             --config config_prod --ssl local --ssl-cert-dir ssl_cert
 
-# 测试环境全量部署（Let's Encrypt 自动证书 + SSH Key 认证）
+# Test environment full deployment (Let's Encrypt auto cert + SSH Key auth)
 ./deploy.sh --domain test.deeppool.tech --server root@<your-server-ip> \
             --config config_test --ssl letsencrypt
 
-# 仅部署 manager 和 portal_web
+# Deploy manager and portal_web only
 ./deploy.sh --domain deeppool.tech --server root@<your-server-ip> --password '<your-password>' \
             --components manager,portal_web
 
-# 仅部署前端
+# Deploy frontends only
 ./deploy.sh --domain deeppool.tech --server root@<your-server-ip> --password '<your-password>' \
             --components portal_web,control_web
 ```
 
-### 部署参数
+### Deployment Parameters
 
-| 参数 | 必选 | 说明 | 默认值 |
-|------|:----:|------|--------|
-| `--domain` | ✅ | 部署域名 | — |
-| `--server` | ✅ | 远程服务器 `user@host` | — |
-| `--password` | — | SSH 密码（不指定则用 Key 认证） | — |
-| `--config` | — | 配置文件目录名（相对 `platform/`） | `config_prod` |
-| `--remote-dir` | — | 远程部署目录 | `/opt/deeppool` |
-| `--components` | — | 逗号分隔的组件列表 | 全部 |
-| `--ssl` | — | 证书模式：`local` / `letsencrypt` | 自动检测 |
-| `--ssl-cert-dir` | — | 本地证书目录 | `ssl_cert` |
-| `--admin-email` | — | Let's Encrypt 注册邮箱 | `admin@deeppool.tech` |
+| Parameter | Required | Description | Default |
+|-----------|:--------:|-------------|---------|
+| `--domain` | ✅ | Deployment domain | — |
+| `--server` | ✅ | Remote server `user@host` | — |
+| `--password` | — | SSH password (omit for Key auth) | — |
+| `--config` | — | Config directory name (relative to `platform/`) | `config_prod` |
+| `--remote-dir` | — | Remote deployment directory | `/opt/deeppool` |
+| `--components` | — | Comma-separated component list | all |
+| `--ssl` | — | Cert mode: `local` / `letsencrypt` | auto-detect |
+| `--ssl-cert-dir` | — | Local certificate directory | `ssl_cert` |
+| `--admin-email` | — | Let's Encrypt registration email | `admin@deeppool.tech` |
 
-**可部署组件**：`manager`、`nodemanager`、`experiment`、`portal_web`、`control_web`
+**Deployable components**: `manager`, `nodemanager`, `experiment`, `portal_web`, `control_web`
 
-### 部署流程
+### Deployment Flow
 
-脚本自动完成以下步骤：
+The script automatically completes the following steps:
 
-1. **交叉编译** — Go 服务编译为 `linux/amd64` 二进制（`-trimpath -ldflags="-s -w"`）
-2. **前端构建** — `control_web`（base=/admin/）和 `portal_web` 的 Vite 生产构建
-3. **停止旧服务** — 远程 SIGTERM → 等待 → SIGKILL 优雅停机
-4. **上传产物** — SCP 上传二进制、配置、前端资源、SSL 证书、支付证书
-5. **SSL 证书** — 本地证书上传 或 Let's Encrypt 自动申请（含续期 cron）
-6. **启动服务** — nohup 后台启动所有后端组件
-7. **Nginx 配置** — 自动生成并加载 Ingress 配置（HTTPS 终止 + 反向代理）
-8. **健康检查** — 验证各服务端口监听和 HTTP 响应
+1. **Cross-compilation** — Go services compiled to `linux/amd64` binary (`-trimpath -ldflags="-s -w"`)
+2. **Frontend Build** — Vite production build for `control_web` (base=/admin/) and `portal_web`
+3. **Stop Old Services** — Remote SIGTERM → wait → SIGKILL graceful shutdown
+4. **Upload Artifacts** — SCP upload binaries, configs, frontend assets, SSL certs, payment certs
+5. **SSL Certificates** — Local cert upload or Let's Encrypt auto-provisioning (with renewal cron)
+6. **Start Services** — nohup background startup for all backend components
+7. **Nginx Config** — Auto-generate and load Ingress config (HTTPS termination + reverse proxy)
+8. **Health Check** — Verify service port listening and HTTP response
 
-### Nginx Ingress 路由
+### Nginx Ingress Routes
 
-| 域名 | 路径 | 后端 |
-|------|------|------|
-| `deeppool.tech` | `/` | portal_web（用户门户） |
-| `deeppool.tech` | `/admin/` | control_web（管控后台） |
+| Domain | Path | Backend |
+|--------|------|---------|
+| `deeppool.tech` | `/` | portal_web (User Portal) |
+| `deeppool.tech` | `/admin/` | control_web (Admin Dashboard) |
 | `deeppool.tech` | `/api/` | Manager :8080 |
-| `deeppool.tech` | `/v1/` | Manager :8080（Gateway SSE） |
-| `api.deeppool.tech` | `/api/` `/v1/` | Manager :8080（独立 API 域名） |
+| `deeppool.tech` | `/v1/` | Manager :8080 (Gateway SSE) |
+| `api.deeppool.tech` | `/api/` `/v1/` | Manager :8080 (Dedicated API domain) |
 
-### 部署后目录结构
+### Post-Deployment Directory Structure
 
 ```
-/opt/deeppool/               # 远程服务器
-├── manager                  # Manager 二进制
-├── nodemanager              # NodeManager 二进制
-├── experiment               # Experiment 二进制
-├── manager.log              # Manager 运行日志
-├── nodemanager.log          # NodeManager 运行日志
-├── experiment.log           # Experiment 运行日志
-├── config/                  # YAML 配置文件
+/opt/deeppool/               # Remote server
+├── manager                  # Manager binary
+├── nodemanager              # NodeManager binary
+├── experiment               # Experiment binary
+├── manager.log              # Manager runtime log
+├── nodemanager.log          # NodeManager runtime log
+├── experiment.log           # Experiment runtime log
+├── config/                  # YAML config files
 │   ├── manager.yaml
 │   ├── nodemanager.yaml
 │   └── experiment.yaml
-├── control_web/             # 管控后台前端资源
-├── portal_web/              # 用户门户前端资源
-├── alipay_cert/             # 支付宝证书
-└── wechat_pay_cert/         # 微信支付证书
+├── control_web/             # Admin dashboard frontend assets
+├── portal_web/              # User portal frontend assets
+├── alipay_cert/             # Alipay certificates
+└── wechat_pay_cert/         # WeChat Pay certificates
 ```
 
-### 端口一览
+### Port Reference
 
-| 服务 | HTTP | gRPC | 说明 |
-|------|------|------|------|
-| Manager | 8080 | 9090 | 用户/设备管理 + **AI 融合调度网关** |
-| NodeManager | 8082 | 9092 | 设备隧道管理 + 推理分发 |
-| Experiment | — | 9093 | AI Judge + 数据集评估 |
-| control_web (Nginx) | 443 | — | 管控后台 (`/admin/`) |
-| portal_web (Nginx) | 443 | — | 用户门户 (`/`) |
-| DeepNode LocalServer | 8765 | — | 本地推理服务 |
+| Service | HTTP | gRPC | Description |
+|---------|------|------|-------------|
+| Manager | 8080 | 9090 | User/Device management + **AI Orchestration Gateway** |
+| NodeManager | 8082 | 9092 | Device tunnel management + inference dispatch |
+| Experiment | — | 9093 | AI Judge + dataset evaluation |
+| control_web (Nginx) | 443 | — | Admin Dashboard (`/admin/`) |
+| portal_web (Nginx) | 443 | — | User Portal (`/`) |
+| DeepNode LocalServer | 8765 | — | Local inference service |
 
 ---
 
-## 🗄️ 数据库
+## 🗄️ Database
 
-使用 MySQL 8，核心表在服务启动时**幂等创建**，增量变更通过 `migrations/` 目录下的 SQL 脚本管理。
+Uses MySQL 8. Core tables are **idempotently created** on service startup. Incremental changes are managed via SQL scripts in the `migrations/` directory.
 
-### 数据库迁移
+### Database Migrations
 
-项目提供 `update_db.sh` 脚本，用于执行 `platform/migrations/` 目录下的增量 SQL 迁移：
+The project provides an `update_db.sh` script to execute incremental SQL migrations from `platform/migrations/`:
 
 ```bash
 cd platform
 
-# 查看帮助
+# View help
 ./update_db.sh --help
 
-# 从配置文件读取数据库连接，执行所有迁移
+# Read DB connection from config file, execute all migrations
 ./update_db.sh --config config/manager.yaml
 
-# 手动指定连接参数
+# Manually specify connection parameters
 ./update_db.sh --host 127.0.0.1 --user root --password 'your_password' --database deeppool
 
-# 仅执行指定的迁移文件
+# Execute only specified migration file
 ./update_db.sh --config config/manager.yaml --file 011_guardrails.sql
 
-# 从指定编号开始执行
+# Start from specified migration number
 ./update_db.sh --config config/manager.yaml --from 008
 
-# 预览将要执行的文件（不实际执行）
+# Preview files to be executed (dry run)
 ./update_db.sh --config config/manager.yaml --dry-run
 ```
 
-**迁移规则**：
-- SQL 文件按文件名前缀数字排序执行（002, 003, 004, ...）
-- 所有语句使用 `CREATE TABLE IF NOT EXISTS`、`ALTER TABLE ... ADD COLUMN IF NOT EXISTS` 等幂等写法，可安全重复执行
-- 执行失败时自动中断，并提示从失败文件重新开始的命令
+**Migration Rules**:
+- SQL files are executed in order of filename prefix number (002, 003, 004, ...)
+- All statements use idempotent patterns like `CREATE TABLE IF NOT EXISTS`, `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`, safe to re-execute
+- Execution auto-stops on failure with a command hint to resume from the failed file
 
-### 迁移文件列表
+### Migration Files
 
 ```
 platform/migrations/
-├── 002_billing_precision_yuan.sql        # 计费精度调整为元
-├── 003_tunnel_logs_fen_to_yuan.sql       # 隧道日志金额分→元
-├── 004_add_model_tags.sql                # 模型标签字段
-├── 005_payment_orders.sql                # 支付订单表
-├── 006_consumer_operations.sql           # 消费者操作记录
-├── 007_add_supports_vision.sql           # 视觉能力标识
-├── 008_user_custom_models.sql            # 用户自定义模型
-├── 009_migrate_rename_model_family.sql   # 模型族重命名
-├── 010_remove_legacy_provider_fields.sql # 移除旧 Provider 字段
-└── 011_guardrails.sql                    # Guardrails 护栏表
+├── 002_billing_precision_yuan.sql        # Billing precision adjusted to yuan
+├── 003_tunnel_logs_fen_to_yuan.sql       # Tunnel log amount fen → yuan
+├── 004_add_model_tags.sql                # Model tags field
+├── 005_payment_orders.sql                # Payment orders table
+├── 006_consumer_operations.sql           # Consumer operation records
+├── 007_add_supports_vision.sql           # Vision capability flag
+├── 008_user_custom_models.sql            # User custom models
+├── 009_migrate_rename_model_family.sql   # Model family rename
+├── 010_remove_legacy_provider_fields.sql # Remove legacy Provider fields
+└── 011_guardrails.sql                    # Guardrails tables
 ```
 
-### 核心表概览
+### Core Tables Overview
 
-| 表名 | 说明 | 关键字段 |
-|------|------|---------|
-| `users` | 用户表 | username (UK), password_hash, phone (UK), email (UK) |
-| `user_sessions` | 会话表 | token (UK) → user_id, expires_at (7天有效期) |
-| `user_devices` | 设备表 | simei (UK), user_id, device_ip, device_config (JSON) |
-| `api_keys` | API Key 表 | key_hash (UK), user_id, rate_limit, quota |
-| `model_registry` | 模型仓库 | model_name (UK), vendor_type, pricing_tiers (JSON) |
-| `model_endpoints` | 模型端点 | model_id → endpoint, upstream_model |
-| `user_custom_models` | 用户自定义模型 | user_id + model_name (UK), hybrid_policy (TEXT) |
-| `guardrails` | 护栏规则 | api_key_id, phase, action, evaluator_model |
-| `guardrail_results` | 护栏评估结果 | guardrail_id, request_id, flagged, blocked |
-| `payment_orders` | 支付订单 | order_no (UK), user_id, amount, status |
+| Table | Description | Key Fields |
+|-------|-------------|------------|
+| `users` | Users | username (UK), password_hash, phone (UK), email (UK) |
+| `user_sessions` | Sessions | token (UK) → user_id, expires_at (7-day validity) |
+| `user_devices` | Devices | simei (UK), user_id, device_ip, device_config (JSON) |
+| `api_keys` | API Keys | key_hash (UK), user_id, rate_limit, quota |
+| `model_registry` | Model Registry | model_name (UK), vendor_type, pricing_tiers (JSON) |
+| `model_endpoints` | Model Endpoints | model_id → endpoint, upstream_model |
+| `user_custom_models` | User Custom Models | user_id + model_name (UK), hybrid_policy (TEXT) |
+| `guardrails` | Guardrail Rules | api_key_id, phase, action, evaluator_model |
+| `guardrail_results` | Guardrail Evaluation Results | guardrail_id, request_id, flagged, blocked |
+| `payment_orders` | Payment Orders | order_no (UK), user_id, amount, status |
 
 ---
 
-## 🧪 测试
+## 🧪 Testing
 
 ```bash
-# 运行平台后端单元测试
+# Run platform backend unit tests
 cd platform
 go test ./...
 
-# 运行指定模块测试
+# Run specific module tests
 go test ./internal/nodemanager/...
 go test ./internal/manager/...
 ```
 
-项目包含以下测试用例：
-- **ConnectionHub** — 分片并发注册/注销/查找
-- **OpenAI Handler** — 请求解析与响应封装
-- **User Handler** — HTTP 接口测试
-- **User Service** — 业务逻辑测试
+The project includes the following test suites:
+- **ConnectionHub** — Sharded concurrent register/unregister/lookup
+- **OpenAI Handler** — Request parsing and response wrapping
+- **User Handler** — HTTP interface tests
+- **User Service** — Business logic tests
 
-> 📝 完整的联调测试手册见 [mini_test.md](./mini_test.md)，覆盖用户注册/登录、模型配置、设备初始化、gRPC 推理（流式/非流式/多轮对话）、OpenAI 兼容接口等全链路场景。
+> 📝 Full integration test manual available at [mini_test.md](./mini_test.md), covering user registration/login, model configuration, device initialization, gRPC inference (streaming/non-streaming/multi-turn), OpenAI-compatible interface, and other end-to-end scenarios.
 
 ---
 
-## 🤝 贡献指南
+## 🤝 Contributing
 
-欢迎参与 DeepPool 的开发！
+Contributions to DeepPool are welcome!
 
-### 开发流程
+### Development Workflow
 
-1. **Fork** 本仓库
-2. 创建特性分支：`git checkout -b feature/your-feature`
-3. 提交变更：`git commit -m 'feat: add some feature'`
-4. 推送分支：`git push origin feature/your-feature`
-5. 提交 **Pull Request**
+1. **Fork** this repository
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Commit changes: `git commit -m 'feat: add some feature'`
+4. Push branch: `git push origin feature/your-feature`
+5. Submit a **Pull Request**
 
-### 代码规范
+### Code Standards
 
-- **Go** — 遵循标准 Go 编码规范，`gofmt` 格式化
-- **前端** — Vue 3 Composition API + TypeScript
-- **提交信息** — 遵循 [Conventional Commits](https://www.conventionalcommits.org/)
-- **安全** — 所有 SQL 使用参数化查询，密码使用 bcrypt 哈希
-- **代码质量** — 注重良好抽象，补充必要注释与日志
+- **Go** — Follow standard Go coding conventions, `gofmt` formatted
+- **Frontend** — Vue 3 Composition API + TypeScript
+- **Commit Messages** — Follow [Conventional Commits](https://www.conventionalcommits.org/)
+- **Security** — All SQL uses parameterized queries, passwords use bcrypt hashing
+- **Code Quality** — Focus on good abstraction, add necessary comments and logging
 
-### 开发环境推荐
+### Recommended Dev Environment
 
 ```bash
-# 一键启动开发环境（自动并行启动所有组件）
+# One-click dev environment (auto parallel start all components)
 ./dev.sh all
 
-# 或者分别在不同终端启动，便于查看各组件日志
-# Terminal 1: 后端
+# Or start in separate terminals for easier log viewing
+# Terminal 1: Backend
 ./run_platformserver.sh manager
-# Terminal 2: 前端
+# Terminal 2: Frontend
 ./run_platformweb.sh all
-# Terminal 3: DeepNode 客户端（可选）
+# Terminal 3: DeepNode client (optional)
 ./run_client.sh
 ```
 
-**本地开发脚本一览**：
+**Local Dev Scripts**:
 
-| 脚本 | 用途 | 参数 |
-|------|------|------|
-| `dev.sh` | 一键启动所有组件 | `platform` / `platformweb` / `client` / `all` |
-| `run_platformserver.sh` | 启动后端服务 | `manager` / `nodemanager` / `experiment` |
-| `run_platformweb.sh` | 启动前端开发服务器 | `control` / `portal` / `all` |
-| `run_client.sh` | 启动 DeepNode 客户端 | — |
+| Script | Purpose | Parameters |
+|--------|---------|------------|
+| `dev.sh` | One-click start all components | `platform` / `platformweb` / `client` / `all` |
+| `run_platformserver.sh` | Start backend services | `manager` / `nodemanager` / `experiment` |
+| `run_platformweb.sh` | Start frontend dev servers | `control` / `portal` / `all` |
+| `run_client.sh` | Start DeepNode client | — |
 
 ---
 
-## 📜 许可证
+## 📜 License
 
-本项目采用 [MIT License](LICENSE) 开源协议。
+This project is licensed under the [Apache License 2.0](LICENSE).
 
 ---
 
