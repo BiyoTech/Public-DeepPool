@@ -612,7 +612,7 @@ The project includes the following test suites:
 - **User Handler** — HTTP interface tests
 - **User Service** — Business logic tests
 
-> 📝 Full integration test manual available at [mini_test.md](./mini_test.md), covering user registration/login, model configuration, device initialization, gRPC inference (streaming/non-streaming/multi-turn), OpenAI-compatible interface, and other end-to-end scenarios.
+> 📝 A full integration test manual is being prepared and will be published in this repository, covering user registration/login, model configuration, device initialization, gRPC inference (streaming/non-streaming/multi-turn), OpenAI-compatible interfaces, and other end-to-end scenarios.
 
 ---
 

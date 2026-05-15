@@ -609,7 +609,7 @@ go test ./internal/manager/...
 - **User Handler** — HTTP 接口测试
 - **User Service** — 业务逻辑测试
 
-> 📝 完整的联调测试手册见 [mini_test.md](./mini_test.md)，覆盖用户注册/登录、模型配置、设备初始化、gRPC 推理（流式/非流式/多轮对话）、OpenAI 兼容接口等全链路场景。
+> 📝 完整的联调测试手册正在整理中，后续会在本仓库发布，覆盖用户注册/登录、模型配置、设备初始化、gRPC 推理（流式/非流式/多轮对话）、OpenAI 兼容接口等全链路场景。
 
 ---
 

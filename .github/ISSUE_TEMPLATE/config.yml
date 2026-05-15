@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security Vulnerability Report
+    url: mailto:admin@deeppool.tech
+    about: Please report vulnerabilities privately by email (do not open a public issue)
+  - name: Security Policy
+    url: https://github.com/BiyoTech/Public-DeepPool/blob/main/SECURITY.md
+    about: Read responsible disclosure policy and response timeline
+  - name: DeepPool Website
+    url: https://deeppool.tech
+    about: Try DeepPool online
