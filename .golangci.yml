@@ -18,7 +18,6 @@ linters:
     - staticcheck
     - unused
     - ineffassign
-    - typecheck
     # Style & simplification
     - gosimple
     - gocritic
@@ -27,7 +26,6 @@ linters:
     # Bug detection
     - bodyclose
     - nilerr
-    - exportloopref
 
 linters-settings:
   govet:
