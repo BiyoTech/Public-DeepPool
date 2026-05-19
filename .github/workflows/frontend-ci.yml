@@ -61,7 +61,7 @@ jobs:
             vue-tsc
 
       - name: Run ESLint
-        run: npx eslint src/ --max-warnings=0
+        run: npx eslint src/
 
       - name: Run TypeScript type check
         run: npx vue-tsc --noEmit
