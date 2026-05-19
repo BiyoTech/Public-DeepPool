@@ -9,28 +9,31 @@
         <div class="absolute top-40 -right-20 w-[300px] h-[300px] bg-purple-200/20 rounded-full blur-3xl" />
       </div>
 
-      <div class="relative max-w-5xl mx-auto px-6 pt-24 pb-20 text-center">
-        <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-dp-title leading-tight tracking-tight">
+      <div class="relative max-w-5xl mx-auto px-6 pt-20 pb-16 text-center">
+        <!-- Slogan with gradient text -->
+        <h1 class="text-4xl md:text-5xl lg:text-[3.5rem] font-extrabold leading-tight tracking-wide
+                    bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 bg-clip-text text-transparent
+                    drop-shadow-sm">
           {{ $t('home.hero.title') }}
         </h1>
-        <div class="mt-5 flex items-center justify-center gap-3 flex-wrap">
-          <span class="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold bg-blue-100 text-blue-700 border border-blue-200 shadow-sm">
+        <div class="mt-6 flex items-center justify-center gap-3 flex-wrap">
+          <span class="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-medium bg-blue-50 text-blue-600 border border-blue-200/60">
             {{ $t('home.hero.tag_gateway') }}
           </span>
-          <span class="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200 shadow-sm">
+          <span class="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-600 border border-emerald-200/60">
             {{ $t('home.hero.tag_governance') }}
           </span>
-          <span class="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold bg-rose-100 text-rose-700 border border-rose-200 shadow-sm">
+          <span class="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-medium bg-rose-50 text-rose-500 border border-rose-200/60">
             {{ $t('home.hero.tag_guardrails') }}
           </span>
-          <span class="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold bg-violet-100 text-violet-700 border border-violet-200 shadow-sm">
+          <span class="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-medium bg-violet-50 text-violet-600 border border-violet-200/60">
             {{ $t('home.hero.tag_trace') }}
           </span>
-          <span class="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold bg-amber-100 text-amber-700 border border-amber-200 shadow-sm">
+          <span class="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-medium bg-amber-50 text-amber-600 border border-amber-200/60">
             {{ $t('home.hero.tag_local') }}
           </span>
         </div>
-        <p class="mt-6 text-lg md:text-xl text-dp-muted max-w-2xl mx-auto leading-relaxed">
+        <p class="mt-5 text-base md:text-lg text-slate-500 max-w-xl mx-auto leading-relaxed font-light tracking-wide">
           {{ $t('home.hero.subtitle') }}
         </p>
         <p v-if="authStore.isLoggedIn && authStore.user?.username" class="mt-4 text-base text-dp-blue font-medium">
@@ -69,6 +72,12 @@
           >
             {{ $t('home.hero.cta_docs') }}
           </router-link>
+        </div>
+
+        <!-- Token Flow Diagram — visible on first screen -->
+        <div class="mt-14 max-w-3xl mx-auto rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900
+                    p-5 md:p-6 shadow-xl shadow-slate-900/20 border border-slate-700/50">
+          <img src="/token-flow.svg" alt="DeepPool Token Flow" class="w-full h-auto" />
         </div>
       </div>
     </section>
@@ -115,42 +124,14 @@
       </div>
     </section>
 
-    <!-- ========== Architecture Flow ========== -->
-    <section class="py-20 bg-white">
+    <!-- ========== Architecture — Vendor Types ========== -->
+    <section class="py-16 bg-white">
       <div class="max-w-5xl mx-auto px-6">
         <h2 class="text-3xl font-bold text-dp-title text-center mb-4">{{ $t('home.arch.title') }}</h2>
-        <p class="text-center text-dp-muted mb-14 max-w-2xl mx-auto">{{ $t('home.arch.subtitle') }}</p>
-
-        <!-- Horizontal flow -->
-        <div class="flex flex-col md:flex-row items-stretch gap-0 justify-center">
-          <div v-for="(step, idx) in archSteps" :key="idx"
-               class="flex items-center"
-          >
-            <!-- Step card -->
-            <div class="flex flex-col items-center text-center w-40 md:w-44">
-              <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-3 shadow-sm"
-                   :class="step.bgClass">
-                <component :is="step.icon" :class="step.iconClass" />
-              </div>
-              <span class="text-xs font-bold text-dp-blue mb-1">{{ step.label }}</span>
-              <span class="text-[11px] text-dp-muted leading-snug">{{ step.desc }}</span>
-            </div>
-            <!-- Arrow between cards -->
-            <svg v-if="idx < archSteps.length - 1"
-                 class="hidden md:block w-8 h-8 text-slate-300 shrink-0 mx-1"
-                 fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-            </svg>
-            <svg v-if="idx < archSteps.length - 1"
-                 class="md:hidden w-6 h-6 text-slate-300 my-2 rotate-90"
-                 fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-            </svg>
-          </div>
-        </div>
+        <p class="text-center text-dp-muted mb-10 max-w-2xl mx-auto">{{ $t('home.arch.subtitle') }}</p>
 
         <!-- Three vendor types -->
-        <div class="mt-14 grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
           <div v-for="(vt, idx) in vendorTypes" :key="idx"
                class="rounded-xl border p-4 text-center" :class="vt.borderClass">
             <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold mb-2" :class="vt.badgeClass">
@@ -298,52 +279,6 @@ const featuresBottom = computed(() => [
   },
 ])
 
-// ---- Architecture Flow Steps ----
-
-function archIcon(d: string) {
-  return {
-    render: () => h('svg', { class: 'w-8 h-8', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '1.5' }, [
-      h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', d }),
-    ]),
-  }
-}
-
-const ArchUser = archIcon('M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z')
-const ArchGuard = archIcon('M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z')
-const ArchRoute = archIcon('M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5')
-const ArchInfer = archIcon('M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z')
-
-const archSteps = computed(() => [
-  {
-    icon: ArchUser,
-    label: t('home.arch.step1_label'),
-    desc: t('home.arch.step1_desc'),
-    bgClass: 'bg-blue-50',
-    iconClass: 'w-8 h-8 text-dp-blue',
-  },
-  {
-    icon: ArchGuard,
-    label: t('home.arch.step2_label'),
-    desc: t('home.arch.step2_desc'),
-    bgClass: 'bg-rose-50',
-    iconClass: 'w-8 h-8 text-rose-600',
-  },
-  {
-    icon: ArchRoute,
-    label: t('home.arch.step3_label'),
-    desc: t('home.arch.step3_desc'),
-    bgClass: 'bg-violet-50',
-    iconClass: 'w-8 h-8 text-violet-600',
-  },
-  {
-    icon: ArchInfer,
-    label: t('home.arch.step4_label'),
-    desc: t('home.arch.step4_desc'),
-    bgClass: 'bg-emerald-50',
-    iconClass: 'w-8 h-8 text-emerald-600',
-  },
-])
-
 // ---- Vendor Type Cards ----
 
 const vendorTypes = computed(() => [
@@ -371,3 +306,5 @@ const vendorTypes = computed(() => [
 ])
 
 </script>
+
+

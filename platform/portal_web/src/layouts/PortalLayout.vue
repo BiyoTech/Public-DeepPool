@@ -369,8 +369,8 @@ const emailCooldown = ref(0)
 const pwdCooldown = ref(0)
 const sendingEmailCode = ref(false)
 const sendingPwdCode = ref(false)
-let emailCdTimer: ReturnType<typeof setInterval> | null = null
-let pwdCdTimer: ReturnType<typeof setInterval> | null = null
+const emailCdTimer: { value: ReturnType<typeof setInterval> | null } = { value: null }
+const pwdCdTimer: { value: ReturnType<typeof setInterval> | null } = { value: null }
 
 function startCooldown(ref: typeof emailCooldown, timerRef: { value: ReturnType<typeof setInterval> | null }) {
   ref.value = 60
@@ -433,11 +433,11 @@ async function handleSendEmailCode() {
   sendingEmailCode.value = true
   try {
     await sendEmailCodeApi({ email, purpose: 'change_email' })
-    startCooldown(emailCooldown, { value: emailCdTimer } as any)
+    startCooldown(emailCooldown, emailCdTimer)
   } catch (err: any) {
     const msg = err?.response?.data?.message || ''
     if (msg.includes('already sent') || msg.includes('please wait')) {
-      startCooldown(emailCooldown, { value: emailCdTimer } as any)
+      startCooldown(emailCooldown, emailCdTimer)
     }
     profileError.value = msg || t('profile.send_code_failed')
   } finally {
@@ -471,11 +471,11 @@ async function handleSendPwdCode() {
   sendingPwdCode.value = true
   try {
     await sendEmailCodeApi({ email, purpose: 'reset_password' })
-    startCooldown(pwdCooldown, { value: pwdCdTimer } as any)
+    startCooldown(pwdCooldown, pwdCdTimer)
   } catch (err: any) {
     const msg = err?.response?.data?.message || ''
     if (msg.includes('already sent') || msg.includes('please wait')) {
-      startCooldown(pwdCooldown, { value: pwdCdTimer } as any)
+      startCooldown(pwdCooldown, pwdCdTimer)
     }
     profileError.value = msg || t('profile.send_code_failed')
   } finally {

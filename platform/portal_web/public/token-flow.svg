@@ -1,0 +1,168 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 210" fill="none">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="600" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="50%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#8B5CF6"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#8B5CF6" stop-opacity="0.05"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <style>
+      @keyframes flow { 0%{opacity:0;transform:translateX(-20px)} 30%{opacity:1} 70%{opacity:1} 100%{opacity:0;transform:translateX(20px)} }
+      @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+      @keyframes dash { to { stroke-dashoffset: -20; } }
+      .token { animation: flow 3s ease-in-out infinite; }
+      .t1 { animation-delay: 0s; }
+      .t2 { animation-delay: 0.5s; }
+      .t3 { animation-delay: 1s; }
+      .t4 { animation-delay: 1.5s; }
+      .t5 { animation-delay: 2s; }
+      .t6 { animation-delay: 2.5s; }
+      .pulse-dot { animation: pulse 2s ease-in-out infinite; }
+      .flow-line { stroke-dasharray: 8 4; animation: dash 1s linear infinite; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="600" height="210" rx="12" fill="#0F172A"/>
+  <rect width="600" height="210" rx="12" fill="url(#g2)"/>
+
+  <!-- Grid overlay -->
+  <g opacity="0.04" stroke="#38BDF8" stroke-width="0.5">
+    <line x1="0" y1="42" x2="600" y2="42"/><line x1="0" y1="84" x2="600" y2="84"/>
+    <line x1="0" y1="126" x2="600" y2="126"/><line x1="0" y1="168" x2="600" y2="168"/>
+    <line x1="100" y1="0" x2="100" y2="210"/><line x1="200" y1="0" x2="200" y2="210"/>
+    <line x1="300" y1="0" x2="300" y2="210"/><line x1="400" y1="0" x2="400" y2="210"/>
+    <line x1="500" y1="0" x2="500" y2="210"/>
+  </g>
+
+  <!-- === Left: Model / Source Icons (6 items) === -->
+  <!-- GPT -->
+  <g transform="translate(40,14)">
+    <rect width="50" height="22" rx="6" fill="#1A2332" stroke="#38BDF8" stroke-width="1" opacity="0.8"/>
+    <text x="25" y="15" text-anchor="middle" font-family="monospace" font-size="9" font-weight="600" fill="#38BDF8">GPT</text>
+  </g>
+  <!-- Claude -->
+  <g transform="translate(40,44)">
+    <rect width="50" height="22" rx="6" fill="#1A2332" stroke="#8B5CF6" stroke-width="1" opacity="0.8"/>
+    <text x="25" y="15" text-anchor="middle" font-family="monospace" font-size="9" font-weight="600" fill="#8B5CF6">Claude</text>
+  </g>
+  <!-- DeepSeek -->
+  <g transform="translate(28,74)">
+    <rect width="74" height="22" rx="6" fill="#1A2332" stroke="#3B82F6" stroke-width="1" opacity="0.8"/>
+    <text x="37" y="15" text-anchor="middle" font-family="monospace" font-size="9" font-weight="600" fill="#3B82F6">DeepSeek</text>
+  </g>
+  <!-- Qwen -->
+  <g transform="translate(40,104)">
+    <rect width="50" height="22" rx="6" fill="#1A2332" stroke="#38BDF8" stroke-width="1" opacity="0.8"/>
+    <text x="25" y="15" text-anchor="middle" font-family="monospace" font-size="9" font-weight="600" fill="#38BDF8">Qwen</text>
+  </g>
+  <!-- Custom Endpoint -->
+  <g transform="translate(12,134)">
+    <rect width="98" height="22" rx="6" fill="#1A2332" stroke="#8B5CF6" stroke-width="1" opacity="0.8"/>
+    <text x="49" y="15" text-anchor="middle" font-family="monospace" font-size="8" font-weight="600" fill="#8B5CF6">Custom Endpoint</text>
+  </g>
+  <!-- DeepNode -->
+  <g transform="translate(22,164)">
+    <rect width="78" height="22" rx="6" fill="#1A2332" stroke="#10B981" stroke-width="1" opacity="0.8"/>
+    <text x="39" y="15" text-anchor="middle" font-family="monospace" font-size="9" font-weight="600" fill="#10B981">DeepNode</text>
+  </g>
+
+  <!-- === Flow lines from sources to gateway === -->
+  <g class="flow-line" stroke="url(#g1)" stroke-width="1.5" opacity="0.5">
+    <line x1="95" y1="25" x2="210" y2="72"/>
+    <line x1="95" y1="55" x2="210" y2="80"/>
+    <line x1="105" y1="85" x2="210" y2="90"/>
+    <line x1="95" y1="115" x2="210" y2="100"/>
+    <line x1="114" y1="145" x2="210" y2="110"/>
+    <line x1="104" y1="175" x2="210" y2="118"/>
+  </g>
+
+  <!-- === Center: DeepPool Gateway === -->
+  <g transform="translate(210,40)">
+    <!-- Gateway box -->
+    <rect width="180" height="130" rx="10" fill="#1A2332" stroke="url(#g1)" stroke-width="2"/>
+    <!-- Inner glow -->
+    <rect x="4" y="4" width="172" height="122" rx="8" fill="url(#g1)" opacity="0.05"/>
+    <!-- Logo circuit icon (simplified) -->
+    <g transform="translate(60,8)" filter="url(#glow)">
+      <circle cx="30" cy="14" r="10" fill="none" stroke="url(#g1)" stroke-width="1.5"/>
+      <circle cx="30" cy="14" r="4" fill="url(#g1)" opacity="0.6" class="pulse-dot"/>
+      <line x1="20" y1="14" x2="8" y2="14" stroke="url(#g1)" stroke-width="1.5"/>
+      <line x1="40" y1="14" x2="52" y2="14" stroke="url(#g1)" stroke-width="1.5"/>
+      <line x1="30" y1="4" x2="30" y2="-4" stroke="url(#g1)" stroke-width="1.5"/>
+      <circle cx="8" cy="14" r="2" fill="url(#g1)"/>
+      <circle cx="52" cy="14" r="2" fill="url(#g1)"/>
+    </g>
+    <!-- Title -->
+    <text x="90" y="50" text-anchor="middle" font-family="'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="700" fill="white">DeepPool</text>
+    <text x="90" y="66" text-anchor="middle" font-family="'Helvetica Neue',Arial,sans-serif" font-size="9" fill="#94A3B8">Gateway</text>
+    <!-- Capability labels -->
+    <g transform="translate(12,80)">
+      <rect width="46" height="16" rx="4" fill="#38BDF8" opacity="0.15"/>
+      <text x="23" y="12" text-anchor="middle" font-family="monospace" font-size="8" fill="#38BDF8">Route</text>
+    </g>
+    <g transform="translate(66,80)">
+      <rect width="46" height="16" rx="4" fill="#8B5CF6" opacity="0.15"/>
+      <text x="23" y="12" text-anchor="middle" font-family="monospace" font-size="8" fill="#8B5CF6">Guard</text>
+    </g>
+    <g transform="translate(120,80)">
+      <rect width="46" height="16" rx="4" fill="#3B82F6" opacity="0.15"/>
+      <text x="23" y="12" text-anchor="middle" font-family="monospace" font-size="8" fill="#3B82F6">Trace</text>
+    </g>
+    <g transform="translate(40,102)">
+      <rect width="100" height="16" rx="4" fill="#10B981" opacity="0.12"/>
+      <text x="50" y="12" text-anchor="middle" font-family="monospace" font-size="8" fill="#10B981">Token Governance</text>
+    </g>
+  </g>
+
+  <!-- === Flowing tokens (left side) === -->
+  <g filter="url(#glow)">
+    <circle cx="160" cy="42" r="3" fill="#38BDF8" class="token t1"/>
+    <circle cx="155" cy="62" r="3" fill="#8B5CF6" class="token t2"/>
+    <circle cx="165" cy="82" r="3" fill="#3B82F6" class="token t3"/>
+    <circle cx="150" cy="102" r="3" fill="#38BDF8" class="token t4"/>
+    <circle cx="168" cy="125" r="3" fill="#8B5CF6" class="token t5"/>
+    <circle cx="155" cy="148" r="2.5" fill="#10B981" class="token t6"/>
+  </g>
+
+  <!-- === Flow lines from gateway to output === -->
+  <g class="flow-line" stroke="url(#g1)" stroke-width="1.5" opacity="0.5">
+    <line x1="390" y1="72" x2="480" y2="55"/>
+    <line x1="390" y1="105" x2="480" y2="105"/>
+    <line x1="390" y1="138" x2="480" y2="155"/>
+  </g>
+
+  <!-- === Right: Output targets === -->
+  <!-- API -->
+  <g transform="translate(480,40)">
+    <rect width="90" height="28" rx="6" fill="#1A2332" stroke="#38BDF8" stroke-width="1" opacity="0.8"/>
+    <text x="12" y="18" font-family="monospace" font-size="9" fill="#94A3B8">/v1/chat</text>
+    <circle cx="76" cy="14" r="4" fill="#38BDF8" opacity="0.5" class="pulse-dot"/>
+  </g>
+  <!-- Eval -->
+  <g transform="translate(480,90)">
+    <rect width="90" height="28" rx="6" fill="#1A2332" stroke="#8B5CF6" stroke-width="1" opacity="0.8"/>
+    <text x="12" y="18" font-family="monospace" font-size="9" fill="#94A3B8">AI Eval</text>
+    <circle cx="76" cy="14" r="4" fill="#8B5CF6" opacity="0.5" class="pulse-dot"/>
+  </g>
+  <!-- Token Stats -->
+  <g transform="translate(480,140)">
+    <rect width="90" height="28" rx="6" fill="#1A2332" stroke="#3B82F6" stroke-width="1" opacity="0.8"/>
+    <text x="12" y="18" font-family="monospace" font-size="9" fill="#94A3B8">Token Gov</text>
+    <circle cx="76" cy="14" r="4" fill="#3B82F6" opacity="0.5" class="pulse-dot"/>
+  </g>
+
+  <!-- === Flowing tokens (right side) === -->
+  <g filter="url(#glow)">
+    <circle cx="440" cy="72" r="3" fill="#38BDF8" class="token t2"/>
+    <circle cx="450" cy="105" r="3" fill="#8B5CF6" class="token t4"/>
+    <circle cx="435" cy="138" r="3" fill="#3B82F6" class="token t1"/>
+  </g>
+</svg>
