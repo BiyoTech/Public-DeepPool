@@ -238,10 +238,7 @@
               YAML 格式路由策略，按规则顺序匹配。留空时所有子模型按 round-robin 轮询。
               <a
                 class="text-blue-400 hover:text-blue-300 cursor-pointer ml-1"
-                @click.prevent="
-                  helpVisible = true
-                  helpScrollTo = 'routing'
-                "
+                @click.prevent="helpVisible = true; helpScrollTo = 'routing'"
                 >查看配置文档 →</a
               >
             </div>
@@ -427,10 +424,7 @@
               表示无上限（兜底区间）。留空表示免费。
               <a
                 class="text-blue-400 hover:text-blue-300 cursor-pointer ml-1"
-                @click.prevent="
-                  helpVisible = true
-                  helpScrollTo = 'billing'
-                "
+                @click.prevent="helpVisible = true; helpScrollTo = 'billing'"
                 >查看计费文档 →</a
               >
             </div>

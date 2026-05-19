@@ -900,10 +900,7 @@
         <p class="text-[10px] text-dp-placeholder mt-1.5">{{ $t('service.apikey.detail_rate_limit_hint') }}</p>
         <div class="flex gap-3 mt-4">
           <button
-            @click="
-              showCreateDialog = false
-              newKeyName = ''
-            "
+            @click="showCreateDialog = false; newKeyName = ''"
             class="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-muted hover:bg-slate-50 transition-colors"
           >
             {{ $t('service.apikey.cancel') }}

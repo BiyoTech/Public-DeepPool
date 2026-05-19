@@ -330,10 +330,7 @@
       :visible="showEditDialog"
       :editing-model="editingCustomModel"
       :custom-models="rawCustomModels"
-      @close="
-        showEditDialog = false
-        editingCustomModel = null
-      "
+      @close="showEditDialog = false; editingCustomModel = null"
       @saved="onCustomModelSaved"
     />
   </div>
