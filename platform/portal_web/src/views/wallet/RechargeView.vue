@@ -22,10 +22,7 @@
                 ? 'border-dp-blue bg-blue-50 text-dp-blue shadow-sm'
                 : 'border-slate-200 text-dp-body hover:border-slate-300 hover:bg-slate-50'
             "
-            @click="
-              amountYuan = preset
-              customYuan = null
-            "
+            @click="amountYuan = preset; customYuan = null"
           >
             ¥{{ preset }}
           </button>
