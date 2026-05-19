@@ -39,7 +39,8 @@ linters-settings:
       - nestingReduce
       - unnamedResult
   goimports:
-    local-prefixes: deeppool
+    local-prefixes:
+      - deeppool
 
 issues:
   # Exclude generated code

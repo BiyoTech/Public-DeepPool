@@ -720,7 +720,7 @@ function onTraceChange() {
 function toggleModel(name: string) {
   const arr = form.value.filterModels
   const idx = arr.indexOf(name)
-  idx >= 0 ? arr.splice(idx, 1) : arr.push(name)
+  if (idx >= 0) arr.splice(idx, 1); else arr.push(name)
   // Clear log selection since filter changed
   form.value.selectedLogIds = []
   if (showLogPicker.value) loadLogs()
@@ -729,7 +729,7 @@ function toggleModel(name: string) {
 function toggleApiKey(id: number) {
   const arr = form.value.filterApiKeyIds
   const idx = arr.indexOf(id)
-  idx >= 0 ? arr.splice(idx, 1) : arr.push(id)
+  if (idx >= 0) arr.splice(idx, 1); else arr.push(id)
   form.value.selectedLogIds = []
   if (showLogPicker.value) loadLogs()
 }
@@ -775,7 +775,7 @@ function cancelLogPicker() {
 
 function togglePickerLog(id: number) {
   const idx = pickerSelectedIds.value.indexOf(id)
-  idx >= 0 ? pickerSelectedIds.value.splice(idx, 1) : pickerSelectedIds.value.push(id)
+  if (idx >= 0) pickerSelectedIds.value.splice(idx, 1); else pickerSelectedIds.value.push(id)
 }
 
 function toggleAllPickerLogs() {

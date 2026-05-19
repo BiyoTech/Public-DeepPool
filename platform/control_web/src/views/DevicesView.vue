@@ -301,19 +301,15 @@ function toggleModelSelection(modelId: number) {
 async function handleAssign() {
   assigning.value = true
 
-  let res: any = null
-  if (assignMode.value === 'single') {
-    res = await assignModelsToDevice({
-      device_id: assignDeviceId.value,
-      model_ids: selectedModelIds.value,
-    }).catch(() => null)
-  } else {
-    const deviceIds = selectedRows.value.map((r: any) => r.deviceID)
-    res = await batchAssignModels({
-      device_ids: deviceIds,
-      model_ids: selectedModelIds.value,
-    }).catch(() => null)
-  }
+  const res = assignMode.value === 'single'
+    ? await assignModelsToDevice({
+        device_id: assignDeviceId.value,
+        model_ids: selectedModelIds.value,
+      }).catch(() => null)
+    : await batchAssignModels({
+        device_ids: selectedRows.value.map((r: any) => r.deviceID),
+        model_ids: selectedModelIds.value,
+      }).catch(() => null)
 
   assigning.value = false
 
