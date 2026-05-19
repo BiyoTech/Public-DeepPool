@@ -21,11 +21,14 @@ linters:
     # Style & simplification
     - gosimple
     - gocritic
-    - gofmt
-    - goimports
     # Bug detection
     - bodyclose
     - nilerr
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
 
 linters-settings:
   govet:
@@ -36,6 +39,8 @@ linters-settings:
       - ifElseChain
       - nestingReduce
       - unnamedResult
+
+formatters-settings:
   goimports:
     local-prefixes: deeppool
 
