@@ -2,8 +2,8 @@
 // Scorer definitions are loaded from YAML template files at startup, supporting i18n (en/zh).
 //
 // Loading priority:
-//   1. External filesystem path (templateDir config) — allows runtime override
-//   2. Embedded templates (go:embed via template package) — always available in binary
+//  1. External filesystem path (templateDir config) — allows runtime override
+//  2. Embedded templates (go:embed via template package) — always available in binary
 //
 // Template files: platform/internal/experiment/template/judge_template_{lang}.yaml
 //
@@ -54,7 +54,6 @@ var TemplateVariables = []string{
 var (
 	scorerRegistry     map[string][]BuiltinScorer // lang -> scorers
 	scorerRegistryOnce sync.Once
-	templateDir        string // set by InitScorerTemplates
 )
 
 // defaultLang is the fallback language when requested lang is not available.
@@ -70,7 +69,6 @@ var supportedLangs = []string{"en", "zh"}
 //  1. Try external file: {templateBaseDir}/judge_template_{lang}.yaml
 //  2. Fallback to embedded template compiled into the binary
 func InitScorerTemplates(templateBaseDir string) {
-	templateDir = templateBaseDir
 	scorerRegistryOnce.Do(func() {
 		scorerRegistry = make(map[string][]BuiltinScorer)
 		for _, lang := range supportedLangs {

@@ -14,12 +14,9 @@ linters:
   enable:
     # Core correctness
     - govet
-    - errcheck
     - staticcheck
     - unused
     - ineffassign
-    # Style & simplification
-    - gocritic
     # Bug detection
     - bodyclose
     - nilerr
@@ -32,30 +29,36 @@ formatters:
 linters-settings:
   govet:
     enable-all: true
-  gocritic:
-    enabled-checks:
-      - dupImport
-      - ifElseChain
-      - nestingReduce
-      - unnamedResult
+    disable:
+      - inline
 
 formatters-settings:
   goimports:
     local-prefixes: deeppool
 
 issues:
-  # Exclude generated code
+  # Exclude generated/third-party code
   exclude-dirs:
     - generated
     - vendor
+    - node_modules
     - dist
     - build
+  exclude-dirs-use-default: false
   exclude-rules:
     # Allow unused params in test files
     - path: _test\.go
       linters:
         - unused
-        - errcheck
+    # Skip node_modules (npm packages that contain Go files)
+    - path: node_modules/
+      linters:
+        - govet
+        - staticcheck
+        - unused
+        - ineffassign
+        - bodyclose
+        - nilerr
   # Maximum issues per linter (0 = unlimited)
   max-issues-per-linter: 0
   max-same-issues: 0

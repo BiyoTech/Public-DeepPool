@@ -361,7 +361,7 @@ func judgeRunToProto(r *types.JudgeRunDTO) *experimentv1.JudgeRunDTO {
 		TotalCount:     int32(r.TotalCount),
 		CompletedCount: int32(r.CompletedCount),
 		FailedCount:    int32(r.FailedCount),
-		PassRate:        float32(r.PassRate),
+		PassRate:       float32(r.PassRate),
 		CreatedAt:      r.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
 		UpdatedAt:      r.UpdatedAt.UTC().Format("2006-01-02T15:04:05Z"),
 	}
