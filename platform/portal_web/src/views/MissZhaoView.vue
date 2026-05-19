@@ -8,8 +8,7 @@
       <!-- New chat button -->
       <div class="p-3 border-b border-slate-200">
         <button
-          class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg border border-slate-200
-                 text-sm font-medium text-dp-title hover:bg-white hover:shadow-sm transition-all"
+          class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg border border-slate-200 text-sm font-medium text-dp-title hover:bg-white hover:shadow-sm transition-all"
           @click="handleNewChat"
         >
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -31,13 +30,25 @@
           v-for="(session, idx) in chatSessions"
           :key="idx"
           class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors mb-0.5"
-          :class="idx === activeSessionIdx
-            ? 'bg-white shadow-sm text-dp-title font-medium'
-            : 'text-dp-muted hover:bg-white/60 hover:text-dp-title'"
+          :class="
+            idx === activeSessionIdx
+              ? 'bg-white shadow-sm text-dp-title font-medium'
+              : 'text-dp-muted hover:bg-white/60 hover:text-dp-title'
+          "
           @click="switchSession(idx)"
         >
-          <svg class="w-4 h-4 flex-shrink-0 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+          <svg
+            class="w-4 h-4 flex-shrink-0 opacity-50"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"
+            />
           </svg>
           <span class="truncate">{{ session.title }}</span>
         </div>
@@ -45,11 +56,7 @@
     </aside>
 
     <!-- Mobile sidebar overlay -->
-    <div
-      v-if="sidebarOpen"
-      class="fixed inset-0 bg-black/30 z-40 md:hidden"
-      @click="sidebarOpen = false"
-    />
+    <div v-if="sidebarOpen" class="fixed inset-0 bg-black/30 z-40 md:hidden" @click="sidebarOpen = false" />
 
     <!-- ── Center: main chat area ── -->
     <div class="flex-1 flex flex-col min-w-0">
@@ -73,21 +80,34 @@
               <button
                 type="button"
                 :disabled="!availableModels.length"
-                class="min-w-[280px] flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg border text-sm text-left
-                       focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100
-                       disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-dp-placeholder"
-                :class="modelDropdownOpen ? 'border-dp-blue ring-2 ring-blue-100 bg-white' : 'border-slate-200 bg-white'"
+                class="min-w-[280px] flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg border text-sm text-left focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-dp-placeholder"
+                :class="
+                  modelDropdownOpen ? 'border-dp-blue ring-2 ring-blue-100 bg-white' : 'border-slate-200 bg-white'
+                "
                 @click="modelDropdownOpen = !modelDropdownOpen"
               >
-                <span v-if="!availableModels.length" class="text-dp-placeholder truncate">{{ $t('misszhao.no_models') }}</span>
+                <span v-if="!availableModels.length" class="text-dp-placeholder truncate">{{
+                  $t('misszhao.no_models')
+                }}</span>
                 <template v-else-if="selectedModelOption">
                   <span class="truncate text-dp-body">{{ selectedModelOption.id }}</span>
-                  <span :class="vendorTypeTagClass(selectedModelOption.vendor_type)" class="inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none">
+                  <span
+                    :class="vendorTypeTagClass(selectedModelOption.vendor_type)"
+                    class="inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none"
+                  >
                     {{ vendorTypeLabel(selectedModelOption.vendor_type) }}
                   </span>
                 </template>
                 <span v-else class="text-dp-placeholder truncate">{{ $t('misszhao.select_model') }}</span>
-                <svg class="w-4 h-4 shrink-0 text-slate-400 transition-transform" :class="{ 'rotate-180': modelDropdownOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                <svg
+                  class="w-4 h-4 shrink-0 text-slate-400 transition-transform"
+                  :class="{ 'rotate-180': modelDropdownOpen }"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
               </button>
               <Transition
                 enter-active-class="transition duration-100 ease-out"
@@ -109,7 +129,10 @@
                     @click="selectModel(m.id)"
                   >
                     <span class="truncate">{{ m.id }}</span>
-                    <span :class="vendorTypeTagClass(m.vendor_type)" class="inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none">
+                    <span
+                      :class="vendorTypeTagClass(m.vendor_type)"
+                      class="inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none"
+                    >
                       {{ vendorTypeLabel(m.vendor_type) }}
                     </span>
                   </li>
@@ -124,8 +147,7 @@
             <template v-if="apiKeys.length">
               <select
                 v-model="selectedKeyId"
-                class="min-w-[160px] px-2.5 py-1.5 rounded-lg border border-slate-200 text-sm text-dp-body bg-white
-                       focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+                class="min-w-[160px] px-2.5 py-1.5 rounded-lg border border-slate-200 text-sm text-dp-body bg-white focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
                 @change="onKeyChange"
               >
                 <option v-for="k in apiKeys" :key="k.id" :value="k.id">{{ k.name }} ({{ k.key_prefix }}...)</option>
@@ -134,11 +156,14 @@
             <template v-else>
               <router-link
                 to="/service"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-xs font-medium text-dp-blue
-                       hover:bg-blue-100 transition-colors"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-xs font-medium text-dp-blue hover:bg-blue-100 transition-colors"
               >
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z"
+                  />
                 </svg>
                 {{ $t('misszhao.create_apikey') }}
               </router-link>
@@ -148,13 +173,17 @@
           <!-- File panel toggle -->
           <button
             class="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-            :class="filePanelOpen
-              ? 'bg-dp-blue/10 text-dp-blue'
-              : 'text-dp-muted hover:bg-slate-100 hover:text-dp-title'"
+            :class="
+              filePanelOpen ? 'bg-dp-blue/10 text-dp-blue' : 'text-dp-muted hover:bg-slate-100 hover:text-dp-title'
+            "
             @click="filePanelOpen = !filePanelOpen"
           >
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"
+              />
             </svg>
             {{ $t('misszhao.output_files') }}
           </button>
@@ -173,8 +202,7 @@
               <button
                 v-for="(example, idx) in exampleQuestions"
                 :key="idx"
-                class="text-left p-4 rounded-xl border border-slate-200 hover:border-dp-blue/30
-                       hover:bg-blue-50/30 hover:shadow-sm transition-all text-sm text-dp-body leading-relaxed"
+                class="text-left p-4 rounded-xl border border-slate-200 hover:border-dp-blue/30 hover:bg-blue-50/30 hover:shadow-sm transition-all text-sm text-dp-body leading-relaxed"
                 @click="sendExample(example)"
               >
                 {{ example }}
@@ -192,14 +220,21 @@
             :class="msg.role === 'user' ? 'justify-end' : 'justify-start'"
           >
             <!-- AI avatar -->
-            <img v-if="msg.role === 'assistant'" src="/misszhao.png" alt="misszhao" class="flex-shrink-0 w-8 h-8 rounded-lg object-cover mt-0.5" />
+            <img
+              v-if="msg.role === 'assistant'"
+              src="/misszhao.png"
+              alt="misszhao"
+              class="flex-shrink-0 w-8 h-8 rounded-lg object-cover mt-0.5"
+            />
 
             <!-- Message bubble -->
             <div
               class="max-w-[80%] rounded-2xl px-4 py-3"
-              :class="msg.role === 'user'
-                ? 'bg-dp-blue text-white rounded-br-md'
-                : 'bg-white border border-slate-200 shadow-sm rounded-bl-md'"
+              :class="
+                msg.role === 'user'
+                  ? 'bg-dp-blue text-white rounded-br-md'
+                  : 'bg-white border border-slate-200 shadow-sm rounded-bl-md'
+              "
             >
               <!-- User message -->
               <div v-if="msg.role === 'user'" class="text-sm leading-relaxed whitespace-pre-wrap">
@@ -223,7 +258,11 @@
                     @click="copyMessage(msg.content)"
                   >
                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"
+                      />
                     </svg>
                     {{ $t('misszhao.copy_code') }}
                   </button>
@@ -232,9 +271,22 @@
             </div>
 
             <!-- User avatar -->
-            <div v-if="msg.role === 'user'" class="flex-shrink-0 w-8 h-8 rounded-lg bg-slate-200 flex items-center justify-center mt-0.5">
-              <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+            <div
+              v-if="msg.role === 'user'"
+              class="flex-shrink-0 w-8 h-8 rounded-lg bg-slate-200 flex items-center justify-center mt-0.5"
+            >
+              <svg
+                class="w-4 h-4 text-slate-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+                />
               </svg>
             </div>
           </div>
@@ -258,7 +310,11 @@
           <div v-if="errorMessage" class="flex gap-3 justify-start">
             <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
               <svg class="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+                />
               </svg>
             </div>
             <div class="bg-red-50 border border-red-200 rounded-2xl rounded-bl-md px-4 py-3 max-w-[80%]">
@@ -268,7 +324,11 @@
                 @click="retryLastMessage"
               >
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"
+                  />
                 </svg>
                 {{ $t('misszhao.retry') }}
               </button>
@@ -286,10 +346,7 @@
                 ref="inputRef"
                 v-model="inputText"
                 :placeholder="$t('misszhao.input_placeholder')"
-                class="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 pr-12
-                       text-sm text-dp-body placeholder:text-dp-muted/50
-                       focus:outline-none focus:ring-2 focus:ring-dp-blue/20 focus:border-dp-blue/40
-                       transition-all"
+                class="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 pr-12 text-sm text-dp-body placeholder:text-dp-muted/50 focus:outline-none focus:ring-2 focus:ring-dp-blue/20 focus:border-dp-blue/40 transition-all"
                 :style="{ height: inputHeight + 'px' }"
                 rows="1"
                 @input="autoResize"
@@ -300,8 +357,7 @@
             <!-- Send / Stop button -->
             <button
               v-if="isStreaming"
-              class="flex-shrink-0 w-10 h-10 rounded-xl bg-red-500 hover:bg-red-600 text-white
-                     flex items-center justify-center transition-colors shadow-sm"
+              class="flex-shrink-0 w-10 h-10 rounded-xl bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors shadow-sm"
               @click="stopStreaming"
             >
               <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -311,14 +367,20 @@
             <button
               v-else
               class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-colors shadow-sm"
-              :class="inputText.trim()
-                ? 'bg-dp-blue hover:bg-dp-blue-dark text-white'
-                : 'bg-slate-100 text-slate-300 cursor-not-allowed'"
+              :class="
+                inputText.trim()
+                  ? 'bg-dp-blue hover:bg-dp-blue-dark text-white'
+                  : 'bg-slate-100 text-slate-300 cursor-not-allowed'
+              "
               :disabled="!inputText.trim()"
               @click="handleSend"
             >
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"
+                />
               </svg>
             </button>
           </div>
@@ -342,12 +404,20 @@
         <!-- Header -->
         <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
           <h3 class="text-sm font-semibold text-dp-title">{{ $t('misszhao.output_files') }}</h3>
-          <button
-            class="text-dp-muted hover:text-dp-title transition-colors p-1 rounded"
-            @click="refreshFiles"
-          >
-            <svg class="w-4 h-4" :class="{ 'animate-spin': filesLoading }" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+          <button class="text-dp-muted hover:text-dp-title transition-colors p-1 rounded" @click="refreshFiles">
+            <svg
+              class="w-4 h-4"
+              :class="{ 'animate-spin': filesLoading }"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"
+              />
             </svg>
           </button>
         </div>
@@ -358,8 +428,7 @@
             v-model="fileSearchQuery"
             type="text"
             :placeholder="$t('misszhao.search_files')"
-            class="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs bg-slate-50 text-dp-body
-                   placeholder:text-dp-muted/50 focus:outline-none focus:border-dp-blue/40 focus:ring-1 focus:ring-dp-blue/20"
+            class="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs bg-slate-50 text-dp-body placeholder:text-dp-muted/50 focus:outline-none focus:border-dp-blue/40 focus:ring-1 focus:ring-dp-blue/20"
           />
         </div>
 
@@ -369,9 +438,9 @@
             v-for="tab in fileTypeTabs"
             :key="tab.key"
             class="px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors"
-            :class="activeFileTab === tab.key
-              ? 'bg-dp-blue text-white'
-              : 'bg-slate-100 text-dp-muted hover:bg-slate-200'"
+            :class="
+              activeFileTab === tab.key ? 'bg-dp-blue text-white' : 'bg-slate-100 text-dp-muted hover:bg-slate-200'
+            "
             @click="activeFileTab = tab.key"
           >
             {{ tab.label }}
@@ -390,11 +459,7 @@
           <div v-else-if="!filteredFiles.length" class="text-xs text-dp-muted text-center py-8">
             {{ $t('misszhao.no_files') }}
           </div>
-          <FileTreeNode
-            v-for="entry in filteredFiles"
-            :key="entry.path"
-            :entry="entry"
-          />
+          <FileTreeNode v-for="entry in filteredFiles" :key="entry.path" :entry="entry" />
         </div>
       </aside>
     </Transition>
@@ -444,7 +509,7 @@ interface GatewayModel {
 
 const availableModels = ref<GatewayModel[]>([])
 const selectedModel = ref('')
-const selectedModelOption = computed(() => availableModels.value.find(m => m.id === selectedModel.value) || null)
+const selectedModelOption = computed(() => availableModels.value.find((m) => m.id === selectedModel.value) || null)
 const apiKeys = ref<APIKey[]>([])
 const selectedKeyId = ref<number | null>(null)
 
@@ -459,17 +524,23 @@ function selectModel(id: string) {
 
 function vendorTypeTagClass(vendorType?: string): string {
   switch ((vendorType || '').trim()) {
-    case 'provider': return 'bg-emerald-100 text-emerald-700'
-    case 'hybrid': return 'bg-amber-100 text-amber-700'
-    default: return 'bg-blue-100 text-dp-blue'
+    case 'provider':
+      return 'bg-emerald-100 text-emerald-700'
+    case 'hybrid':
+      return 'bg-amber-100 text-amber-700'
+    default:
+      return 'bg-blue-100 text-dp-blue'
   }
 }
 
 function vendorTypeLabel(vendorType?: string): string {
   switch ((vendorType || '').trim()) {
-    case 'provider': return 'Provider'
-    case 'hybrid': return 'Hybrid'
-    default: return 'DeepNode'
+    case 'provider':
+      return 'Provider'
+    case 'hybrid':
+      return 'Hybrid'
+    default:
+      return 'DeepNode'
   }
 }
 
@@ -480,7 +551,7 @@ function handleClickOutsideDropdown(e: MouseEvent) {
 }
 
 const keySecretCache = ref<Record<string, string>>({})
-const GATEWAY_BASE = import.meta.env.VITE_GATEWAY_BASE_URL || (window.location.origin + '/v1')
+const GATEWAY_BASE = import.meta.env.VITE_GATEWAY_BASE_URL || window.location.origin + '/v1'
 const SELECTED_MODEL_KEY = 'dp_misszhao_selected_model'
 const SELECTED_KEY_KEY = 'dp_misszhao_selected_key_id'
 
@@ -495,7 +566,7 @@ async function fetchModels() {
     .sort((a: GatewayModel, b: GatewayModel) => a.id.localeCompare(b.id))
 
   const saved = localStorage.getItem(SELECTED_MODEL_KEY)
-  if (saved && availableModels.value.some(m => m.id === saved)) {
+  if (saved && availableModels.value.some((m) => m.id === saved)) {
     selectedModel.value = saved
   } else if (availableModels.value.length) {
     selectedModel.value = availableModels.value[0].id
@@ -507,7 +578,7 @@ async function fetchKeys() {
   apiKeys.value = res.data?.data || []
   const saved = localStorage.getItem(SELECTED_KEY_KEY)
   const savedId = saved ? Number(saved) : null
-  if (savedId && apiKeys.value.some(k => k.id === savedId)) {
+  if (savedId && apiKeys.value.some((k) => k.id === savedId)) {
     selectedKeyId.value = savedId
   } else if (apiKeys.value.length) {
     selectedKeyId.value = apiKeys.value[0].id
@@ -658,7 +729,7 @@ async function loadHistory() {
       }))
       messages.value = displayMessages
 
-      const firstUserMsg = displayMessages.find(m => m.role === 'user')
+      const firstUserMsg = displayMessages.find((m) => m.role === 'user')
       chatSessions.push({
         title: firstUserMsg ? firstUserMsg.content.slice(0, 30) : t('misszhao.new_chat'),
         messages: [...displayMessages],
@@ -679,17 +750,25 @@ function formatDuration(ms: number): string {
   const sec = Math.floor(ms / 1000)
   const min = Math.floor(sec / 60)
   const s = sec % 60
-  return min > 0 ? `${min.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}` : `00:${s.toString().padStart(2, '0')}`
+  return min > 0
+    ? `${min.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+    : `00:${s.toString().padStart(2, '0')}`
 }
 
 function makeStepLabel(event: AgentEvent): string {
   switch (event.type) {
-    case 'tool_called': return event.tool_name
-    case 'tool_output': return t('misszhao.step_tool_output')
-    case 'reasoning': return t('misszhao.step_reasoning')
-    case 'handoff': return `${event.source_agent} → ${event.target_agent}`
-    case 'agent_updated': return event.agent_name
-    default: return ''
+    case 'tool_called':
+      return event.tool_name
+    case 'tool_output':
+      return t('misszhao.step_tool_output')
+    case 'reasoning':
+      return t('misszhao.step_reasoning')
+    case 'handoff':
+      return `${event.source_agent} → ${event.target_agent}`
+    case 'agent_updated':
+      return event.agent_name
+    default:
+      return ''
   }
 }
 
@@ -698,14 +777,23 @@ function makeStepDetail(event: AgentEvent): string {
     case 'tool_called': {
       try {
         const args = JSON.parse(event.arguments)
-        return Object.entries(args).map(([k, v]) => `${k}: ${v}`).join(', ')
-      } catch { return event.arguments }
+        return Object.entries(args)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join(', ')
+      } catch {
+        return event.arguments
+      }
     }
-    case 'tool_output': return event.output.slice(0, 200)
-    case 'reasoning': return event.content.slice(0, 200)
-    case 'handoff': return ''
-    case 'agent_updated': return ''
-    default: return ''
+    case 'tool_output':
+      return event.output.slice(0, 200)
+    case 'reasoning':
+      return event.content.slice(0, 200)
+    case 'handoff':
+      return ''
+    case 'agent_updated':
+      return ''
+    default:
+      return ''
   }
 }
 
@@ -714,9 +802,7 @@ function handleAgentEvent(event: AgentEvent) {
 
   // Mark previous running step as done
   if (event.type === 'tool_output') {
-    const toolStep = currentSteps.value.find(
-      s => s.type === 'tool_called' && s.status === 'running'
-    )
+    const toolStep = currentSteps.value.find((s) => s.type === 'tool_called' && s.status === 'running')
     if (toolStep) {
       toolStep.status = 'done'
       toolStep.duration = formatDuration(now - toolStep.startTime)
@@ -861,7 +947,7 @@ function stopStreaming() {
 
 function retryLastMessage() {
   errorMessage.value = ''
-  const lastUserMsg = [...messages.value].reverse().find(m => m.role === 'user')
+  const lastUserMsg = [...messages.value].reverse().find((m) => m.role === 'user')
   if (lastUserMsg) {
     const lastUserIdx = messages.value.lastIndexOf(lastUserMsg)
     messages.value.splice(lastUserIdx, 1)
@@ -942,6 +1028,10 @@ function scrollToBottom() {
 // ── Copy message ──
 
 async function copyMessage(content: string) {
-  try { await navigator.clipboard.writeText(content) } catch { /* Silent */ }
+  try {
+    await navigator.clipboard.writeText(content)
+  } catch {
+    /* Silent */
+  }
 }
 </script>

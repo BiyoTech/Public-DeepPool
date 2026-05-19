@@ -53,9 +53,7 @@
           <span class="text-dp-text-2 text-sm">{{ formatTime(row.created_at) }}</span>
         </template>
         <template #op="{ row }">
-          <t-button variant="text" theme="primary" size="small" @click="openBillingDialog(row)">
-            欠费设置
-          </t-button>
+          <t-button variant="text" theme="primary" size="small" @click="openBillingDialog(row)"> 欠费设置 </t-button>
         </template>
       </t-table>
     </div>
@@ -69,7 +67,9 @@
       @confirm="handleSaveBilling"
     >
       <div class="py-2 space-y-1 mb-4">
-        <div class="text-sm text-dp-text-2">用户：<span class="text-dp-text-1 font-medium">{{ editingUser?.username }}</span></div>
+        <div class="text-sm text-dp-text-2">
+          用户：<span class="text-dp-text-1 font-medium">{{ editingUser?.username }}</span>
+        </div>
         <div class="text-sm text-dp-text-2">ID：{{ editingUser?.id }}</div>
       </div>
       <t-form label-width="140px">

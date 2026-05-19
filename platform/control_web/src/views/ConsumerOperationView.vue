@@ -7,9 +7,7 @@
         <div class="mt-4 space-y-4">
           <div class="bg-dp-bg-2 rounded-lg p-6 border border-white/5">
             <h3 class="text-base font-medium text-dp-text-1 mb-4">注册赠送 Token 设置</h3>
-            <p class="text-sm text-dp-text-3 mb-4">
-              新用户注册时自动赠送的免费 Token 数量。设置为 0 表示关闭赠送。
-            </p>
+            <p class="text-sm text-dp-text-3 mb-4">新用户注册时自动赠送的免费 Token 数量。设置为 0 表示关闭赠送。</p>
             <div class="flex items-end gap-4">
               <div class="w-80">
                 <t-input-number
@@ -22,13 +20,9 @@
                   class="w-full"
                 />
               </div>
-              <t-button theme="primary" :loading="savingConfig" @click="saveSignupBonus">
-                保存设置
-              </t-button>
+              <t-button theme="primary" :loading="savingConfig" @click="saveSignupBonus"> 保存设置 </t-button>
             </div>
-            <p class="text-xs text-dp-text-3 mt-2">
-              当前设置: {{ formatTokens(signupBonusTokens) }} tokens
-            </p>
+            <p class="text-xs text-dp-text-3 mt-2">当前设置: {{ formatTokens(signupBonusTokens) }} tokens</p>
           </div>
         </div>
       </t-tab-panel>
@@ -49,12 +43,7 @@
               <t-button @click="searchUsers">搜索</t-button>
             </div>
             <div v-if="userList.length" class="mt-3">
-              <t-select
-                v-model="selectedUserId"
-                placeholder="选择用户"
-                class="w-80"
-                @change="onUserSelected"
-              >
+              <t-select v-model="selectedUserId" placeholder="选择用户" class="w-80" @change="onUserSelected">
                 <t-option
                   v-for="u in userList"
                   :key="u.id"
@@ -70,13 +59,9 @@
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-base font-medium text-dp-text-1">
                 Token 包管理
-                <span class="text-sm text-dp-blue ml-2">
-                  剩余: {{ formatTokens(remainingTokens) }}
-                </span>
+                <span class="text-sm text-dp-blue ml-2"> 剩余: {{ formatTokens(remainingTokens) }} </span>
               </h3>
-              <t-button theme="primary" size="small" @click="showGrantDialog = true">
-                赠送 Token
-              </t-button>
+              <t-button theme="primary" size="small" @click="showGrantDialog = true"> 赠送 Token </t-button>
             </div>
 
             <t-table
@@ -113,9 +98,7 @@
           <div v-if="selectedUserId" class="bg-dp-bg-2 rounded-lg p-6 border border-white/5">
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-base font-medium text-dp-text-1">折扣管理</h3>
-              <t-button theme="primary" size="small" @click="showDiscountDialog = true">
-                设置折扣
-              </t-button>
+              <t-button theme="primary" size="small" @click="showDiscountDialog = true"> 设置折扣 </t-button>
             </div>
 
             <t-table
@@ -133,11 +116,7 @@
                 </t-tag>
               </template>
               <template #status="{ row }">
-                <t-tag
-                  :theme="isDiscountActive(row) ? 'success' : 'default'"
-                  variant="light"
-                  size="small"
-                >
+                <t-tag :theme="isDiscountActive(row) ? 'success' : 'default'" variant="light" size="small">
                   {{ isDiscountActive(row) ? '生效中' : isDiscountExpired(row) ? '已过期' : '未生效' }}
                 </t-tag>
               </template>
@@ -213,7 +192,9 @@
               theme="normal"
               class="w-40"
             />
-            <span class="text-sm text-dp-text-2">折（即支付原价的 {{ ((discountForm.discount_display || 0) * 10).toFixed(0) }}%）</span>
+            <span class="text-sm text-dp-text-2"
+              >折（即支付原价的 {{ ((discountForm.discount_display || 0) * 10).toFixed(0) }}%）</span
+            >
           </div>
         </t-form-item>
         <t-form-item label="生效时间">
@@ -329,7 +310,12 @@ const grantForm = ref({ tokens: 1000000, expires_at: '', remark: '' })
 const grantColumns = [
   { colKey: 'id', title: 'ID', width: 60 },
   { colKey: 'grant_type', title: '类型', width: 100 },
-  { colKey: 'total_tokens', title: '总量', cell: (_h: any, { row }: any) => formatTokens(row.total_tokens), width: 120 },
+  {
+    colKey: 'total_tokens',
+    title: '总量',
+    cell: (_h: any, { row }: any) => formatTokens(row.total_tokens),
+    width: 120,
+  },
   { colKey: 'remaining_tokens', title: '剩余', width: 120 },
   { colKey: 'expires_at', title: '过期时间', width: 160 },
   { colKey: 'remark', title: '备注', ellipsis: true },

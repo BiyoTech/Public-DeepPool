@@ -22,18 +22,14 @@
       <div class="flex mb-6 bg-slate-100 rounded-lg p-1">
         <button
           class="flex-1 py-2 text-sm font-medium rounded-md transition-all duration-200"
-          :class="loginMode === 'password'
-            ? 'bg-white text-dp-blue shadow-sm'
-            : 'text-dp-muted hover:text-dp-body'"
+          :class="loginMode === 'password' ? 'bg-white text-dp-blue shadow-sm' : 'text-dp-muted hover:text-dp-body'"
           @click="switchMode('password')"
         >
           {{ $t('auth.login.tab_password') }}
         </button>
         <button
           class="flex-1 py-2 text-sm font-medium rounded-md transition-all duration-200"
-          :class="loginMode === 'email'
-            ? 'bg-white text-dp-blue shadow-sm'
-            : 'text-dp-muted hover:text-dp-body'"
+          :class="loginMode === 'email' ? 'bg-white text-dp-blue shadow-sm' : 'text-dp-muted hover:text-dp-body'"
           @click="switchMode('email')"
         >
           {{ $t('auth.login.tab_email') }}
@@ -53,9 +49,7 @@
             v-model="passwordForm.account"
             type="text"
             :placeholder="$t('auth.login.account_placeholder')"
-            class="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body
-                   placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100
-                   transition-all duration-200"
+            class="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100 transition-all duration-200"
             required
           />
         </div>
@@ -71,9 +65,7 @@
             v-model="passwordForm.password"
             type="password"
             :placeholder="$t('auth.login.password_placeholder')"
-            class="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body
-                   placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100
-                   transition-all duration-200"
+            class="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100 transition-all duration-200"
             required
           />
         </div>
@@ -81,9 +73,7 @@
         <button
           type="submit"
           :disabled="loading"
-          class="w-full py-3 rounded-lg bg-gradient-to-r from-dp-blue to-dp-blue-dark text-white font-medium
-                 shadow-sm hover:shadow-md hover:from-dp-blue-dark hover:to-dp-blue-deeper
-                 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+          class="w-full py-3 rounded-lg bg-gradient-to-r from-dp-blue to-dp-blue-dark text-white font-medium shadow-sm hover:shadow-md hover:from-dp-blue-dark hover:to-dp-blue-deeper transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {{ loading ? '...' : $t('auth.login.submit') }}
         </button>
@@ -97,9 +87,7 @@
             v-model="emailForm.email"
             type="email"
             :placeholder="$t('auth.login.email_placeholder')"
-            class="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body
-                   placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100
-                   transition-all duration-200"
+            class="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100 transition-all duration-200"
             required
           />
         </div>
@@ -112,22 +100,19 @@
               type="text"
               maxlength="6"
               :placeholder="$t('auth.login.code_placeholder')"
-              class="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body
-                     placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100
-                     transition-all duration-200"
+              class="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100 transition-all duration-200"
               required
             />
             <button
               type="button"
               :disabled="codeCooldown > 0 || sendingCode"
-              class="shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-                     disabled:opacity-60 disabled:cursor-not-allowed"
-              :class="codeCooldown > 0
-                ? 'bg-slate-100 text-dp-muted'
-                : 'bg-blue-50 text-dp-blue hover:bg-blue-100'"
+              class="shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+              :class="codeCooldown > 0 ? 'bg-slate-100 text-dp-muted' : 'bg-blue-50 text-dp-blue hover:bg-blue-100'"
               @click="handleSendCode('login')"
             >
-              {{ codeCooldown > 0 ? $t('auth.login.code_sent', { seconds: codeCooldown }) : $t('auth.login.send_code') }}
+              {{
+                codeCooldown > 0 ? $t('auth.login.code_sent', { seconds: codeCooldown }) : $t('auth.login.send_code')
+              }}
             </button>
           </div>
         </div>
@@ -135,9 +120,7 @@
         <button
           type="submit"
           :disabled="loading"
-          class="w-full py-3 rounded-lg bg-gradient-to-r from-dp-blue to-dp-blue-dark text-white font-medium
-                 shadow-sm hover:shadow-md hover:from-dp-blue-dark hover:to-dp-blue-deeper
-                 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+          class="w-full py-3 rounded-lg bg-gradient-to-r from-dp-blue to-dp-blue-dark text-white font-medium shadow-sm hover:shadow-md hover:from-dp-blue-dark hover:to-dp-blue-deeper transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {{ loading ? '...' : $t('auth.login.submit') }}
         </button>

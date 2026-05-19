@@ -11,7 +11,9 @@
           @click="showCreateDialog = true"
           class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition shadow-sm"
         >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
           {{ $t('service.mymodels.create_custom') }}
         </button>
       </div>
@@ -19,8 +21,18 @@
       <!-- Search & Filters -->
       <div class="flex flex-wrap items-center gap-3 mb-6">
         <div class="relative flex-1 min-w-[240px] max-w-md">
-          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          <svg
+            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
           </svg>
           <input
             v-model="searchQuery"
@@ -36,9 +48,11 @@
             v-for="sf in sourceFilters"
             :key="sf.value"
             class="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-            :class="activeSourceFilter === sf.value
-              ? 'bg-slate-800 text-white shadow-sm'
-              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'"
+            :class="
+              activeSourceFilter === sf.value
+                ? 'bg-slate-800 text-white shadow-sm'
+                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+            "
             @click="activeSourceFilter = sf.value"
           >
             {{ sf.label }}
@@ -51,9 +65,11 @@
             v-for="vt in vendorFilters"
             :key="vt.value"
             class="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-            :class="activeVendorFilter === vt.value
-              ? 'bg-blue-600 text-white shadow-sm'
-              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'"
+            :class="
+              activeVendorFilter === vt.value
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+            "
             @click="activeVendorFilter = vt.value"
           >
             {{ vt.label }}
@@ -103,7 +119,11 @@
                 @click.stop="openEdit(model)"
               >
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/>
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"
+                  />
                 </svg>
               </button>
               <span v-if="model._isCustom" class="text-[10px] text-violet-500 font-medium">Custom</span>
@@ -124,15 +144,15 @@
             >
               {{ tag }}
             </span>
-            <span v-if="(model.tags || []).length > 4" class="text-[10px] text-slate-400">+{{ model.tags.length - 4 }}</span>
+            <span v-if="(model.tags || []).length > 4" class="text-[10px] text-slate-400"
+              >+{{ model.tags.length - 4 }}</span
+            >
           </div>
 
           <!-- Meta -->
           <div class="flex items-center gap-3 text-[11px] text-slate-400">
             <span v-if="model.max_context_length">{{ formatCtx(model.max_context_length) }} ctx</span>
-            <span v-if="model.pricing_tiers?.length">
-              ¥{{ model.pricing_tiers[0].input_price }}/M in
-            </span>
+            <span v-if="model.pricing_tiers?.length"> ¥{{ model.pricing_tiers[0].input_price }}/M in </span>
             <span v-else-if="model.price_range">
               ¥{{ model.price_range.min_input_price }}~{{ model.price_range.max_input_price }}/M
             </span>
@@ -151,13 +171,18 @@
       leave-from-class="translate-x-0"
       leave-to-class="translate-x-full"
     >
-      <div v-if="detailModel" class="fixed inset-y-0 right-0 z-50 w-[480px] max-w-full bg-white shadow-2xl flex flex-col">
+      <div
+        v-if="detailModel"
+        class="fixed inset-y-0 right-0 z-50 w-[480px] max-w-full bg-white shadow-2xl flex flex-col"
+      >
         <!-- Drawer Header -->
         <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h2 class="text-lg font-semibold text-slate-800 truncate">{{ detailModel._displayName || detailModel.model_name }}</h2>
+          <h2 class="text-lg font-semibold text-slate-800 truncate">
+            {{ detailModel._displayName || detailModel.model_name }}
+          </h2>
           <button class="p-1.5 rounded-lg hover:bg-slate-100 transition" @click="detailModel = null">
             <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
@@ -166,7 +191,10 @@
         <div class="flex-1 overflow-y-auto px-6 py-5 space-y-5">
           <!-- Vendor -->
           <div class="flex items-center gap-2">
-            <span :class="vendorBadgeClass(detailModel.vendor_type)" class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold">
+            <span
+              :class="vendorBadgeClass(detailModel.vendor_type)"
+              class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold"
+            >
               {{ vendorLabel(detailModel.vendor_type) }}
             </span>
             <span v-if="detailModel._isCustom" class="text-xs text-violet-500 font-medium">Custom Model</span>
@@ -207,15 +235,25 @@
                 :key="idx"
                 class="flex items-center gap-2 text-sm text-slate-700"
               >
-                <span class="text-xs text-slate-400 w-16">{{ tier.max_input_tokens ? `≤${formatCtx(tier.max_input_tokens)}` : '∞' }}</span>
+                <span class="text-xs text-slate-400 w-16">{{
+                  tier.max_input_tokens ? `≤${formatCtx(tier.max_input_tokens)}` : '∞'
+                }}</span>
                 <span>¥{{ tier.input_price }}/M input</span>
                 <span class="text-slate-300">|</span>
                 <span>¥{{ tier.output_price }}/M output</span>
               </div>
             </div>
             <div v-else-if="detailModel.price_range" class="text-sm text-slate-700">
-              <p>Input: ¥{{ detailModel.price_range.min_input_price }} ~ ¥{{ detailModel.price_range.max_input_price }} / M tokens</p>
-              <p>Output: ¥{{ detailModel.price_range.min_output_price }} ~ ¥{{ detailModel.price_range.max_output_price }} / M tokens</p>
+              <p>
+                Input: ¥{{ detailModel.price_range.min_input_price }} ~ ¥{{ detailModel.price_range.max_input_price }} /
+                M tokens
+              </p>
+              <p>
+                Output: ¥{{ detailModel.price_range.min_output_price }} ~ ¥{{
+                  detailModel.price_range.max_output_price
+                }}
+                / M tokens
+              </p>
               <p class="text-xs text-slate-400 mt-1">Dynamic pricing based on child model selected</p>
             </div>
             <p v-else class="text-sm text-emerald-600 font-medium">Free</p>
@@ -230,7 +268,9 @@
                 :key="idx"
                 class="flex items-center gap-2 text-sm text-slate-700"
               >
-                <span class="text-xs text-slate-400 w-16">{{ tier.max_input_tokens ? `≤${formatCtx(tier.max_input_tokens)}` : '∞' }}</span>
+                <span class="text-xs text-slate-400 w-16">{{
+                  tier.max_input_tokens ? `≤${formatCtx(tier.max_input_tokens)}` : '∞'
+                }}</span>
                 <span>¥{{ tier.input_price }}/M in</span>
                 <span class="text-slate-300">|</span>
                 <span>¥{{ tier.output_price }}/M out</span>
@@ -274,11 +314,7 @@
       leave-from-class="opacity-100"
       leave-to-class="opacity-0"
     >
-      <div
-        v-if="detailModel"
-        class="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
-        @click="detailModel = null"
-      />
+      <div v-if="detailModel" class="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm" @click="detailModel = null" />
     </Transition>
 
     <!-- Custom Model Create Dialog -->
@@ -294,7 +330,10 @@
       :visible="showEditDialog"
       :editing-model="editingCustomModel"
       :custom-models="rawCustomModels"
-      @close="showEditDialog = false; editingCustomModel = null"
+      @close="
+        showEditDialog = false
+        editingCustomModel = null
+      "
       @saved="onCustomModelSaved"
     />
   </div>
@@ -353,23 +392,24 @@ const filteredModels = computed(() => {
 
   // Filter by source (preset vs custom).
   if (activeSourceFilter.value === 'preset') {
-    result = result.filter(m => !m._isCustom)
+    result = result.filter((m) => !m._isCustom)
   } else if (activeSourceFilter.value === 'custom') {
-    result = result.filter(m => m._isCustom)
+    result = result.filter((m) => m._isCustom)
   }
 
   // Filter by vendor type.
   if (activeVendorFilter.value !== 'all') {
-    result = result.filter(m => m.vendor_type === activeVendorFilter.value)
+    result = result.filter((m) => m.vendor_type === activeVendorFilter.value)
   }
 
   // Search by name or tags.
   const q = searchQuery.value.trim().toLowerCase()
   if (q) {
-    result = result.filter(m =>
-      m.model_name.toLowerCase().includes(q) ||
-      m._displayName.toLowerCase().includes(q) ||
-      (m.tags || []).some(tag => tag.toLowerCase().includes(q))
+    result = result.filter(
+      (m) =>
+        m.model_name.toLowerCase().includes(q) ||
+        m._displayName.toLowerCase().includes(q) ||
+        (m.tags || []).some((tag) => tag.toLowerCase().includes(q)),
     )
   }
 
@@ -386,7 +426,7 @@ async function fetchModels() {
 
     // Map public models to display format.
     const publicItems: PublicModel[] = publicRes?.data?.data || []
-    presetModels.value = publicItems.map(m => ({
+    presetModels.value = publicItems.map((m) => ({
       ...m,
       _isCustom: false,
       _displayName: m.model_name,
@@ -396,8 +436,8 @@ async function fetchModels() {
     const customItems: CustomModel[] = customRes?.data?.data || []
     rawCustomModels.value = customItems
     customModels.value = customItems
-      .filter(cm => cm.enabled)
-      .map(cm => ({
+      .filter((cm) => cm.enabled)
+      .map((cm) => ({
         model_name: cm.model_name,
         vendor_type: cm.vendor_type,
         max_context_length: 0,
@@ -425,7 +465,7 @@ function openDetail(model: DisplayModel) {
 // Open edit drawer for a custom model
 function openEdit(model: DisplayModel) {
   if (!model._isCustom || !model._customModelId) return
-  const raw = rawCustomModels.value.find(cm => cm.id === model._customModelId)
+  const raw = rawCustomModels.value.find((cm) => cm.id === model._customModelId)
   if (!raw) return
   editingCustomModel.value = raw
   showEditDialog.value = true

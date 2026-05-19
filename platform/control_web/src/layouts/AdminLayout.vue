@@ -18,7 +18,7 @@
           :class="[
             isActive(item.path)
               ? 'bg-dp-blue/10 text-dp-blue border-l-2 border-dp-blue'
-              : 'text-dp-text-2 hover:bg-white/5 hover:text-dp-text-1 border-l-2 border-transparent'
+              : 'text-dp-text-2 hover:bg-white/5 hover:text-dp-text-1 border-l-2 border-transparent',
           ]"
         >
           <component :is="item.icon" class="w-5 h-5" />

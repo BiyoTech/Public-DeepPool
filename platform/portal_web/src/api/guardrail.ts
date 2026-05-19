@@ -9,7 +9,7 @@ export interface GuardrailTemplate {
   name: string
   display_name: string
   description: string
-  phase: string        // input / output / both
+  phase: string // input / output / both
   prompt_template: string
 }
 
@@ -17,8 +17,8 @@ export interface Guardrail {
   id: number
   api_key_id: number
   name: string
-  phase: string        // input / output
-  action: string       // block / log
+  phase: string // input / output
+  action: string // block / log
   prompt: string
   evaluator_model: string
   evaluator_api_key_id: number
@@ -116,14 +116,17 @@ export function deleteGuardrail(apiKeyId: number, guardrailId: number) {
 }
 
 /** List evaluation results for the given API Key (scroll-based pagination) */
-export function listGuardrailResults(apiKeyId: number, params?: {
-  guardrail_id?: number
-  request_id?: string
-  flagged?: boolean
-  start_time?: string
-  end_time?: string
-  page?: number
-  page_size?: number
-}) {
+export function listGuardrailResults(
+  apiKeyId: number,
+  params?: {
+    guardrail_id?: number
+    request_id?: string
+    flagged?: boolean
+    start_time?: string
+    end_time?: string
+    page?: number
+    page_size?: number
+  },
+) {
   return http.get<{ code: number; data: GuardrailResultsResponse }>(`/guardrails/${apiKeyId}/results`, { params })
 }

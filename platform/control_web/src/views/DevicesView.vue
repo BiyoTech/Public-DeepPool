@@ -15,11 +15,7 @@
         </t-input>
         <t-button theme="primary" @click="fetchDevices">搜索</t-button>
       </div>
-      <t-button
-        v-if="selectedRows.length > 0"
-        theme="primary"
-        @click="openBatchAssignDialog"
-      >
+      <t-button v-if="selectedRows.length > 0" theme="primary" @click="openBatchAssignDialog">
         批量分配模型 (已选 {{ selectedRows.length }} 台)
       </t-button>
     </div>
@@ -42,10 +38,7 @@
         <!-- 在线状态列：基于 NodeManager 实时连接 -->
         <template #online="{ row }">
           <div class="flex items-center gap-1.5">
-            <span
-              class="w-2 h-2 rounded-full"
-              :class="row._isOnline ? 'bg-dp-green' : 'bg-dp-text-3'"
-            />
+            <span class="w-2 h-2 rounded-full" :class="row._isOnline ? 'bg-dp-green' : 'bg-dp-text-3'" />
             <span class="text-sm" :class="row._isOnline ? 'text-dp-green' : 'text-dp-text-3'">
               {{ row._isOnline ? '在线' : '离线' }}
             </span>
@@ -97,9 +90,7 @@
         </template>
         <!-- 操作列 -->
         <template #op="{ row }">
-          <t-button variant="text" theme="primary" size="small" @click="openAssignDialog(row)">
-            分配模型
-          </t-button>
+          <t-button variant="text" theme="primary" size="small" @click="openAssignDialog(row)"> 分配模型 </t-button>
         </template>
       </t-table>
     </div>
@@ -113,18 +104,18 @@
       @confirm="handleAssign"
     >
       <div class="py-2">
-        <p class="text-dp-text-2 text-sm mb-4">
-          从平台已启用的模型中选择要分配给设备的模型列表：
-        </p>
+        <p class="text-dp-text-2 text-sm mb-4">从平台已启用的模型中选择要分配给设备的模型列表：</p>
         <!-- 模型多选 -->
         <t-checkbox-group v-model="selectedModelIds" class="flex flex-col gap-2">
           <div
             v-for="model in enabledModels"
             :key="model.id"
             class="flex items-center gap-3 px-4 py-3 rounded-lg border transition-all duration-150 cursor-pointer"
-            :class="selectedModelIds.includes(model.id)
-              ? 'bg-dp-blue/5 border-dp-blue/30'
-              : 'bg-dp-bg-4 border-white/5 hover:border-white/10'"
+            :class="
+              selectedModelIds.includes(model.id)
+                ? 'bg-dp-blue/5 border-dp-blue/30'
+                : 'bg-dp-bg-4 border-white/5 hover:border-white/10'
+            "
             @click="toggleModelSelection(model.id)"
           >
             <t-checkbox :value="model.id" @click.stop />
@@ -206,9 +197,7 @@ async function fetchDevices() {
     const items = devRes.data.data.items || []
 
     // 构建在线 simei 集合（来自 NodeManager 实时连接表，O(1) 查找）
-    const onlineSimeis = new Set<string>(
-      (sessRes?.data?.data || []).map((s: any) => s.simei)
-    )
+    const onlineSimeis = new Set<string>((sessRes?.data?.data || []).map((s: any) => s.simei))
 
     // 为每个设备附加分配模型信息（并行请求）+ 在线状态
     const enriched = await Promise.all(
@@ -216,11 +205,11 @@ async function fetchDevices() {
         const aRes = await getDeviceAssignments(device.deviceID).catch(() => null)
         const aData = aRes?.data?.data
         // 后端返回的 data 可能是数组或 { items: [...] }
-        device._assignedModels = Array.isArray(aData) ? aData : (aData?.items || [])
+        device._assignedModels = Array.isArray(aData) ? aData : aData?.items || []
         // 在线状态以 NodeManager 实时连接为准，覆盖数据库 status
         device._isOnline = onlineSimeis.has(device.simei)
         return device
-      })
+      }),
     )
     devices.value = enriched
     pagination.total = devRes.data.data.total || 0
@@ -265,7 +254,7 @@ const assignDialogTitle = computed(() => {
 async function loadEnabledModels() {
   const res = await getEnabledModels().catch(() => null)
   const data = res?.data?.data
-  const all = Array.isArray(data) ? data : (data?.items || [])
+  const all = Array.isArray(data) ? data : data?.items || []
   // Only deepnode models can be assigned to physical devices
   enabledModels.value = all.filter((m: any) => m.vendor_type === 'deepnode')
 }
@@ -301,15 +290,16 @@ function toggleModelSelection(modelId: number) {
 async function handleAssign() {
   assigning.value = true
 
-  const res = assignMode.value === 'single'
-    ? await assignModelsToDevice({
-        device_id: assignDeviceId.value,
-        model_ids: selectedModelIds.value,
-      }).catch(() => null)
-    : await batchAssignModels({
-        device_ids: selectedRows.value.map((r: any) => r.deviceID),
-        model_ids: selectedModelIds.value,
-      }).catch(() => null)
+  const res =
+    assignMode.value === 'single'
+      ? await assignModelsToDevice({
+          device_id: assignDeviceId.value,
+          model_ids: selectedModelIds.value,
+        }).catch(() => null)
+      : await batchAssignModels({
+          device_ids: selectedRows.value.map((r: any) => r.deviceID),
+          model_ids: selectedModelIds.value,
+        }).catch(() => null)
 
   assigning.value = false
 

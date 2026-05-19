@@ -1,15 +1,15 @@
 <template>
   <div class="flex min-h-[calc(100vh-64px)]">
     <!-- 左侧目录树 -->
-    <aside class="w-64 flex-shrink-0 border-r border-slate-200 bg-white overflow-y-auto sticky top-16 h-[calc(100vh-64px)]">
+    <aside
+      class="w-64 flex-shrink-0 border-r border-slate-200 bg-white overflow-y-auto sticky top-16 h-[calc(100vh-64px)]"
+    >
       <div class="p-4">
         <!-- 搜索框 -->
         <input
           v-model="searchQuery"
           :placeholder="$t('docs.search_placeholder')"
-          class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-dp-body
-                 placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-1 focus:ring-blue-100
-                 transition-all duration-200 mb-4"
+          class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-dp-body placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-1 focus:ring-blue-100 transition-all duration-200 mb-4"
         />
 
         <!-- 目录组 -->
@@ -21,9 +21,11 @@
                 <button
                   @click="selectDoc(item.path)"
                   class="w-full text-left px-3 py-1.5 rounded-lg text-sm transition-all duration-200 flex items-center"
-                  :class="currentPath === item.path
-                    ? 'text-dp-blue bg-blue-50 font-medium border-l-[3px] border-dp-blue'
-                    : 'text-dp-body hover:bg-slate-50 hover:text-dp-title border-l-[3px] border-transparent'"
+                  :class="
+                    currentPath === item.path
+                      ? 'text-dp-blue bg-blue-50 font-medium border-l-[3px] border-dp-blue'
+                      : 'text-dp-body hover:bg-slate-50 hover:text-dp-title border-l-[3px] border-transparent'
+                  "
                 >
                   {{ item.title }}
                 </button>
@@ -58,7 +60,7 @@
               class="block text-sm py-0.5 transition-colors duration-200"
               :class="[
                 heading.level === 2 ? 'text-dp-body hover:text-dp-blue' : 'text-dp-muted hover:text-dp-body pl-3',
-                activeHeading === heading.id ? '!text-dp-blue font-medium' : ''
+                activeHeading === heading.id ? '!text-dp-blue font-medium' : '',
               ]"
             >
               {{ heading.text }}
@@ -119,8 +121,8 @@ const filteredSidebar = computed(() => {
   return sidebar.value
     .map((group) => ({
       ...group,
-      children: group.children.filter((item) =>
-        item.title.toLowerCase().includes(q) || item.path.toLowerCase().includes(q)
+      children: group.children.filter(
+        (item) => item.title.toLowerCase().includes(q) || item.path.toLowerCase().includes(q),
       ),
     }))
     .filter((group) => group.children.length > 0)
@@ -156,7 +158,10 @@ function extractToc() {
   while ((match = headingRegex.exec(docContent.value)) !== null) {
     const level = match[1].length
     const text = match[2].trim()
-    const id = text.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]+/g, '-').replace(/^-|-$/g, '')
+    const id = text
+      .toLowerCase()
+      .replace(/[^a-z0-9\u4e00-\u9fff]+/g, '-')
+      .replace(/^-|-$/g, '')
     items.push({ id, text, level })
   }
   tocItems.value = items
@@ -168,17 +173,25 @@ function selectDoc(path: string) {
 }
 
 // 监听路径参数变化
-watch(() => route.params.pathMatch, (val) => {
-  if (val) {
-    const path = Array.isArray(val) ? val.join('/') : val
-    if (path) currentPath.value = path
-  }
-}, { immediate: true })
+watch(
+  () => route.params.pathMatch,
+  (val) => {
+    if (val) {
+      const path = Array.isArray(val) ? val.join('/') : val
+      if (path) currentPath.value = path
+    }
+  },
+  { immediate: true },
+)
 
 // 监听当前路径和语言变化，重新加载文档
-watch([currentPath, () => langStore.locale], () => {
-  loadDoc(currentPath.value)
-}, { immediate: true })
+watch(
+  [currentPath, () => langStore.locale],
+  () => {
+    loadDoc(currentPath.value)
+  },
+  { immediate: true },
+)
 
 // 滚动监听，高亮当前可见的标题
 let scrollTimer: number | undefined

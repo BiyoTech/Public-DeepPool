@@ -22,10 +22,34 @@
     <circle cx="42" cy="34" r="1" fill="url(#dp-logo-grad)" />
     <circle cx="42" cy="42" r="1" fill="url(#dp-logo-grad)" />
     <!-- Circuit traces flowing from left into server -->
-    <path d="M8 18 Q18 18 24 14 L36 14" stroke="url(#dp-logo-grad)" stroke-width="2" stroke-linecap="round" fill="none" />
-    <path d="M8 30 Q16 30 22 24 L36 24" stroke="url(#dp-logo-grad)" stroke-width="2" stroke-linecap="round" fill="none" />
-    <path d="M8 42 Q16 42 22 36 L36 36" stroke="url(#dp-logo-grad)" stroke-width="2" stroke-linecap="round" fill="none" />
-    <path d="M12 52 Q18 52 24 46 L36 46" stroke="url(#dp-logo-grad)" stroke-width="2" stroke-linecap="round" fill="none" />
+    <path
+      d="M8 18 Q18 18 24 14 L36 14"
+      stroke="url(#dp-logo-grad)"
+      stroke-width="2"
+      stroke-linecap="round"
+      fill="none"
+    />
+    <path
+      d="M8 30 Q16 30 22 24 L36 24"
+      stroke="url(#dp-logo-grad)"
+      stroke-width="2"
+      stroke-linecap="round"
+      fill="none"
+    />
+    <path
+      d="M8 42 Q16 42 22 36 L36 36"
+      stroke="url(#dp-logo-grad)"
+      stroke-width="2"
+      stroke-linecap="round"
+      fill="none"
+    />
+    <path
+      d="M12 52 Q18 52 24 46 L36 46"
+      stroke="url(#dp-logo-grad)"
+      stroke-width="2"
+      stroke-linecap="round"
+      fill="none"
+    />
     <!-- Circuit junction nodes -->
     <circle cx="8" cy="18" r="2.5" fill="url(#dp-logo-grad)" />
     <circle cx="8" cy="30" r="2.5" fill="url(#dp-logo-grad)" />

@@ -14,9 +14,7 @@
         <template #icon><RefreshIcon /></template>
         刷新
       </t-button>
-      <t-tag theme="primary" variant="light" size="large">
-        在线设备: {{ sessions.length }}
-      </t-tag>
+      <t-tag theme="primary" variant="light" size="large"> 在线设备: {{ sessions.length }} </t-tag>
     </div>
 
     <!-- 设备表格 -->

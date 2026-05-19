@@ -25,7 +25,7 @@ export interface PublicModel {
   param_scale: number
   pricing_tiers: PricingTier[]
   contributor_tiers: PricingTier[]
-  price_range?: PriceRange  // hybrid models only
+  price_range?: PriceRange // hybrid models only
   tags?: string[]
 }
 

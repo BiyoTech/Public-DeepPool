@@ -21,7 +21,9 @@
           </div>
           <div class="bg-white rounded-xl p-5 border border-slate-100 shadow-sm">
             <div class="text-xs text-dp-muted mb-1">{{ $t('data.summary_requests') }}</div>
-            <div class="text-2xl font-bold text-dp-title">{{ formatNum(summary.contributed_requests + summary.consumed_requests) }}</div>
+            <div class="text-2xl font-bold text-dp-title">
+              {{ formatNum(summary.contributed_requests + summary.consumed_requests) }}
+            </div>
           </div>
         </div>
 
@@ -32,9 +34,7 @@
               v-for="tab in tabs"
               :key="tab.key"
               class="flex-1 py-3 text-sm font-medium text-center transition-colors relative"
-              :class="activeTab === tab.key
-                ? 'text-dp-blue'
-                : 'text-dp-muted hover:text-dp-title'"
+              :class="activeTab === tab.key ? 'text-dp-blue' : 'text-dp-muted hover:text-dp-title'"
               @click="switchTab(tab.key as 'contribution' | 'consumption' | 'billing')"
             >
               {{ tab.label }}
@@ -54,10 +54,18 @@
               <table class="w-full text-sm border-collapse">
                 <thead>
                   <tr class="bg-slate-50 text-dp-muted text-xs">
-                    <th class="py-3 px-4 text-left font-medium border-b border-slate-200">{{ $t('data.billing_col_model') }}</th>
-                    <th class="py-3 px-4 text-left font-medium border-b border-slate-200">{{ $t('data.billing_col_input_tokens') }}</th>
-                    <th class="py-3 px-4 text-right font-medium border-b border-slate-200">{{ $t('data.billing_col_input_price') }}</th>
-                    <th class="py-3 px-4 text-right font-medium border-b border-slate-200">{{ $t('data.billing_col_output_price') }}</th>
+                    <th class="py-3 px-4 text-left font-medium border-b border-slate-200">
+                      {{ $t('data.billing_col_model') }}
+                    </th>
+                    <th class="py-3 px-4 text-left font-medium border-b border-slate-200">
+                      {{ $t('data.billing_col_input_tokens') }}
+                    </th>
+                    <th class="py-3 px-4 text-right font-medium border-b border-slate-200">
+                      {{ $t('data.billing_col_input_price') }}
+                    </th>
+                    <th class="py-3 px-4 text-right font-medium border-b border-slate-200">
+                      {{ $t('data.billing_col_output_price') }}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -70,7 +78,10 @@
                       <td class="py-3 px-4 text-dp-title font-medium align-top border-r border-slate-100">
                         <div class="flex items-center gap-1.5">
                           {{ model.model_name }}
-                          <span class="inline-block px-1.5 py-0.5 text-[10px] font-medium bg-blue-50 text-blue-600 rounded">Hybrid</span>
+                          <span
+                            class="inline-block px-1.5 py-0.5 text-[10px] font-medium bg-blue-50 text-blue-600 rounded"
+                            >Hybrid</span
+                          >
                         </div>
                         <div v-if="model.price_range.child_models?.length" class="text-xs text-dp-muted mt-0.5">
                           {{ $t('data.billing_hybrid_children', { count: model.price_range.child_models.length }) }}
@@ -130,112 +141,133 @@
 
           <!-- ═══ Usage Tabs: Filter + Table + Pagination ═══ -->
           <template v-if="activeTab !== 'billing'">
-
-          <!-- 筛选栏 -->
-          <div class="px-6 py-4 border-b border-slate-50 flex flex-wrap gap-3 items-center">
-            <!-- API Key 筛选（仅消耗 tab 显示） -->
-            <select
-              v-if="activeTab === 'consumption'"
-              v-model="filterAPIKeyID"
-              class="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-dp-body
-                     focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
-            >
-              <option value="">{{ $t('data.filter_apikey') }}: {{ $t('data.filter_all') }}</option>
-              <option v-for="k in apiKeyList" :key="k.id" :value="String(k.id)">{{ k.name }} ({{ k.key_prefix }}...)</option>
-            </select>
-            <select
-              v-model="filterModel"
-              class="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-dp-body
-                     focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
-            >
-              <option value="">{{ $t('data.filter_model') }}: {{ $t('data.filter_all') }}</option>
-              <option v-for="m in modelList" :key="m" :value="m">{{ m }}</option>
-            </select>
-            <input
-              v-model="filterStartDate"
-              type="date"
-              class="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-dp-body
-                     focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
-            />
-            <span class="text-dp-muted text-xs">—</span>
-            <input
-              v-model="filterEndDate"
-              type="date"
-              class="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-dp-body
-                     focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
-            />
-            <button
-              class="px-4 py-1.5 rounded-lg bg-dp-blue text-white text-sm font-medium hover:bg-dp-blue-dark transition-colors"
-              @click="fetchData"
-            >
-              {{ $t('data.search') }}
-            </button>
-          </div>
-
-          <!-- 数据表格 -->
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-              <thead>
-                <tr class="bg-slate-50 text-dp-muted text-xs">
-                  <th class="py-3 px-4 text-left font-medium">{{ $t('data.col_date') }}</th>
-                  <th v-if="activeTab === 'contribution'" class="py-3 px-4 text-left font-medium">{{ $t('data.col_device') }}</th>
-                  <th v-if="activeTab === 'consumption'" class="py-3 px-4 text-left font-medium">{{ $t('data.col_apikey') }}</th>
-                  <th class="py-3 px-4 text-left font-medium">{{ $t('data.col_model') }}</th>
-                  <th class="py-3 px-4 text-right font-medium">{{ $t('data.col_prompt') }}</th>
-                  <th class="py-3 px-4 text-right font-medium">{{ $t('data.col_completion') }}</th>
-                  <th class="py-3 px-4 text-right font-medium">{{ $t('data.col_total') }}</th>
-                  <th class="py-3 px-4 text-right font-medium">{{ $t('data.col_requests') }}</th>
-                  <th v-if="activeTab === 'consumption'" class="py-3 px-4 text-right font-medium">{{ $t('data.col_cost') }}</th>
-                  <th v-if="activeTab === 'contribution'" class="py-3 px-4 text-right font-medium">{{ $t('data.col_earning') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-if="rows.length === 0">
-                  <td :colspan="activeTab === 'contribution' ? 8 : 8" class="py-12 text-center text-dp-muted">{{ $t('data.empty') }}</td>
-                </tr>
-                <tr
-                  v-for="(row, idx) in rows"
-                  :key="idx"
-                  class="border-t border-slate-50 hover:bg-slate-50/50 transition-colors"
-                >
-                  <td class="py-3 px-4 text-dp-body">{{ row.usage_date }}</td>
-                  <td v-if="activeTab === 'contribution'" class="py-3 px-4 text-dp-body font-mono text-xs">{{ row.simei }}</td>
-                  <td v-if="activeTab === 'consumption'" class="py-3 px-4 text-dp-body text-xs">
-                    {{ row.api_key_name || '—' }}
-                  </td>
-                  <td class="py-3 px-4 text-dp-body">{{ row.model_name }}</td>
-                  <td class="py-3 px-4 text-right text-dp-body tabular-nums">{{ formatNum(row.prompt_tokens) }}</td>
-                  <td class="py-3 px-4 text-right text-dp-body tabular-nums">{{ formatNum(row.completion_tokens) }}</td>
-                  <td class="py-3 px-4 text-right font-medium text-dp-title tabular-nums">{{ formatNum(row.total_tokens) }}</td>
-                  <td class="py-3 px-4 text-right text-dp-body tabular-nums">{{ formatNum(row.request_count) }}</td>
-                  <td v-if="activeTab === 'consumption'" class="py-3 px-4 text-right text-red-500 tabular-nums font-mono text-xs">{{ formatYuan(row.cost_yuan) }}</td>
-                  <td v-if="activeTab === 'contribution'" class="py-3 px-4 text-right text-green-600 tabular-nums font-mono text-xs">{{ formatYuan(row.earning_yuan) }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- 分页 -->
-          <div v-if="totalRows > pageSize" class="px-6 py-4 border-t border-slate-50 flex items-center justify-between">
-            <span class="text-xs text-dp-muted">
-              {{ totalRows }} {{ $t('data.records') }}
-            </span>
-            <div class="flex gap-1">
-              <button
-                v-for="p in totalPages"
-                :key="p"
-                class="w-8 h-8 rounded-lg text-xs font-medium transition-colors"
-                :class="page === p
-                  ? 'bg-dp-blue text-white'
-                  : 'text-dp-muted hover:bg-slate-100'"
-                @click="goPage(p)"
+            <!-- 筛选栏 -->
+            <div class="px-6 py-4 border-b border-slate-50 flex flex-wrap gap-3 items-center">
+              <!-- API Key 筛选（仅消耗 tab 显示） -->
+              <select
+                v-if="activeTab === 'consumption'"
+                v-model="filterAPIKeyID"
+                class="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-dp-body focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
               >
-                {{ p }}
+                <option value="">{{ $t('data.filter_apikey') }}: {{ $t('data.filter_all') }}</option>
+                <option v-for="k in apiKeyList" :key="k.id" :value="String(k.id)">
+                  {{ k.name }} ({{ k.key_prefix }}...)
+                </option>
+              </select>
+              <select
+                v-model="filterModel"
+                class="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-dp-body focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+              >
+                <option value="">{{ $t('data.filter_model') }}: {{ $t('data.filter_all') }}</option>
+                <option v-for="m in modelList" :key="m" :value="m">{{ m }}</option>
+              </select>
+              <input
+                v-model="filterStartDate"
+                type="date"
+                class="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-dp-body focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+              />
+              <span class="text-dp-muted text-xs">—</span>
+              <input
+                v-model="filterEndDate"
+                type="date"
+                class="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-dp-body focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+              />
+              <button
+                class="px-4 py-1.5 rounded-lg bg-dp-blue text-white text-sm font-medium hover:bg-dp-blue-dark transition-colors"
+                @click="fetchData"
+              >
+                {{ $t('data.search') }}
               </button>
             </div>
-          </div>
 
-          </template><!-- end usage tabs -->
+            <!-- 数据表格 -->
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="bg-slate-50 text-dp-muted text-xs">
+                    <th class="py-3 px-4 text-left font-medium">{{ $t('data.col_date') }}</th>
+                    <th v-if="activeTab === 'contribution'" class="py-3 px-4 text-left font-medium">
+                      {{ $t('data.col_device') }}
+                    </th>
+                    <th v-if="activeTab === 'consumption'" class="py-3 px-4 text-left font-medium">
+                      {{ $t('data.col_apikey') }}
+                    </th>
+                    <th class="py-3 px-4 text-left font-medium">{{ $t('data.col_model') }}</th>
+                    <th class="py-3 px-4 text-right font-medium">{{ $t('data.col_prompt') }}</th>
+                    <th class="py-3 px-4 text-right font-medium">{{ $t('data.col_completion') }}</th>
+                    <th class="py-3 px-4 text-right font-medium">{{ $t('data.col_total') }}</th>
+                    <th class="py-3 px-4 text-right font-medium">{{ $t('data.col_requests') }}</th>
+                    <th v-if="activeTab === 'consumption'" class="py-3 px-4 text-right font-medium">
+                      {{ $t('data.col_cost') }}
+                    </th>
+                    <th v-if="activeTab === 'contribution'" class="py-3 px-4 text-right font-medium">
+                      {{ $t('data.col_earning') }}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="rows.length === 0">
+                    <td :colspan="activeTab === 'contribution' ? 8 : 8" class="py-12 text-center text-dp-muted">
+                      {{ $t('data.empty') }}
+                    </td>
+                  </tr>
+                  <tr
+                    v-for="(row, idx) in rows"
+                    :key="idx"
+                    class="border-t border-slate-50 hover:bg-slate-50/50 transition-colors"
+                  >
+                    <td class="py-3 px-4 text-dp-body">{{ row.usage_date }}</td>
+                    <td v-if="activeTab === 'contribution'" class="py-3 px-4 text-dp-body font-mono text-xs">
+                      {{ row.simei }}
+                    </td>
+                    <td v-if="activeTab === 'consumption'" class="py-3 px-4 text-dp-body text-xs">
+                      {{ row.api_key_name || '—' }}
+                    </td>
+                    <td class="py-3 px-4 text-dp-body">{{ row.model_name }}</td>
+                    <td class="py-3 px-4 text-right text-dp-body tabular-nums">{{ formatNum(row.prompt_tokens) }}</td>
+                    <td class="py-3 px-4 text-right text-dp-body tabular-nums">
+                      {{ formatNum(row.completion_tokens) }}
+                    </td>
+                    <td class="py-3 px-4 text-right font-medium text-dp-title tabular-nums">
+                      {{ formatNum(row.total_tokens) }}
+                    </td>
+                    <td class="py-3 px-4 text-right text-dp-body tabular-nums">{{ formatNum(row.request_count) }}</td>
+                    <td
+                      v-if="activeTab === 'consumption'"
+                      class="py-3 px-4 text-right text-red-500 tabular-nums font-mono text-xs"
+                    >
+                      {{ formatYuan(row.cost_yuan) }}
+                    </td>
+                    <td
+                      v-if="activeTab === 'contribution'"
+                      class="py-3 px-4 text-right text-green-600 tabular-nums font-mono text-xs"
+                    >
+                      {{ formatYuan(row.earning_yuan) }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- 分页 -->
+            <div
+              v-if="totalRows > pageSize"
+              class="px-6 py-4 border-t border-slate-50 flex items-center justify-between"
+            >
+              <span class="text-xs text-dp-muted"> {{ totalRows }} {{ $t('data.records') }} </span>
+              <div class="flex gap-1">
+                <button
+                  v-for="p in totalPages"
+                  :key="p"
+                  class="w-8 h-8 rounded-lg text-xs font-medium transition-colors"
+                  :class="page === p ? 'bg-dp-blue text-white' : 'text-dp-muted hover:bg-slate-100'"
+                  @click="goPage(p)"
+                >
+                  {{ p }}
+                </button>
+              </div>
+            </div> </template
+          ><!-- end usage tabs -->
         </div>
       </template>
     </div>
@@ -322,7 +354,9 @@ function sanitizeUsageRows(items: unknown[]): UsageRow[] {
 }
 
 function extractModelNames(items: UsageRow[]): string[] {
-  return [...new Set(items.map(item => item.model_name).filter(Boolean))].sort((left, right) => left.localeCompare(right))
+  return [...new Set(items.map((item) => item.model_name).filter(Boolean))].sort((left, right) =>
+    left.localeCompare(right),
+  )
 }
 
 function switchTab(tab: 'contribution' | 'consumption' | 'billing') {
@@ -407,9 +441,7 @@ async function fetchModels() {
     const res = await getPublicModels()
     const data = res.data?.data
     // Include models with pricing_tiers (standard) or price_range (hybrid dynamic pricing).
-    billingModels.value = Array.isArray(data)
-      ? data.filter(m => m.pricing_tiers?.length > 0 || m.price_range)
-      : []
+    billingModels.value = Array.isArray(data) ? data.filter((m) => m.pricing_tiers?.length > 0 || m.price_range) : []
   } catch {
     billingModels.value = []
   }

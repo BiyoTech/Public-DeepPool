@@ -8,10 +8,7 @@
         class="bg-dp-bg-3 rounded-xl p-6 border border-white/5 hover:border-white/10 transition-all duration-200"
       >
         <div class="flex items-center justify-between mb-4">
-          <div
-            class="w-12 h-12 rounded-xl flex items-center justify-center"
-            :class="card.bgClass"
-          >
+          <div class="w-12 h-12 rounded-xl flex items-center justify-center" :class="card.bgClass">
             <component :is="card.icon" class="w-6 h-6" :class="card.iconClass" />
           </div>
           <t-tag v-if="!loading" variant="light" theme="success" size="small">实时</t-tag>
@@ -83,10 +80,7 @@ const statCards = computed(() => [
 let timer: ReturnType<typeof setInterval> | null = null
 
 async function fetchData() {
-  const [dashRes, statsRes] = await Promise.all([
-    getDashboard().catch(() => null),
-    getNodeStats().catch(() => null),
-  ])
+  const [dashRes, statsRes] = await Promise.all([getDashboard().catch(() => null), getNodeStats().catch(() => null)])
   if (dashRes?.data?.data) dashboard.value = dashRes.data.data
   if (statsRes?.data?.data) stats.value = statsRes.data.data
   loading.value = false

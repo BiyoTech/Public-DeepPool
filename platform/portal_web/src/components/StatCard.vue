@@ -1,7 +1,9 @@
 <template>
   <div class="text-center py-2">
     <div class="inline-flex flex-col items-center">
-      <span class="text-3xl md:text-4xl font-bold bg-gradient-to-r from-dp-blue to-dp-blue-dark bg-clip-text text-transparent tabular-nums">
+      <span
+        class="text-3xl md:text-4xl font-bold bg-gradient-to-r from-dp-blue to-dp-blue-dark bg-clip-text text-transparent tabular-nums"
+      >
         {{ displayValue }}
       </span>
       <span class="text-sm text-dp-muted mt-1">{{ label }}</span>
@@ -33,5 +35,8 @@ function animate(target: number) {
 }
 
 onMounted(() => animate(props.value))
-watch(() => props.value, (val) => animate(val))
+watch(
+  () => props.value,
+  (val) => animate(val),
+)
 </script>

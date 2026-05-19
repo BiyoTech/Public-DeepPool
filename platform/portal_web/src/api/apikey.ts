@@ -10,7 +10,7 @@ export interface APIKey {
   status: string
   rate_limit_rpm: number
   rate_limit_tpm: number
-  quota_total: number    // -1 means unlimited
+  quota_total: number // -1 means unlimited
   quota_used: number
   last_used_at: string | null
   created_at: string
@@ -22,15 +22,15 @@ export interface APIKeyCreated extends APIKey {
 
 export interface CreateAPIKeyParams {
   name: string
-  rate_limit_rpm?: number  // 0 = unlimited
-  rate_limit_tpm?: number  // 0 = unlimited
+  rate_limit_rpm?: number // 0 = unlimited
+  rate_limit_tpm?: number // 0 = unlimited
 }
 
 export interface UpdateAPIKeyParams {
   name?: string
-  rate_limit_rpm?: number  // 0 = unlimited
-  rate_limit_tpm?: number  // 0 = unlimited
-  quota_total?: number     // -1 = unlimited
+  rate_limit_rpm?: number // 0 = unlimited
+  rate_limit_tpm?: number // 0 = unlimited
+  quota_total?: number // -1 = unlimited
 }
 
 /** Create an API Key */

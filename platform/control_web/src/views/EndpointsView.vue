@@ -46,7 +46,13 @@
 
         <template #price_level="{ row }">
           <div class="flex items-center gap-0.5">
-            <span v-for="i in 5" :key="i" class="text-xs" :class="i <= row.price_level ? 'text-yellow-400' : 'text-gray-600'">★</span>
+            <span
+              v-for="i in 5"
+              :key="i"
+              class="text-xs"
+              :class="i <= row.price_level ? 'text-yellow-400' : 'text-gray-600'"
+              >★</span
+            >
           </div>
         </template>
 
@@ -105,7 +111,11 @@
         </t-form-item>
 
         <t-form-item label="API Key" :required="!isEdit">
-          <t-input v-model="formData.api_key" type="password" :placeholder="isEdit ? 'Leave empty to keep current' : 'Enter API key'" />
+          <t-input
+            v-model="formData.api_key"
+            type="password"
+            :placeholder="isEdit ? 'Leave empty to keep current' : 'Enter API key'"
+          />
         </t-form-item>
 
         <t-form-item label="Source" required>
@@ -121,7 +131,13 @@
         </t-form-item>
 
         <t-form-item label="Price Level">
-          <t-slider v-model="formData.price_level" :min="1" :max="5" :step="1" :marks="{ 1: '1 Cheap', 3: '3', 5: '5 Expensive' }" />
+          <t-slider
+            v-model="formData.price_level"
+            :min="1"
+            :max="5"
+            :step="1"
+            :marks="{ 1: '1 Cheap', 3: '3', 5: '5 Expensive' }"
+          />
         </t-form-item>
       </t-form>
     </t-dialog>
@@ -135,8 +151,16 @@
     >
       <div class="flex flex-col h-full">
         <div class="flex-1 overflow-y-auto space-y-3 pb-4">
-          <div v-for="(msg, idx) in testMessages" :key="idx" class="flex" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
-            <div class="max-w-[80%] rounded-lg px-3 py-2 text-sm" :class="msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-dp-bg-2 text-dp-text-1'">
+          <div
+            v-for="(msg, idx) in testMessages"
+            :key="idx"
+            class="flex"
+            :class="msg.role === 'user' ? 'justify-end' : 'justify-start'"
+          >
+            <div
+              class="max-w-[80%] rounded-lg px-3 py-2 text-sm"
+              :class="msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-dp-bg-2 text-dp-text-1'"
+            >
               {{ msg.content }}
             </div>
           </div>

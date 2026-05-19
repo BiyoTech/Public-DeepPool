@@ -69,11 +69,24 @@ const router = createRouter({
           component: () => import('@/views/experiment/ExperimentLayout.vue'),
           children: [
             { path: '', redirect: '/experiment/trace' },
-            { path: 'overview', name: 'ExperimentOverview', component: () => import('@/views/experiment/OverviewView.vue') },
+            {
+              path: 'overview',
+              name: 'ExperimentOverview',
+              component: () => import('@/views/experiment/OverviewView.vue'),
+            },
             { path: 'trace', name: 'ExperimentTrace', component: () => import('@/views/experiment/TraceView.vue') },
-            { path: 'trace/:traceId/logs', name: 'ExperimentTraceLogs', component: () => import('@/views/experiment/TraceLogsView.vue'), props: true },
+            {
+              path: 'trace/:traceId/logs',
+              name: 'ExperimentTraceLogs',
+              component: () => import('@/views/experiment/TraceLogsView.vue'),
+              props: true,
+            },
             { path: 'judge', name: 'ExperimentJudge', component: () => import('@/views/experiment/JudgeView.vue') },
-            { path: 'evaluate', name: 'ExperimentEvaluate', component: () => import('@/views/experiment/EvaluateView.vue') },
+            {
+              path: 'evaluate',
+              name: 'ExperimentEvaluate',
+              component: () => import('@/views/experiment/EvaluateView.vue'),
+            },
           ],
         },
       ],
