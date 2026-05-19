@@ -14,7 +14,7 @@ grpcio>=1.68.0                  # gRPC 客户端/服务端
 protobuf>=5.29.0                # proto 序列化（generated/ 下的 pb2 文件依赖）
 
 # ── 配置 / 工具 ──
-pyyaml>=6.0                     # config.yaml 解析
+pyyaml>=6.0.3                     # config.yaml 解析
 psutil>=6.1.0                   # CPU/内存/硬件信息采集
 
 # ── 模型下载 ──
