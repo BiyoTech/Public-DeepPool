@@ -11,6 +11,7 @@ clients/deepnode/localserver/build/
 platform/portal_web/dist/
 platform/control_web/dist/
 platform/build/
+platform/build/config/
 # Python
 /env/
 **/env/
@@ -27,6 +28,7 @@ platform/build/
 **/src-tauri/dist/
 
 # Build
+build/
 **/.build_venv/
 dist/
 
