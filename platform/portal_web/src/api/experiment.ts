@@ -36,6 +36,9 @@ export interface CreateTraceParams {
   db_name?: string
 }
 
+/** Params for updating an existing trace config */
+export type UpdateTraceParams = CreateTraceParams
+
 export interface TestConnectionParams {
   db_type: string
   db_host: string

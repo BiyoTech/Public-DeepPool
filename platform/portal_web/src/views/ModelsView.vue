@@ -145,7 +145,7 @@
               {{ tag }}
             </span>
             <span v-if="(model.tags || []).length > 4" class="text-[10px] text-slate-400"
-              >+{{ model.tags.length - 4 }}</span
+              >+{{ (model.tags || []).length - 4 }}</span
             >
           </div>
 
