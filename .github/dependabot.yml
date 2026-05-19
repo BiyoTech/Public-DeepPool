@@ -1,0 +1,88 @@
+# Dependabot configuration
+# Automatically detects dependency vulnerabilities and creates update PRs
+# Docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+
+version: 2
+updates:
+  # Go modules (platform + libs)
+  - package-ecosystem: "gomod"
+    directory: "/platform"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "go"
+    commit-message:
+      prefix: "deps(go):"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "gomod"
+    directory: "/libs"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "go"
+    commit-message:
+      prefix: "deps(go):"
+    open-pull-requests-limit: 5
+
+  # npm (control_web)
+  - package-ecosystem: "npm"
+    directory: "/platform/control_web"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "frontend"
+    commit-message:
+      prefix: "deps(npm):"
+    open-pull-requests-limit: 5
+
+  # npm (portal_web)
+  - package-ecosystem: "npm"
+    directory: "/platform/portal_web"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "frontend"
+    commit-message:
+      prefix: "deps(npm):"
+    open-pull-requests-limit: 5
+
+  # pip (localserver)
+  - package-ecosystem: "pip"
+    directory: "/clients/deepnode/localserver"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "deps(pip):"
+    open-pull-requests-limit: 5
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "deps(actions):"
+    open-pull-requests-limit: 3

@@ -1,0 +1,73 @@
+# Go CI — golangci-lint + unit tests + coverage report
+# Triggered on PR/push to main when Go code changes
+
+name: Go CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "platform/**"
+      - "libs/**"
+      - "go.work"
+      - "go.work.sum"
+      - ".golangci.yml"
+      - ".github/workflows/go-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "platform/**"
+      - "libs/**"
+      - "go.work"
+      - "go.work.sum"
+      - ".golangci.yml"
+      - ".github/workflows/go-ci.yml"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  go-ci:
+    name: go-ci
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.work
+          cache: true
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: --timeout=5m
+          # Lint all workspace modules
+          working-directory: .
+
+      - name: Run tests with coverage
+        run: |
+          go test ./platform/... ./libs/... \
+            -coverprofile=coverage.out \
+            -covermode=atomic \
+            -race \
+            -timeout=5m
+
+      - name: Display coverage summary
+        run: |
+          go tool cover -func=coverage.out | tail -1
+          echo "---"
+          echo "Full coverage report:"
+          go tool cover -func=coverage.out
+
+      - name: Upload coverage report
+        if: always() && hashFiles('coverage.out') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-coverage
+          path: coverage.out

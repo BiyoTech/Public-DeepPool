@@ -1,0 +1,60 @@
+# golangci-lint configuration for DeepPool
+# Docs: https://golangci-lint.run/usage/configuration/
+
+version: "2"
+
+run:
+  # Timeout for analysis
+  timeout: 5m
+  # Use Go workspace mode
+  modules-download-mode: readonly
+
+linters:
+  default: none
+  enable:
+    # Core correctness
+    - govet
+    - errcheck
+    - staticcheck
+    - unused
+    - ineffassign
+    - typecheck
+    # Style & simplification
+    - gosimple
+    - gocritic
+    - gofmt
+    - goimports
+    # Bug detection
+    - bodyclose
+    - nilerr
+    - exportloopref
+
+linters-settings:
+  govet:
+    enable-all: true
+  gocritic:
+    enabled-checks:
+      - dupImport
+      - ifElseChain
+      - nestingReduce
+      - unnamedResult
+  goimports:
+    local-prefixes:
+      - deeppool
+
+issues:
+  # Exclude generated code
+  exclude-dirs:
+    - generated
+    - vendor
+    - dist
+    - build
+  exclude-rules:
+    # Allow unused params in test files
+    - path: _test\.go
+      linters:
+        - unused
+        - errcheck
+  # Maximum issues per linter (0 = unlimited)
+  max-issues-per-linter: 0
+  max-same-issues: 0

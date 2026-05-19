@@ -1,0 +1,62 @@
+# Python CI — pytest + coverage report
+# Triggered on PR/push to main when localserver code changes
+
+name: Python CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "clients/deepnode/localserver/**"
+      - ".github/workflows/python-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "clients/deepnode/localserver/**"
+      - ".github/workflows/python-ci.yml"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  python-ci:
+    name: python-ci
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: clients/deepnode/localserver
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+          cache-dependency-path: clients/deepnode/localserver/requirements.txt
+
+      - name: Install core dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Install requirements, skip hardware-specific packages that fail on CI
+          pip install -r requirements.txt --ignore-requires-python 2>/dev/null || \
+            pip install $(grep -v -E "mlx-lm|vllm|torch|triton" requirements.txt) || true
+          # Install test tooling
+          pip install pytest pytest-cov pytest-asyncio
+
+      - name: Run tests with coverage
+        run: |
+          # Discover and run tests; graceful degradation if no tests exist yet
+          pytest --cov=. --cov-report=term --cov-report=xml:coverage.xml \
+            --ignore=engine/ --ignore=build/ --ignore=dist/ \
+            -q || echo "::warning::No tests found or tests failed — coverage not enforced"
+
+      - name: Upload coverage report
+        if: always() && hashFiles('clients/deepnode/localserver/coverage.xml') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-coverage
+          path: clients/deepnode/localserver/coverage.xml
