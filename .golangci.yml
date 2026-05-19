@@ -19,7 +19,6 @@ linters:
     - unused
     - ineffassign
     # Style & simplification
-    - gosimple
     - gocritic
     # Bug detection
     - bodyclose
