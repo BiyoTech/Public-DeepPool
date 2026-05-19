@@ -116,9 +116,9 @@ type PaginatedResponse struct {
 // CreateJudgeRequest is the request body for creating a judge task.
 type CreateJudgeRequest struct {
 	Name           string `json:"name"`
-	Scope          string `json:"scope"`           // model / apikey / trace / trace_log
-	ScopeValue     string `json:"scope_value"`     // entity identifier for the chosen scope
-	TraceID        uint64 `json:"trace_id"`        // required for trace/trace_log scope
+	Scope          string `json:"scope"`       // model / apikey / trace / trace_log
+	ScopeValue     string `json:"scope_value"` // entity identifier for the chosen scope
+	TraceID        uint64 `json:"trace_id"`    // required for trace/trace_log scope
 	JudgeModel     string `json:"judge_model"`
 	JudgeAPIKeyID  uint64 `json:"judge_apikey_id"`
 	ScorerType     string `json:"scorer_type"`     // builtin / custom
@@ -304,19 +304,19 @@ type ExpectationItem struct {
 
 // AnnotationDTO represents the annotation (feedbacks + expectation) for a trace log.
 type AnnotationDTO struct {
-	ID          uint64          `json:"id"`
-	UserID      uint64          `json:"user_id"`
-	TraceID     uint64          `json:"trace_id"`
-	LogID       uint64          `json:"log_id"`
-	Feedbacks   []FeedbackItem  `json:"feedbacks"`
+	ID          uint64           `json:"id"`
+	UserID      uint64           `json:"user_id"`
+	TraceID     uint64           `json:"trace_id"`
+	LogID       uint64           `json:"log_id"`
+	Feedbacks   []FeedbackItem   `json:"feedbacks"`
 	Expectation *ExpectationItem `json:"expectation"`
-	CreatedAt   time.Time       `json:"created_at"`
-	UpdatedAt   time.Time       `json:"updated_at"`
+	CreatedAt   time.Time        `json:"created_at"`
+	UpdatedAt   time.Time        `json:"updated_at"`
 }
 
 // SaveAnnotationRequest is the request body for creating/updating an annotation.
 type SaveAnnotationRequest struct {
-	Feedbacks   []FeedbackItem  `json:"feedbacks"`
+	Feedbacks   []FeedbackItem   `json:"feedbacks"`
 	Expectation *ExpectationItem `json:"expectation"`
 }
 

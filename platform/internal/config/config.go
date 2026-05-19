@@ -79,25 +79,25 @@ type ExperimentServerConfig struct {
 type AdminConfig struct {
 	NodeManagers            []NodeManagerConfig      `yaml:"node_managers"`
 	ExperimentServers       []ExperimentServerConfig `yaml:"experiment_servers"`
-	SuperAdmin              SuperAdminConfig    `yaml:"super_admin"`
-	InternalToken           string              `yaml:"internal_token"`             // Gateway ↔ NodeManager internal token
-	DefaultHybridPolicyPath string              `yaml:"default_hybrid_policy_path"` // path to default hybrid routing policy YAML
-	APIKeyEncryptionKey     string              `yaml:"api_key_encryption_key"`     // 32-byte hex key for AES-256-GCM encryption of API keys
-	SMTP                    SMTPConfig          `yaml:"smtp"`                       // SMTP mail server for verification codes
-	Payment                 PaymentConfig       `yaml:"payment"`                    // third-party payment gateway configuration
-	DefaultTraceDB          DefaultTraceDBConfig    `yaml:"default_trace_db"`          // built-in trace log storage engine
-	DefaultGuardrailDB      DefaultGuardrailDBConfig `yaml:"default_guardrail_db"`      // built-in guardrail result storage engine
+	SuperAdmin              SuperAdminConfig         `yaml:"super_admin"`
+	InternalToken           string                   `yaml:"internal_token"`             // Gateway ↔ NodeManager internal token
+	DefaultHybridPolicyPath string                   `yaml:"default_hybrid_policy_path"` // path to default hybrid routing policy YAML
+	APIKeyEncryptionKey     string                   `yaml:"api_key_encryption_key"`     // 32-byte hex key for AES-256-GCM encryption of API keys
+	SMTP                    SMTPConfig               `yaml:"smtp"`                       // SMTP mail server for verification codes
+	Payment                 PaymentConfig            `yaml:"payment"`                    // third-party payment gateway configuration
+	DefaultTraceDB          DefaultTraceDBConfig     `yaml:"default_trace_db"`           // built-in trace log storage engine
+	DefaultGuardrailDB      DefaultGuardrailDBConfig `yaml:"default_guardrail_db"`       // built-in guardrail result storage engine
 }
 
 // DefaultTraceDBConfig defines the platform-managed database for built-in trace log storage.
 // When a user selects "builtin" storage_type, these DB credentials are used automatically.
 type DefaultTraceDBConfig struct {
-	DBType   string `yaml:"db_type"`   // mysql / postgresql / clickhouse
-	DBHost   string `yaml:"db_host"`
-	DBPort   int    `yaml:"db_port"`
-	DBUser   string `yaml:"db_user"`
-	DBPass   string `yaml:"db_pass"`
-	DBName   string `yaml:"db_name"`
+	DBType string `yaml:"db_type"` // mysql / postgresql / clickhouse
+	DBHost string `yaml:"db_host"`
+	DBPort int    `yaml:"db_port"`
+	DBUser string `yaml:"db_user"`
+	DBPass string `yaml:"db_pass"`
+	DBName string `yaml:"db_name"`
 }
 
 // DefaultGuardrailDBConfig defines the platform-managed database for built-in guardrail result storage.
@@ -132,10 +132,10 @@ type WechatPayConfig struct {
 
 // AlipayConfig holds Alipay API credentials.
 type AlipayConfig struct {
-	AppID             string `yaml:"app_id"`               // Alipay application ID
-	PrivateKeyPath    string `yaml:"private_key_path"`     // path to app private key PEM file
+	AppID               string `yaml:"app_id"`                 // Alipay application ID
+	PrivateKeyPath      string `yaml:"private_key_path"`       // path to app private key PEM file
 	AlipayPublicKeyPath string `yaml:"alipay_public_key_path"` // path to Alipay public key PEM file
-	IsSandbox         bool   `yaml:"is_sandbox"`           // true to use sandbox environment
+	IsSandbox           bool   `yaml:"is_sandbox"`             // true to use sandbox environment
 }
 
 // SMTPConfig SMTP mail server configuration for sending verification codes.

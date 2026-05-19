@@ -452,7 +452,7 @@ func extractConversations(requestBody string) string {
 
 	var sb strings.Builder
 	for _, msg := range payload.Messages {
-		sb.WriteString(fmt.Sprintf("[%s]: %s\n", msg.Role, msg.Content))
+		fmt.Fprintf(&sb, "[%s]: %s\n", msg.Role, msg.Content)
 	}
 	return sb.String()
 }
