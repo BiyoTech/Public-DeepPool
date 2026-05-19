@@ -101,7 +101,7 @@ rsync -av --delete "${EXCLUDES[@]}" "$SRC/" "$DEST/"
 echo ""
 echo "==> Checking for potential secrets in synced files ..."
 cd "$DEST"
-SECRETS=$(git grep -l -i 'root@123\|REMOVED\|3857358a44c4a49a55309e5d3e54497e\|mch_id.*[0-9]\{10\}\|23412432431' -- ':!*.example' ':!prepare_opensource.sh' ':!sync_opensource.sh' || true)
+SECRETS=$(git grep -l -i 'root@123\|AliRoot@123\|3857358a44c4a49a55309e5d3e54497e\|mch_id.*[0-9]\{10\}\|23412432431' -- ':!*.example' ':!prepare_opensource.sh' ':!sync_opensource.sh' || true)
 if [ -n "$SECRETS" ]; then
   echo "WARNING: potential secrets found in these files:"
   echo "$SECRETS"
