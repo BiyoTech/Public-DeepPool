@@ -12,12 +12,12 @@ const props = defineProps<{
   content: string
 }>()
 
-// 创建 markdown-it 实例，启用代码高亮
-const md = new MarkdownIt({
-  html: false, // 禁用 HTML 标签渲染，防止 XSS
+// Create markdown-it instance with code highlighting
+const md: MarkdownIt = new MarkdownIt({
+  html: false, // Disable HTML rendering to prevent XSS
   linkify: true,
   typographer: true,
-  highlight(str: string, lang: string) {
+  highlight(str: string, lang: string): string {
     if (lang && hljs.getLanguage(lang)) {
       try {
         return `<pre class="hljs rounded-lg overflow-x-auto"><code>${hljs.highlight(str, { language: lang }).value}</code></pre>`

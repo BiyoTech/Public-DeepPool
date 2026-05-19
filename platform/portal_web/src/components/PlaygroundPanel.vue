@@ -633,7 +633,7 @@ async function sendMessage() {
   const assistantIdx = messages.value.length - 1
 
   try {
-    const chatMessages = messages.value
+    const chatMessages: Array<{ role: string; content: any }> = messages.value
       .filter((message) => !message.streaming)
       .map((message) => {
         if (message.images && message.images.length > 0) {

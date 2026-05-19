@@ -16,6 +16,7 @@
       "@/*": ["src/*"]
     },
     "verbatimModuleSyntax": false,
+    "skipLibCheck": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false
   },

@@ -90,7 +90,7 @@ const EvaluateIcon = {
     ]),
 }
 
-const navItems = computed(() => [
+const navItems = computed<{ path: string; label: string; icon: object; badge?: string }[]>(() => [
   { path: '/experiment/overview', label: t('experiment.nav.overview'), icon: OverviewIcon },
   { path: '/experiment/trace', label: t('experiment.nav.trace'), icon: TraceIcon },
   { path: '/experiment/judge', label: t('experiment.nav.judge'), icon: JudgeIcon },

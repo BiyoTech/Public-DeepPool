@@ -1113,7 +1113,7 @@ function openCreate() {
  * Map the unified target selection to backend scope/scope_value/trace_id fields.
  * Priority: selectedLogIds > filterModels/filterApiKeyIds > trace > all
  */
-function resolveScope(): { scope: string; scope_value: string; trace_id: number } {
+function resolveScope(): { scope: 'model' | 'apikey' | 'trace' | 'trace_log'; scope_value: string; trace_id: number } {
   const f = form.value
 
   // Case 1: Specific logs selected

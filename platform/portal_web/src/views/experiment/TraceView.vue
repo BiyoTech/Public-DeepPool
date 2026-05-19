@@ -825,7 +825,7 @@ async function doUpdateTrace() {
     if (form.db_password) {
       params.db_password = form.db_password
     }
-    const res = await apiUpdateTrace(editingTrace.value.id, params)
+    const res = await apiUpdateTrace(editingTrace.value.id, params as import('@/api/experiment').UpdateTraceParams)
     if (res.data?.data) {
       // Update the trace in-place in the list
       const idx = traces.value.findIndex((t) => t.id === editingTrace.value!.id)

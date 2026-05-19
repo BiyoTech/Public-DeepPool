@@ -371,7 +371,7 @@ onMounted(() => window.addEventListener('scroll', onScroll))
 onUnmounted(() => window.removeEventListener('scroll', onScroll))
 
 // 导航项（响应语言变化）
-const navItems = computed(() => [
+const navItems = computed<{ path: string; label: string; beta?: boolean }[]>(() => [
   { path: '/', label: t('nav.home') },
   { path: '/models', label: t('nav.models') },
   { path: '/service', label: t('nav.service') },
