@@ -62,12 +62,7 @@ export interface AgentUpdatedEvent {
   agent_name: string
 }
 
-export type AgentEvent =
-  | ToolCalledEvent
-  | ToolOutputEvent
-  | ReasoningEvent
-  | HandoffEvent
-  | AgentUpdatedEvent
+export type AgentEvent = ToolCalledEvent | ToolOutputEvent | ReasoningEvent | HandoffEvent | AgentUpdatedEvent
 
 // ── SSE streaming chat ──
 
@@ -94,11 +89,7 @@ export interface SendMessageOptions {
  *
  * Returns AbortController for caller to abort the stream.
  */
-export function sendMessage(
-  message: string,
-  callbacks: StreamCallbacks,
-  options: SendMessageOptions,
-): AbortController {
+export function sendMessage(message: string, callbacks: StreamCallbacks, options: SendMessageOptions): AbortController {
   const controller = new AbortController()
 
   const body = {
@@ -241,10 +232,7 @@ export interface WorkspaceFilesResponse {
   workspace_path: string
 }
 
-export async function listWorkspaceFiles(
-  subPath = '',
-  recursive = true,
-): Promise<WorkspaceFilesResponse> {
+export async function listWorkspaceFiles(subPath = '', recursive = true): Promise<WorkspaceFilesResponse> {
   const params = new URLSearchParams()
   if (subPath) params.set('path', subPath)
   params.set('recursive', String(recursive))

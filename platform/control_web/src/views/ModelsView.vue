@@ -62,7 +62,6 @@
           </div>
         </template>
 
-
         <template #supported_engines="{ row }">
           <span class="text-dp-text-2 text-sm">{{ formatEngines(row.supported_engines) }}</span>
         </template>
@@ -87,22 +86,26 @@
         </template>
 
         <template #max_context_length="{ row }">
-          <span class="text-dp-text-2 text-sm">{{ row.max_context_length ? formatContextLength(row.max_context_length) : '-' }}</span>
+          <span class="text-dp-text-2 text-sm">{{
+            row.max_context_length ? formatContextLength(row.max_context_length) : '-'
+          }}</span>
         </template>
 
         <template #pricing="{ row }">
           <div class="text-xs text-dp-text-2 leading-5">
             <template v-if="row.pricing_tiers?.length">
-              <div v-for="(tier, idx) in row.pricing_tiers" :key="'p'+idx">
-                {{ tier.max_input_tokens ? `≤${formatContextLength(tier.max_input_tokens)}` : '∞' }}:
-                入{{ tier.input_price }}/出{{ tier.output_price }}
+              <div v-for="(tier, idx) in row.pricing_tiers" :key="'p' + idx">
+                {{ tier.max_input_tokens ? `≤${formatContextLength(tier.max_input_tokens)}` : '∞' }}: 入{{
+                  tier.input_price
+                }}/出{{ tier.output_price }}
               </div>
             </template>
             <template v-if="row.contributor_tiers?.length">
               <div class="text-dp-text-3 mt-0.5">贡献者:</div>
-              <div v-for="(tier, idx) in row.contributor_tiers" :key="'c'+idx" class="text-dp-text-3">
-                {{ tier.max_input_tokens ? `≤${formatContextLength(tier.max_input_tokens)}` : '∞' }}:
-                入{{ tier.input_price }}/出{{ tier.output_price }}
+              <div v-for="(tier, idx) in row.contributor_tiers" :key="'c' + idx" class="text-dp-text-3">
+                {{ tier.max_input_tokens ? `≤${formatContextLength(tier.max_input_tokens)}` : '∞' }}: 入{{
+                  tier.input_price
+                }}/出{{ tier.output_price }}
               </div>
             </template>
             <span v-if="!row.pricing_tiers?.length && !row.contributor_tiers?.length" class="text-dp-text-3">免费</span>
@@ -188,9 +191,9 @@
                 :key="opt.value"
                 :value="opt.value"
                 :label="opt.label"
-                style="height: auto; line-height: normal;"
+                style="height: auto; line-height: normal"
               >
-                <div class="flex items-center justify-between w-full gap-2" style="padding: 6px 0;">
+                <div class="flex items-center justify-between w-full gap-2" style="padding: 6px 0">
                   <div class="flex-1 min-w-0">
                     <div class="font-medium text-sm truncate leading-5">{{ opt.label }}</div>
                     <div
@@ -199,18 +202,22 @@
                     >
                       <span v-if="opt.param_scale" class="text-[10px] text-gray-500">{{ opt.param_scale }}B</span>
                       <span v-if="opt.param_scale && opt.max_context_length" class="text-[10px] text-gray-300">|</span>
-                      <span v-if="opt.max_context_length" class="text-[10px] text-gray-500">{{ formatContextLength(opt.max_context_length) }}</span>
+                      <span v-if="opt.max_context_length" class="text-[10px] text-gray-500">{{
+                        formatContextLength(opt.max_context_length)
+                      }}</span>
                       <span
                         v-for="tag in opt.tags"
                         :key="tag"
                         class="inline-flex items-center rounded-full bg-slate-100 px-1.5 text-[10px] text-gray-500 leading-4"
-                      >{{ tag }}</span>
+                        >{{ tag }}</span
+                      >
                     </div>
                   </div>
                   <span
                     :class="vendorTagClass(opt.vendor_type)"
                     class="inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none"
-                  >{{ vendorLabelMap[opt.vendor_type] || opt.vendor_type }}</span>
+                    >{{ vendorLabelMap[opt.vendor_type] || opt.vendor_type }}</span
+                  >
                 </div>
               </t-option>
             </t-select>
@@ -229,15 +236,29 @@
             />
             <div class="text-xs text-dp-text-3">
               YAML 格式路由策略，按规则顺序匹配。留空时所有子模型按 round-robin 轮询。
-              <a class="text-blue-400 hover:text-blue-300 cursor-pointer ml-1" @click.prevent="helpVisible = true; helpScrollTo = 'routing'">查看配置文档 →</a>
+              <a
+                class="text-blue-400 hover:text-blue-300 cursor-pointer ml-1"
+                @click.prevent="
+                  helpVisible = true
+                  helpScrollTo = 'routing'
+                "
+                >查看配置文档 →</a
+              >
             </div>
           </div>
         </t-form-item>
 
         <t-form-item v-if="requiresDeepNode" label="模型族">
           <div class="w-full space-y-2">
-            <t-select v-model="formData.model_family" :options="modelFamilyOptions" clearable placeholder="选择模型族（影响 thinking/stop 参数适配）" />
-            <div class="text-xs text-dp-text-3">模型族决定 Gateway 如何适配 thinking、stop 等参数格式。留空则使用默认行为。</div>
+            <t-select
+              v-model="formData.model_family"
+              :options="modelFamilyOptions"
+              clearable
+              placeholder="选择模型族（影响 thinking/stop 参数适配）"
+            />
+            <div class="text-xs text-dp-text-3">
+              模型族决定 Gateway 如何适配 thinking、stop 等参数格式。留空则使用默认行为。
+            </div>
           </div>
         </t-form-item>
 
@@ -274,14 +295,20 @@
                 :value="ep.id"
                 :label="`${ep.name} (${ep.upstream_model})`"
               >
-                <div class="flex items-center justify-between w-full gap-2" style="padding: 4px 0;">
+                <div class="flex items-center justify-between w-full gap-2" style="padding: 4px 0">
                   <div class="flex-1 min-w-0">
                     <div class="font-medium text-sm truncate">{{ ep.name }}</div>
                     <div class="text-[10px] text-gray-500">{{ ep.upstream_model }} · {{ ep.endpoint_url }}</div>
                   </div>
                   <div class="flex items-center gap-1 shrink-0">
                     <span class="text-[10px] text-gray-400">RPM:{{ ep.rpm_limit }}</span>
-                    <span v-for="i in 5" :key="i" class="text-[9px]" :class="i <= ep.price_level ? 'text-yellow-400' : 'text-gray-600'">★</span>
+                    <span
+                      v-for="i in 5"
+                      :key="i"
+                      class="text-[9px]"
+                      :class="i <= ep.price_level ? 'text-yellow-400' : 'text-gray-600'"
+                      >★</span
+                    >
                   </div>
                 </div>
               </t-option>
@@ -323,7 +350,13 @@
         </t-form-item>
 
         <t-form-item v-if="!isHybrid" label="模型参数量级 (B)">
-          <t-input-number v-model="formData.param_scale" :min="0" :step="0.5" :decimal-places="1" placeholder="如 0.6, 7, 72" />
+          <t-input-number
+            v-model="formData.param_scale"
+            :min="0"
+            :step="0.5"
+            :decimal-places="1"
+            placeholder="如 0.6, 7, 72"
+          />
         </t-form-item>
 
         <t-form-item label="模型标签">
@@ -390,8 +423,16 @@
             </div>
             <t-button theme="default" variant="dashed" size="small" @click="addPricingTier">+ 添加价格区间</t-button>
             <div class="text-xs text-dp-text-3">
-              按输入Token长度分段定价（元/百万Token）。Token上限单位为K（如填 4 表示 4K tokens）。填 0 表示无上限（兜底区间）。留空表示免费。
-              <a class="text-blue-400 hover:text-blue-300 cursor-pointer ml-1" @click.prevent="helpVisible = true; helpScrollTo = 'billing'">查看计费文档 →</a>
+              按输入Token长度分段定价（元/百万Token）。Token上限单位为K（如填 4 表示 4K tokens）。填 0
+              表示无上限（兜底区间）。留空表示免费。
+              <a
+                class="text-blue-400 hover:text-blue-300 cursor-pointer ml-1"
+                @click.prevent="
+                  helpVisible = true
+                  helpScrollTo = 'billing'
+                "
+                >查看计费文档 →</a
+              >
             </div>
           </div>
         </t-form-item>
@@ -431,7 +472,9 @@
               />
               <t-button theme="danger" variant="text" size="small" @click="removeContributorTier(idx)">删除</t-button>
             </div>
-            <t-button theme="default" variant="dashed" size="small" @click="addContributorTier">+ 添加收益区间</t-button>
+            <t-button theme="default" variant="dashed" size="small" @click="addContributorTier"
+              >+ 添加收益区间</t-button
+            >
             <div class="text-xs text-dp-text-3">
               按输入Token长度分段设置贡献者收益（元/百万Token）。Token上限单位为K。留空表示无收益。
             </div>
@@ -445,13 +488,7 @@
     </t-dialog>
 
     <!-- Help doc dialog -->
-    <t-dialog
-      v-model:visible="helpVisible"
-      header="模型管理配置帮助"
-      :footer="false"
-      width="900px"
-      placement="center"
-    >
+    <t-dialog v-model:visible="helpVisible" header="模型管理配置帮助" :footer="false" width="900px" placement="center">
       <div class="help-doc-content prose prose-sm max-h-[70vh] overflow-y-auto px-2" v-html="helpHtml" />
     </t-dialog>
   </div>
@@ -461,7 +498,15 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { SearchIcon, AddIcon, HelpCircleIcon } from 'tdesign-icons-vue-next'
 import { MessagePlugin } from 'tdesign-vue-next'
-import { getModels, getModelDetail, getEnabledModels, createModel, updateModel, deleteModel, getEndpointsByFamily } from '@/api/admin'
+import {
+  getModels,
+  getModelDetail,
+  getEnabledModels,
+  createModel,
+  updateModel,
+  deleteModel,
+  getEndpointsByFamily,
+} from '@/api/admin'
 
 interface ModelRow {
   id: number
@@ -625,7 +670,8 @@ const helpVisible = ref(false)
 const helpScrollTo = ref('')
 
 // Pre-rendered help doc HTML (inline to avoid build-time markdown dependency)
-const helpHtml = computed(() => `
+const helpHtml = computed(
+  () => `
 <h2 id="routing">1. Hybrid Routing Policy</h2>
 
 <h3>How It Works</h3>
@@ -719,7 +765,8 @@ Tier 3: unlimited   (fill 0)  → input ¥4.00/M, output ¥8.00/M</code></pre>
   <li>❌ Only 1 child model → Hybrid requires at least 2</li>
   <li>❌ Recursive Hybrid (child is Hybrid) → not allowed</li>
 </ul>
-`)
+`,
+)
 
 // Child model options for hybrid model selector.
 interface ChildModelOption {
@@ -1065,7 +1112,7 @@ onMounted(() => fetchModels())
   font-weight: 700;
   margin: 1.5rem 0 0.75rem;
   padding-bottom: 0.375rem;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 .help-doc-content :deep(h3) {
   font-size: 1rem;
@@ -1077,7 +1124,7 @@ onMounted(() => fetchModels())
   line-height: 1.6;
 }
 .help-doc-content :deep(pre) {
-  background: rgba(0,0,0,0.15);
+  background: rgba(0, 0, 0, 0.15);
   border-radius: 8px;
   padding: 0.75rem 1rem;
   overflow-x: auto;
@@ -1088,7 +1135,7 @@ onMounted(() => fetchModels())
 .help-doc-content :deep(code) {
   font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
   font-size: 0.85em;
-  background: rgba(0,0,0,0.1);
+  background: rgba(0, 0, 0, 0.1);
   padding: 0.1em 0.3em;
   border-radius: 3px;
 }
@@ -1105,12 +1152,12 @@ onMounted(() => fetchModels())
 .help-doc-content :deep(th),
 .help-doc-content :deep(td) {
   padding: 0.4rem 0.6rem;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   text-align: left;
 }
 .help-doc-content :deep(th) {
   font-weight: 600;
-  background: rgba(0,0,0,0.1);
+  background: rgba(0, 0, 0, 0.1);
 }
 .help-doc-content :deep(ol),
 .help-doc-content :deep(ul) {
@@ -1123,7 +1170,7 @@ onMounted(() => fetchModels())
 }
 .help-doc-content :deep(hr) {
   border: none;
-  border-top: 1px solid rgba(255,255,255,0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   margin: 1.5rem 0;
 }
 </style>

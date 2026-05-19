@@ -8,7 +8,10 @@
       <svg
         class="w-3 h-3 transition-transform"
         :class="expanded ? 'rotate-90' : ''"
-        fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        stroke-width="2"
       >
         <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
       </svg>
@@ -17,11 +20,7 @@
 
     <!-- Step list -->
     <div v-if="expanded" class="space-y-1 pl-1 border-l-2 border-slate-200 ml-1">
-      <div
-        v-for="(step, i) in steps"
-        :key="i"
-        class="flex items-start gap-2 pl-3 py-1"
-      >
+      <div v-for="(step, i) in steps" :key="i" class="flex items-start gap-2 pl-3 py-1">
         <!-- Status: done -->
         <span
           v-if="step.status === 'done'"

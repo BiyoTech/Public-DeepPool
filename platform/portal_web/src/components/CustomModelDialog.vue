@@ -14,7 +14,7 @@
         <h3 class="text-lg font-bold text-slate-800">{{ editingModel ? 'Edit Model' : 'Create Custom Model' }}</h3>
         <button class="p-1.5 rounded-lg hover:bg-slate-100 transition" @click="emit('close')">
           <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
@@ -29,7 +29,11 @@
               type="button"
               @click="form.vendorType = 'hybrid'"
               class="flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors"
-              :class="form.vendorType === 'hybrid' ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-slate-200 text-slate-500 hover:bg-slate-50'"
+              :class="
+                form.vendorType === 'hybrid'
+                  ? 'border-blue-500 bg-blue-50 text-blue-600'
+                  : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+              "
             >
               Hybrid
             </button>
@@ -37,13 +41,21 @@
               type="button"
               @click="form.vendorType = 'provider'"
               class="flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors"
-              :class="form.vendorType === 'provider' ? 'border-emerald-500 bg-emerald-50 text-emerald-600' : 'border-slate-200 text-slate-500 hover:bg-slate-50'"
+              :class="
+                form.vendorType === 'provider'
+                  ? 'border-emerald-500 bg-emerald-50 text-emerald-600'
+                  : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+              "
             >
               Provider
             </button>
           </div>
           <p class="text-[10px] text-slate-400 mt-1">
-            {{ form.vendorType === 'hybrid' ? 'Hybrid: intelligent routing across multiple child models' : 'Provider: register your own API endpoint (free of charge)' }}
+            {{
+              form.vendorType === 'hybrid'
+                ? 'Hybrid: intelligent routing across multiple child models'
+                : 'Provider: register your own API endpoint (free of charge)'
+            }}
           </p>
           <router-link
             v-if="form.vendorType === 'hybrid'"
@@ -52,7 +64,11 @@
             @click.stop
           >
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"
+              />
             </svg>
             Learn about Hybrid models →
           </router-link>
@@ -101,7 +117,7 @@
               rows="6"
               placeholder="Leave empty for default least-inflight strategy."
               class="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-mono resize-y focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-              style="min-height: 80px;"
+              style="min-height: 80px"
             ></textarea>
           </div>
         </template>
@@ -153,15 +169,27 @@
             <label class="text-xs font-medium text-slate-500 mb-2 block">Capabilities</label>
             <div class="flex flex-wrap gap-4">
               <label class="flex items-center gap-1.5 cursor-pointer text-sm text-slate-700">
-                <input type="checkbox" v-model="form.supportsReasoning" class="rounded border-slate-300 text-blue-600 focus:ring-blue-200" />
+                <input
+                  type="checkbox"
+                  v-model="form.supportsReasoning"
+                  class="rounded border-slate-300 text-blue-600 focus:ring-blue-200"
+                />
                 Reasoning
               </label>
               <label class="flex items-center gap-1.5 cursor-pointer text-sm text-slate-700">
-                <input type="checkbox" v-model="form.supportsVision" class="rounded border-slate-300 text-blue-600 focus:ring-blue-200" />
+                <input
+                  type="checkbox"
+                  v-model="form.supportsVision"
+                  class="rounded border-slate-300 text-blue-600 focus:ring-blue-200"
+                />
                 Vision
               </label>
               <label class="flex items-center gap-1.5 cursor-pointer text-sm text-slate-700">
-                <input type="checkbox" v-model="form.supportsFunctionCall" class="rounded border-slate-300 text-blue-600 focus:ring-blue-200" />
+                <input
+                  type="checkbox"
+                  v-model="form.supportsFunctionCall"
+                  class="rounded border-slate-300 text-blue-600 focus:ring-blue-200"
+                />
                 Function Call
               </label>
             </div>
@@ -178,7 +206,9 @@
               class="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs text-blue-600"
             >
               {{ tag }}
-              <button @click="form.tags.splice(idx, 1)" class="text-blue-300 hover:text-red-400 text-[10px]">&times;</button>
+              <button @click="form.tags.splice(idx, 1)" class="text-blue-300 hover:text-red-400 text-[10px]">
+                &times;
+              </button>
             </span>
           </div>
           <input
@@ -201,12 +231,16 @@
         <button
           @click="emit('close')"
           class="px-4 py-2 rounded-lg border border-slate-200 text-sm text-slate-500 hover:bg-slate-50 transition"
-        >Cancel</button>
+        >
+          Cancel
+        </button>
         <button
           @click="handleSave"
           :disabled="saving"
           class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50"
-        >{{ saving ? 'Saving...' : 'Save' }}</button>
+        >
+          {{ saving ? 'Saving...' : 'Save' }}
+        </button>
       </div>
     </div>
   </Transition>
@@ -220,11 +254,7 @@
     leave-from-class="opacity-100"
     leave-to-class="opacity-0"
   >
-    <div
-      v-if="visible"
-      class="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
-      @click="emit('close')"
-    />
+    <div v-if="visible" class="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm" @click="emit('close')" />
   </Transition>
 </template>
 
@@ -293,46 +323,51 @@ interface ChildCandidate {
 }
 const childCandidates = computed<ChildCandidate[]>(() => {
   const platform: ChildCandidate[] = publicModels.value
-    .filter(m => m.vendor_type !== 'hybrid')
-    .map(m => ({ model_name: m.model_name, vendor_type: m.vendor_type }))
+    .filter((m) => m.vendor_type !== 'hybrid')
+    .map((m) => ({ model_name: m.model_name, vendor_type: m.vendor_type }))
   const userProviders: ChildCandidate[] = (props.customModels || [])
-    .filter(cm => cm.vendor_type === 'provider' && cm.enabled)
-    .map(cm => ({ model_name: cm.model_name, vendor_type: 'provider', is_user_provider: true }))
+    .filter((cm) => cm.vendor_type === 'provider' && cm.enabled)
+    .map((cm) => ({ model_name: cm.model_name, vendor_type: 'provider', is_user_provider: true }))
   return [...platform, ...userProviders]
 })
 
 // Reset form when dialog opens.
-watch(() => props.visible, async (v) => {
-  if (v) {
-    error.value = ''
-    if (props.editingModel) {
-      const cm = props.editingModel
-      form.value = {
-        displayName: cm.display_name,
-        vendorType: cm.vendor_type || 'hybrid',
-        childModels: [...(cm.child_models || [])],
-        routingPolicy: cm.routing_policy || '',
-        modelFamily: cm.model_family || '',
-        endpoint: cm.endpoint || '',
-        upstreamModel: cm.upstream_model || '',
-        apiKey: '',
-        supportsReasoning: cm.supports_reasoning || false,
-        supportsVision: cm.supports_vision || false,
-        supportsFunctionCall: cm.supports_function_call || false,
-        tags: [...(cm.tags || [])],
+watch(
+  () => props.visible,
+  async (v) => {
+    if (v) {
+      error.value = ''
+      if (props.editingModel) {
+        const cm = props.editingModel
+        form.value = {
+          displayName: cm.display_name,
+          vendorType: cm.vendor_type || 'hybrid',
+          childModels: [...(cm.child_models || [])],
+          routingPolicy: cm.routing_policy || '',
+          modelFamily: cm.model_family || '',
+          endpoint: cm.endpoint || '',
+          upstreamModel: cm.upstream_model || '',
+          apiKey: '',
+          supportsReasoning: cm.supports_reasoning || false,
+          supportsVision: cm.supports_vision || false,
+          supportsFunctionCall: cm.supports_function_call || false,
+          tags: [...(cm.tags || [])],
+        }
+      } else {
+        form.value = defaultForm()
       }
-    } else {
-      form.value = defaultForm()
+      // Fetch public models for hybrid child candidates.
+      if (publicModels.value.length === 0) {
+        try {
+          const res = await getPublicModels()
+          publicModels.value = (res?.data?.data || []).filter((m: PublicModel) => m.vendor_type !== 'hybrid')
+        } catch {
+          /* ignore */
+        }
+      }
     }
-    // Fetch public models for hybrid child candidates.
-    if (publicModels.value.length === 0) {
-      try {
-        const res = await getPublicModels()
-        publicModels.value = (res?.data?.data || []).filter((m: PublicModel) => m.vendor_type !== 'hybrid')
-      } catch { /* ignore */ }
-    }
-  }
-})
+  },
+)
 
 function addTag() {
   const tag = tagInput.value.trim()
@@ -349,19 +384,36 @@ async function handleSave() {
   // Validation.
   if (!props.editingModel) {
     const name = f.displayName.trim()
-    if (!name) { error.value = 'Model name is required'; return }
+    if (!name) {
+      error.value = 'Model name is required'
+      return
+    }
     if (!/^[a-zA-Z0-9][a-zA-Z0-9_./-]{1,63}$/.test(name)) {
-      error.value = 'Name must be 2-64 chars, start with letter/digit, allow letters/digits/-/_/./'; return
+      error.value = 'Name must be 2-64 chars, start with letter/digit, allow letters/digits/-/_/./'
+      return
     }
   }
   if (f.vendorType === 'hybrid' && f.childModels.length < 2) {
-    error.value = 'Select at least 2 child models'; return
+    error.value = 'Select at least 2 child models'
+    return
   }
   if (f.vendorType === 'provider') {
-    if (!f.modelFamily) { error.value = 'Select a model family'; return }
-    if (!f.endpoint) { error.value = 'Endpoint URL is required'; return }
-    if (!f.upstreamModel) { error.value = 'Upstream model name is required'; return }
-    if (!props.editingModel && !f.apiKey) { error.value = 'API Key is required'; return }
+    if (!f.modelFamily) {
+      error.value = 'Select a model family'
+      return
+    }
+    if (!f.endpoint) {
+      error.value = 'Endpoint URL is required'
+      return
+    }
+    if (!f.upstreamModel) {
+      error.value = 'Upstream model name is required'
+      return
+    }
+    if (!props.editingModel && !f.apiKey) {
+      error.value = 'API Key is required'
+      return
+    }
   }
 
   saving.value = true

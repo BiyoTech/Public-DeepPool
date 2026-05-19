@@ -1,35 +1,57 @@
 <template>
   <div class="max-w-6xl mx-auto">
-
     <!-- API Key Detail View -->
     <div v-if="detailKey" class="bg-white rounded-2xl shadow-sm border border-slate-100">
       <!-- Detail header -->
       <div class="flex items-center gap-3 px-6 py-4 border-b border-slate-100">
         <button @click="detailKey = null" class="p-1 rounded-lg hover:bg-slate-100 transition">
-          <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+          <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+          </svg>
         </button>
         <div class="flex-1 min-w-0">
           <h2 class="text-lg font-bold text-dp-title truncate">{{ detailKey.name }}</h2>
           <div class="text-xs text-dp-muted font-mono">{{ detailKey.key_prefix }}••••••</div>
         </div>
-        <button @click="handleCopyStoredKey(detailKey.id)" class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-dp-blue hover:bg-blue-50 transition-colors">{{ $t('service.apikey.copy') }}</button>
+        <button
+          @click="handleCopyStoredKey(detailKey.id)"
+          class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-dp-blue hover:bg-blue-50 transition-colors"
+        >
+          {{ $t('service.apikey.copy') }}
+        </button>
       </div>
 
       <!-- Detail inner tabs -->
       <div class="flex border-b border-slate-100 px-6">
-        <button @click="detailTab = 'settings'"
+        <button
+          @click="detailTab = 'settings'"
           class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px"
-          :class="detailTab === 'settings' ? 'border-dp-blue text-dp-blue' : 'border-transparent text-dp-muted hover:text-dp-body'">
+          :class="
+            detailTab === 'settings'
+              ? 'border-dp-blue text-dp-blue'
+              : 'border-transparent text-dp-muted hover:text-dp-body'
+          "
+        >
           {{ $t('service.apikey.tab_settings') }}
         </button>
-        <button @click="switchDetailTab('data')"
+        <button
+          @click="switchDetailTab('data')"
           class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px"
-          :class="detailTab === 'data' ? 'border-dp-blue text-dp-blue' : 'border-transparent text-dp-muted hover:text-dp-body'">
+          :class="
+            detailTab === 'data' ? 'border-dp-blue text-dp-blue' : 'border-transparent text-dp-muted hover:text-dp-body'
+          "
+        >
           {{ $t('service.apikey.tab_data') }}
         </button>
-        <button @click="switchDetailTab('guardrails')"
+        <button
+          @click="switchDetailTab('guardrails')"
           class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px"
-          :class="detailTab === 'guardrails' ? 'border-dp-blue text-dp-blue' : 'border-transparent text-dp-muted hover:text-dp-body'">
+          :class="
+            detailTab === 'guardrails'
+              ? 'border-dp-blue text-dp-blue'
+              : 'border-transparent text-dp-muted hover:text-dp-body'
+          "
+        >
           {{ $t('service.apikey.tab_guardrails') }}
         </button>
       </div>
@@ -40,9 +62,16 @@
         <div>
           <label class="text-xs font-medium text-dp-muted mb-1.5 block">{{ $t('service.apikey.detail_name') }}</label>
           <div class="flex gap-2">
-            <input v-model="detailEditName" type="text" class="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm text-dp-body focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100" />
-            <button @click="handleUpdateName" :disabled="!detailEditName.trim() || detailEditName === detailKey.name"
-              class="px-3 py-2 rounded-lg bg-dp-blue text-white text-xs font-medium hover:bg-dp-blue-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+            <input
+              v-model="detailEditName"
+              type="text"
+              class="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm text-dp-body focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+            />
+            <button
+              @click="handleUpdateName"
+              :disabled="!detailEditName.trim() || detailEditName === detailKey.name"
+              class="px-3 py-2 rounded-lg bg-dp-blue text-white text-xs font-medium hover:bg-dp-blue-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
               {{ $t('service.apikey.save') }}
             </button>
           </div>
@@ -50,23 +79,37 @@
 
         <!-- Rate Limits -->
         <div>
-          <label class="text-xs font-medium text-dp-muted mb-1.5 block">{{ $t('service.apikey.detail_rate_limit') }}</label>
+          <label class="text-xs font-medium text-dp-muted mb-1.5 block">{{
+            $t('service.apikey.detail_rate_limit')
+          }}</label>
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="text-[10px] text-dp-placeholder block mb-1">RPM (0=∞)</label>
-              <input v-model.number="detailEditRPM" type="number" min="0"
-                class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100" />
+              <input
+                v-model.number="detailEditRPM"
+                type="number"
+                min="0"
+                class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+              />
             </div>
             <div>
               <label class="text-[10px] text-dp-placeholder block mb-1">TPM (0=∞)</label>
-              <input v-model.number="detailEditTPM" type="number" min="0" step="100000"
-                class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100" />
+              <input
+                v-model.number="detailEditTPM"
+                type="number"
+                min="0"
+                step="100000"
+                class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+              />
             </div>
           </div>
           <div class="flex items-center justify-between mt-2">
             <p class="text-[10px] text-dp-placeholder">{{ $t('service.apikey.detail_rate_limit_hint') }}</p>
-            <button @click="handleUpdateRateLimit" :disabled="detailEditRPM === detailKey.rate_limit_rpm && detailEditTPM === detailKey.rate_limit_tpm"
-              class="px-3 py-1.5 rounded-lg bg-dp-blue text-white text-xs font-medium hover:bg-dp-blue-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+            <button
+              @click="handleUpdateRateLimit"
+              :disabled="detailEditRPM === detailKey.rate_limit_rpm && detailEditTPM === detailKey.rate_limit_tpm"
+              class="px-3 py-1.5 rounded-lg bg-dp-blue text-white text-xs font-medium hover:bg-dp-blue-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
               {{ $t('service.apikey.save') }}
             </button>
           </div>
@@ -77,11 +120,21 @@
           <label class="text-xs font-medium text-dp-muted mb-1.5 block">{{ $t('service.apikey.detail_quota') }}</label>
           <div v-if="detailKey.quota_total >= 0" class="flex items-center gap-3">
             <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div class="h-full rounded-full transition-all"
-                :class="quotaPercent(detailKey) > 90 ? 'bg-red-400' : quotaPercent(detailKey) > 70 ? 'bg-amber-400' : 'bg-emerald-400'"
-                :style="{ width: quotaPercent(detailKey) + '%' }" />
+              <div
+                class="h-full rounded-full transition-all"
+                :class="
+                  quotaPercent(detailKey) > 90
+                    ? 'bg-red-400'
+                    : quotaPercent(detailKey) > 70
+                      ? 'bg-amber-400'
+                      : 'bg-emerald-400'
+                "
+                :style="{ width: quotaPercent(detailKey) + '%' }"
+              />
             </div>
-            <span class="text-xs text-dp-muted shrink-0">{{ formatTokens(detailKey.quota_used) }} / {{ formatTokens(detailKey.quota_total) }}</span>
+            <span class="text-xs text-dp-muted shrink-0"
+              >{{ formatTokens(detailKey.quota_used) }} / {{ formatTokens(detailKey.quota_total) }}</span
+            >
           </div>
           <div v-else class="text-sm text-dp-muted">{{ $t('service.apikey.quota_unlimited') }}</div>
         </div>
@@ -89,7 +142,13 @@
         <!-- Meta info -->
         <div class="text-xs text-dp-placeholder space-y-1">
           <div>ID: {{ detailKey.id }}</div>
-          <div>{{ detailKey.last_used_at ? $t('service.apikey.last_used', { time: formatTime(detailKey.last_used_at) }) : $t('service.apikey.never_used') }}</div>
+          <div>
+            {{
+              detailKey.last_used_at
+                ? $t('service.apikey.last_used', { time: formatTime(detailKey.last_used_at) })
+                : $t('service.apikey.never_used')
+            }}
+          </div>
         </div>
       </div>
 
@@ -97,13 +156,21 @@
       <div v-show="detailTab === 'data'" class="p-6">
         <!-- Date range filter -->
         <div class="flex flex-wrap items-center gap-3 mb-5">
-          <input v-model="chartStartDate" type="date"
-            class="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-dp-body focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100" />
+          <input
+            v-model="chartStartDate"
+            type="date"
+            class="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-dp-body focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+          />
           <span class="text-dp-muted text-xs">—</span>
-          <input v-model="chartEndDate" type="date"
-            class="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-dp-body focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100" />
-          <button @click="fetchKeyUsageData"
-            class="px-4 py-1.5 rounded-lg bg-dp-blue text-white text-sm font-medium hover:bg-dp-blue-dark transition-colors">
+          <input
+            v-model="chartEndDate"
+            type="date"
+            class="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-dp-body focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+          />
+          <button
+            @click="fetchKeyUsageData"
+            class="px-4 py-1.5 rounded-lg bg-dp-blue text-white text-sm font-medium hover:bg-dp-blue-dark transition-colors"
+          >
             {{ $t('data.search') }}
           </button>
         </div>
@@ -130,19 +197,21 @@
 
         <!-- Charts -->
         <div v-if="chartLoading" class="text-center py-12 text-dp-muted text-sm">Loading...</div>
-        <div v-else-if="chartData.length === 0" class="text-center py-12 text-dp-muted text-sm">{{ $t('data.empty') }}</div>
+        <div v-else-if="chartData.length === 0" class="text-center py-12 text-dp-muted text-sm">
+          {{ $t('data.empty') }}
+        </div>
         <template v-else>
           <div class="mb-6">
             <h4 class="text-xs font-medium text-dp-muted mb-2">{{ $t('service.apikey.chart_requests') }}</h4>
-            <div ref="requestsChartRef" style="width: 100%; height: 260px;"></div>
+            <div ref="requestsChartRef" style="width: 100%; height: 260px"></div>
           </div>
           <div class="mb-6">
             <h4 class="text-xs font-medium text-dp-muted mb-2">{{ $t('service.apikey.chart_tokens') }}</h4>
-            <div ref="tokensChartRef" style="width: 100%; height: 260px;"></div>
+            <div ref="tokensChartRef" style="width: 100%; height: 260px"></div>
           </div>
           <div>
             <h4 class="text-xs font-medium text-dp-muted mb-2">{{ $t('service.apikey.chart_users') }}</h4>
-            <div ref="usersChartRef" style="width: 100%; height: 260px;"></div>
+            <div ref="usersChartRef" style="width: 100%; height: 260px"></div>
           </div>
         </template>
       </div>
@@ -150,24 +219,48 @@
       <!-- Tab: Guardrails -->
       <div v-show="detailTab === 'guardrails'" class="p-6">
         <!-- Output guardrail stream notice -->
-        <div v-if="guardrailList.some(g => g.phase === 'output' && g.enabled)" class="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-200 flex items-start gap-2">
-          <svg class="w-4 h-4 text-blue-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <div
+          v-if="guardrailList.some((g) => g.phase === 'output' && g.enabled)"
+          class="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-200 flex items-start gap-2"
+        >
+          <svg class="w-4 h-4 text-blue-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
           <p class="text-xs text-blue-700">{{ $t('service.apikey.guardrails_output_stream_notice') }}</p>
         </div>
 
         <!-- Inner tabs: Rules / Results -->
         <div class="flex items-center justify-between mb-4">
           <div class="flex gap-2">
-            <button @click="grInnerTab = 'rules'" class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-              :class="grInnerTab === 'rules' ? 'bg-dp-blue text-white' : 'bg-slate-100 text-dp-muted hover:bg-slate-200'">
+            <button
+              @click="grInnerTab = 'rules'"
+              class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+              :class="
+                grInnerTab === 'rules' ? 'bg-dp-blue text-white' : 'bg-slate-100 text-dp-muted hover:bg-slate-200'
+              "
+            >
               {{ $t('service.apikey.guardrails_title') }}
             </button>
-            <button @click="switchGrInnerTab('results')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-              :class="grInnerTab === 'results' ? 'bg-dp-blue text-white' : 'bg-slate-100 text-dp-muted hover:bg-slate-200'">
+            <button
+              @click="switchGrInnerTab('results')"
+              class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+              :class="
+                grInnerTab === 'results' ? 'bg-dp-blue text-white' : 'bg-slate-100 text-dp-muted hover:bg-slate-200'
+              "
+            >
               {{ $t('service.apikey.guardrails_results_tab') }}
             </button>
           </div>
-          <button v-if="grInnerTab === 'rules'" @click="openGrCreateForm()" class="px-3 py-1.5 rounded-lg bg-dp-blue text-white text-xs font-medium hover:bg-dp-blue-dark transition-colors">
+          <button
+            v-if="grInnerTab === 'rules'"
+            @click="openGrCreateForm()"
+            class="px-3 py-1.5 rounded-lg bg-dp-blue text-white text-xs font-medium hover:bg-dp-blue-dark transition-colors"
+          >
             + {{ $t('service.apikey.guardrails_add') }}
           </button>
         </div>
@@ -175,37 +268,92 @@
         <!-- Rules list -->
         <div v-if="grInnerTab === 'rules'">
           <div v-if="guardrailList.length === 0" class="text-center py-12">
-            <svg class="w-10 h-10 text-slate-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+            <svg
+              class="w-10 h-10 text-slate-300 mx-auto mb-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
+              />
             </svg>
             <p class="text-sm text-dp-muted">{{ $t('service.apikey.guardrails_empty') }}</p>
           </div>
           <div v-else class="space-y-2">
-            <div v-for="gr in guardrailList" :key="gr.id" class="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:border-slate-200 transition group">
+            <div
+              v-for="gr in guardrailList"
+              :key="gr.id"
+              class="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:border-slate-200 transition group"
+            >
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-0.5">
                   <span class="text-sm font-medium text-dp-title truncate">{{ gr.name }}</span>
-                  <span class="px-1.5 py-0.5 rounded text-[10px] font-medium" :class="gr.phase === 'input' ? 'bg-cyan-50 text-cyan-700' : 'bg-purple-50 text-purple-700'">
-                    {{ gr.phase === 'input' ? $t('service.apikey.guardrails_phase_input') : $t('service.apikey.guardrails_phase_output') }}
+                  <span
+                    class="px-1.5 py-0.5 rounded text-[10px] font-medium"
+                    :class="gr.phase === 'input' ? 'bg-cyan-50 text-cyan-700' : 'bg-purple-50 text-purple-700'"
+                  >
+                    {{
+                      gr.phase === 'input'
+                        ? $t('service.apikey.guardrails_phase_input')
+                        : $t('service.apikey.guardrails_phase_output')
+                    }}
                   </span>
-                  <span class="px-1.5 py-0.5 rounded text-[10px] font-medium" :class="gr.action === 'block' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'">
-                    {{ gr.action === 'block' ? $t('service.apikey.guardrails_action_block') : $t('service.apikey.guardrails_action_log') }}
+                  <span
+                    class="px-1.5 py-0.5 rounded text-[10px] font-medium"
+                    :class="gr.action === 'block' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'"
+                  >
+                    {{
+                      gr.action === 'block'
+                        ? $t('service.apikey.guardrails_action_block')
+                        : $t('service.apikey.guardrails_action_log')
+                    }}
                   </span>
                 </div>
                 <p class="text-xs text-dp-muted truncate">{{ gr.evaluator_model }} · {{ gr.storage_type }}</p>
               </div>
               <!-- Toggle enabled -->
-              <button @click="handleToggleGuardrail(gr)" class="px-2 py-1 rounded text-[10px] font-medium transition-colors"
-                :class="gr.enabled ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'">
+              <button
+                @click="handleToggleGuardrail(gr)"
+                class="px-2 py-1 rounded text-[10px] font-medium transition-colors"
+                :class="
+                  gr.enabled
+                    ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                "
+              >
                 {{ gr.enabled ? $t('service.apikey.guardrails_enabled') : $t('service.apikey.guardrails_disabled') }}
               </button>
               <!-- Edit -->
-              <button @click="openGrEditForm(gr)" class="p-1 rounded hover:bg-slate-100 transition opacity-0 group-hover:opacity-100">
-                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+              <button
+                @click="openGrEditForm(gr)"
+                class="p-1 rounded hover:bg-slate-100 transition opacity-0 group-hover:opacity-100"
+              >
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  />
+                </svg>
               </button>
               <!-- Delete -->
-              <button @click="handleDeleteGuardrail(gr)" class="p-1 rounded hover:bg-red-50 transition opacity-0 group-hover:opacity-100">
-                <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              <button
+                @click="handleDeleteGuardrail(gr)"
+                class="p-1 rounded hover:bg-red-50 transition opacity-0 group-hover:opacity-100"
+              >
+                <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
               </button>
             </div>
           </div>
@@ -215,21 +363,33 @@
         <div v-if="grInnerTab === 'results'">
           <!-- Time range filter -->
           <div class="flex flex-wrap items-center gap-3 mb-4">
-            <input v-model="grResultsStartTime" type="date"
-              class="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-dp-body focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100" />
+            <input
+              v-model="grResultsStartTime"
+              type="date"
+              class="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-dp-body focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+            />
             <span class="text-dp-muted text-xs">—</span>
-            <input v-model="grResultsEndTime" type="date"
-              class="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-dp-body focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100" />
-            <button @click="resetAndFetchGrResults"
-              class="px-4 py-1.5 rounded-lg bg-dp-blue text-white text-sm font-medium hover:bg-dp-blue-dark transition-colors">
+            <input
+              v-model="grResultsEndTime"
+              type="date"
+              class="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-dp-body focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+            />
+            <button
+              @click="resetAndFetchGrResults"
+              class="px-4 py-1.5 rounded-lg bg-dp-blue text-white text-sm font-medium hover:bg-dp-blue-dark transition-colors"
+            >
               {{ $t('data.search') }}
             </button>
           </div>
 
           <!-- Initial loading -->
-          <div v-if="grResultsLoading && grResultsList.length === 0" class="text-center py-12 text-dp-muted text-sm">Loading...</div>
+          <div v-if="grResultsLoading && grResultsList.length === 0" class="text-center py-12 text-dp-muted text-sm">
+            Loading...
+          </div>
           <!-- Empty state -->
-          <div v-else-if="grResultsList.length === 0" class="text-center py-12 text-dp-muted text-sm">{{ $t('service.apikey.guardrails_results_empty') }}</div>
+          <div v-else-if="grResultsList.length === 0" class="text-center py-12 text-dp-muted text-sm">
+            {{ $t('service.apikey.guardrails_results_empty') }}
+          </div>
           <!-- Results table with scroll-based loading -->
           <div v-else>
             <div ref="grResultsScrollRef" class="overflow-y-auto max-h-[520px]" @scroll="onGrResultsScroll">
@@ -237,12 +397,22 @@
                 <thead class="sticky top-0 bg-white z-[1]">
                   <tr class="border-b border-slate-100 text-dp-muted">
                     <th class="text-left py-2 pr-3 font-medium">{{ $t('service.apikey.guardrails_results_time') }}</th>
-                    <th class="text-left py-2 pr-3 font-medium">{{ $t('service.apikey.guardrails_results_request_id') }}</th>
+                    <th class="text-left py-2 pr-3 font-medium">
+                      {{ $t('service.apikey.guardrails_results_request_id') }}
+                    </th>
                     <th class="text-left py-2 pr-3 font-medium">{{ $t('service.apikey.guardrails_phase') }}</th>
-                    <th class="text-left py-2 pr-3 font-medium">{{ $t('service.apikey.guardrails_results_flagged') }}</th>
-                    <th class="text-left py-2 pr-3 font-medium">{{ $t('service.apikey.guardrails_results_confidence') }}</th>
-                    <th class="text-left py-2 pr-3 font-medium">{{ $t('service.apikey.guardrails_results_blocked') }}</th>
-                    <th class="text-left py-2 pr-3 font-medium">{{ $t('service.apikey.guardrails_results_duration') }}</th>
+                    <th class="text-left py-2 pr-3 font-medium">
+                      {{ $t('service.apikey.guardrails_results_flagged') }}
+                    </th>
+                    <th class="text-left py-2 pr-3 font-medium">
+                      {{ $t('service.apikey.guardrails_results_confidence') }}
+                    </th>
+                    <th class="text-left py-2 pr-3 font-medium">
+                      {{ $t('service.apikey.guardrails_results_blocked') }}
+                    </th>
+                    <th class="text-left py-2 pr-3 font-medium">
+                      {{ $t('service.apikey.guardrails_results_duration') }}
+                    </th>
                     <th class="text-left py-2 font-medium">Reason</th>
                   </tr>
                 </thead>
@@ -250,13 +420,33 @@
                   <tr v-for="res in grResultsList" :key="res.id" class="border-b border-slate-50 hover:bg-slate-50">
                     <td class="py-2 pr-3 text-dp-muted whitespace-nowrap">{{ res.created_at }}</td>
                     <td class="py-2 pr-3 font-mono text-dp-body max-w-[120px]">
-                      <span class="inline-flex items-center gap-1 cursor-pointer hover:text-dp-blue transition-colors" :title="res.request_id" @click="copyRequestId(res.request_id)">
+                      <span
+                        class="inline-flex items-center gap-1 cursor-pointer hover:text-dp-blue transition-colors"
+                        :title="res.request_id"
+                        @click="copyRequestId(res.request_id)"
+                      >
                         {{ res.request_id.slice(0, 12) }}…
-                        <svg class="w-3 h-3 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" /></svg>
+                        <svg
+                          class="w-3 h-3 text-slate-400 shrink-0"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          stroke-width="2"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"
+                          />
+                        </svg>
                       </span>
                     </td>
                     <td class="py-2 pr-3">
-                      <span class="px-1.5 py-0.5 rounded text-[10px] font-medium" :class="res.phase === 'input' ? 'bg-cyan-50 text-cyan-700' : 'bg-purple-50 text-purple-700'">{{ res.phase }}</span>
+                      <span
+                        class="px-1.5 py-0.5 rounded text-[10px] font-medium"
+                        :class="res.phase === 'input' ? 'bg-cyan-50 text-cyan-700' : 'bg-purple-50 text-purple-700'"
+                        >{{ res.phase }}</span
+                      >
                     </td>
                     <td class="py-2 pr-3">
                       <span v-if="res.flagged" class="text-red-600 font-medium">Yes</span>
@@ -268,7 +458,12 @@
                       <span v-else class="text-dp-muted">No</span>
                     </td>
                     <td class="py-2 pr-3 text-dp-muted">{{ res.duration_ms }}ms</td>
-                    <td class="py-2 text-dp-muted max-w-[260px] truncate" :title="parseEvalReason(res.evaluator_response)">{{ parseEvalReason(res.evaluator_response) }}</td>
+                    <td
+                      class="py-2 text-dp-muted max-w-[260px] truncate"
+                      :title="parseEvalReason(res.evaluator_response)"
+                    >
+                      {{ parseEvalReason(res.evaluator_response) }}
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -284,100 +479,203 @@
         <div class="absolute inset-0 bg-black/30" @click="grFormVisible = false"></div>
         <div class="relative w-full max-w-lg bg-white shadow-xl overflow-y-auto">
           <div class="sticky top-0 bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between z-10">
-            <h3 class="text-base font-bold text-dp-title">{{ grEditingId ? $t('service.apikey.guardrails_edit_title') : $t('service.apikey.guardrails_create_title') }}</h3>
+            <h3 class="text-base font-bold text-dp-title">
+              {{
+                grEditingId ? $t('service.apikey.guardrails_edit_title') : $t('service.apikey.guardrails_create_title')
+              }}
+            </h3>
             <button @click="grFormVisible = false" class="p-1 rounded-lg hover:bg-slate-100">
-              <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+              <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           </div>
           <div class="p-6 space-y-4">
             <!-- Template selector -->
             <div>
-              <label class="text-xs font-medium text-dp-muted mb-1 block">{{ $t('service.apikey.guardrails_template') }}</label>
-              <select v-model="grFormTemplate" @change="onGrTemplateChange" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100">
+              <label class="text-xs font-medium text-dp-muted mb-1 block">{{
+                $t('service.apikey.guardrails_template')
+              }}</label>
+              <select
+                v-model="grFormTemplate"
+                @change="onGrTemplateChange"
+                class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+              >
                 <option value="">{{ $t('service.apikey.guardrails_template_custom') }}</option>
                 <option v-for="t in grTemplates" :key="t.name" :value="t.name">{{ t.display_name }}</option>
               </select>
             </div>
             <!-- Name -->
             <div>
-              <label class="text-xs font-medium text-dp-muted mb-1 block">{{ $t('service.apikey.guardrails_name') }}</label>
-              <input v-model="grFormName" type="text" :placeholder="$t('service.apikey.guardrails_name_placeholder')" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100" />
+              <label class="text-xs font-medium text-dp-muted mb-1 block">{{
+                $t('service.apikey.guardrails_name')
+              }}</label>
+              <input
+                v-model="grFormName"
+                type="text"
+                :placeholder="$t('service.apikey.guardrails_name_placeholder')"
+                class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+              />
             </div>
             <!-- Phase -->
             <div>
-              <label class="text-xs font-medium text-dp-muted mb-1 block">{{ $t('service.apikey.guardrails_phase') }}</label>
+              <label class="text-xs font-medium text-dp-muted mb-1 block">{{
+                $t('service.apikey.guardrails_phase')
+              }}</label>
               <div class="flex gap-2">
-                <button @click="grFormPhase = 'input'" class="flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors"
-                  :class="grFormPhase === 'input' ? 'border-dp-blue bg-blue-50 text-dp-blue' : 'border-slate-200 text-dp-muted hover:bg-slate-50'">
+                <button
+                  @click="grFormPhase = 'input'"
+                  class="flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors"
+                  :class="
+                    grFormPhase === 'input'
+                      ? 'border-dp-blue bg-blue-50 text-dp-blue'
+                      : 'border-slate-200 text-dp-muted hover:bg-slate-50'
+                  "
+                >
                   {{ $t('service.apikey.guardrails_phase_input') }}
                 </button>
-                <button @click="grFormPhase = 'output'" class="flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors"
-                  :class="grFormPhase === 'output' ? 'border-dp-blue bg-blue-50 text-dp-blue' : 'border-slate-200 text-dp-muted hover:bg-slate-50'">
+                <button
+                  @click="grFormPhase = 'output'"
+                  class="flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors"
+                  :class="
+                    grFormPhase === 'output'
+                      ? 'border-dp-blue bg-blue-50 text-dp-blue'
+                      : 'border-slate-200 text-dp-muted hover:bg-slate-50'
+                  "
+                >
                   {{ $t('service.apikey.guardrails_phase_output') }}
                 </button>
               </div>
               <!-- Output stream warning -->
-              <div v-if="grFormPhase === 'output'" class="mt-2 p-2.5 rounded-lg bg-amber-50 border border-amber-200 flex items-start gap-2">
-                <svg class="w-4 h-4 text-amber-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+              <div
+                v-if="grFormPhase === 'output'"
+                class="mt-2 p-2.5 rounded-lg bg-amber-50 border border-amber-200 flex items-start gap-2"
+              >
+                <svg
+                  class="w-4 h-4 text-amber-500 mt-0.5 shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"
+                  />
+                </svg>
                 <p class="text-xs text-amber-700">{{ $t('service.apikey.guardrails_output_stream_warning') }}</p>
               </div>
             </div>
             <!-- Action -->
             <div>
-              <label class="text-xs font-medium text-dp-muted mb-1 block">{{ $t('service.apikey.guardrails_action') }}</label>
+              <label class="text-xs font-medium text-dp-muted mb-1 block">{{
+                $t('service.apikey.guardrails_action')
+              }}</label>
               <div class="flex gap-2">
-                <button @click="grFormAction = 'block'" class="flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors"
-                  :class="grFormAction === 'block' ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-200 text-dp-muted hover:bg-slate-50'">
+                <button
+                  @click="grFormAction = 'block'"
+                  class="flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors"
+                  :class="
+                    grFormAction === 'block'
+                      ? 'border-red-400 bg-red-50 text-red-700'
+                      : 'border-slate-200 text-dp-muted hover:bg-slate-50'
+                  "
+                >
                   {{ $t('service.apikey.guardrails_action_block') }}
                 </button>
-                <button @click="grFormAction = 'log'" class="flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors"
-                  :class="grFormAction === 'log' ? 'border-amber-400 bg-amber-50 text-amber-700' : 'border-slate-200 text-dp-muted hover:bg-slate-50'">
+                <button
+                  @click="grFormAction = 'log'"
+                  class="flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors"
+                  :class="
+                    grFormAction === 'log'
+                      ? 'border-amber-400 bg-amber-50 text-amber-700'
+                      : 'border-slate-200 text-dp-muted hover:bg-slate-50'
+                  "
+                >
                   {{ $t('service.apikey.guardrails_action_log') }}
                 </button>
               </div>
             </div>
             <!-- Evaluator model -->
             <div>
-              <label class="text-xs font-medium text-dp-muted mb-1 block">{{ $t('service.apikey.guardrails_evaluator_model') }}</label>
-              <select v-model="grFormEvalModel" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100">
+              <label class="text-xs font-medium text-dp-muted mb-1 block">{{
+                $t('service.apikey.guardrails_evaluator_model')
+              }}</label>
+              <select
+                v-model="grFormEvalModel"
+                class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+              >
                 <option value="" disabled>{{ $t('service.apikey.guardrails_evaluator_model_placeholder') }}</option>
                 <option v-for="m in availableModels" :key="m.id" :value="m.id">{{ m.id }}</option>
               </select>
             </div>
             <!-- Evaluator API Key -->
             <div>
-              <label class="text-xs font-medium text-dp-muted mb-1 block">{{ $t('service.apikey.guardrails_evaluator_apikey') }}</label>
-              <select v-model="grFormEvalAPIKeyId" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100">
+              <label class="text-xs font-medium text-dp-muted mb-1 block">{{
+                $t('service.apikey.guardrails_evaluator_apikey')
+              }}</label>
+              <select
+                v-model="grFormEvalAPIKeyId"
+                class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+              >
                 <option :value="0" disabled>{{ $t('service.apikey.guardrails_evaluator_apikey_placeholder') }}</option>
                 <option v-for="k in apiKeys" :key="k.id" :value="k.id">{{ k.name }} ({{ k.key_prefix }}…)</option>
               </select>
             </div>
             <!-- Prompt -->
             <div>
-              <label class="text-xs font-medium text-dp-muted mb-1 block">{{ $t('service.apikey.guardrails_prompt') }}</label>
-              <textarea v-model="grFormPrompt" rows="8" :placeholder="$t('service.apikey.guardrails_prompt_placeholder')"
-                class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm font-mono focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100 resize-y"></textarea>
+              <label class="text-xs font-medium text-dp-muted mb-1 block">{{
+                $t('service.apikey.guardrails_prompt')
+              }}</label>
+              <textarea
+                v-model="grFormPrompt"
+                rows="8"
+                :placeholder="$t('service.apikey.guardrails_prompt_placeholder')"
+                class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm font-mono focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100 resize-y"
+              ></textarea>
               <p class="text-[10px] text-dp-placeholder mt-1">{{ grFormPrompt.length }} / 5000</p>
             </div>
             <!-- Storage type -->
             <div>
-              <label class="text-xs font-medium text-dp-muted mb-1 block">{{ $t('service.apikey.guardrails_storage_type') }}</label>
+              <label class="text-xs font-medium text-dp-muted mb-1 block">{{
+                $t('service.apikey.guardrails_storage_type')
+              }}</label>
               <div class="flex gap-2">
-                <button @click="grFormStorageType = 'builtin'" class="flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors"
-                  :class="grFormStorageType === 'builtin' ? 'border-dp-blue bg-blue-50 text-dp-blue' : 'border-slate-200 text-dp-muted hover:bg-slate-50'">
+                <button
+                  @click="grFormStorageType = 'builtin'"
+                  class="flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors"
+                  :class="
+                    grFormStorageType === 'builtin'
+                      ? 'border-dp-blue bg-blue-50 text-dp-blue'
+                      : 'border-slate-200 text-dp-muted hover:bg-slate-50'
+                  "
+                >
                   {{ $t('service.apikey.guardrails_storage_builtin') }}
                 </button>
-                <button @click="grFormStorageType = 'external'" class="flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors"
-                  :class="grFormStorageType === 'external' ? 'border-dp-blue bg-blue-50 text-dp-blue' : 'border-slate-200 text-dp-muted hover:bg-slate-50'">
+                <button
+                  @click="grFormStorageType = 'external'"
+                  class="flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors"
+                  :class="
+                    grFormStorageType === 'external'
+                      ? 'border-dp-blue bg-blue-50 text-dp-blue'
+                      : 'border-slate-200 text-dp-muted hover:bg-slate-50'
+                  "
+                >
                   {{ $t('service.apikey.guardrails_storage_external') }}
                 </button>
               </div>
             </div>
             <!-- External DB fields -->
-            <div v-if="grFormStorageType === 'external'" class="space-y-3 p-3 rounded-lg bg-slate-50 border border-slate-100">
+            <div
+              v-if="grFormStorageType === 'external'"
+              class="space-y-3 p-3 rounded-lg bg-slate-50 border border-slate-100"
+            >
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="text-[10px] text-dp-placeholder block mb-1">{{ $t('service.apikey.guardrails_db_type') }}</label>
+                  <label class="text-[10px] text-dp-placeholder block mb-1">{{
+                    $t('service.apikey.guardrails_db_type')
+                  }}</label>
                   <select v-model="grFormDBType" class="w-full px-2 py-1.5 rounded border border-slate-200 text-xs">
                     <option value="mysql">MySQL</option>
                     <option value="postgresql">PostgreSQL</option>
@@ -385,33 +683,74 @@
                   </select>
                 </div>
                 <div>
-                  <label class="text-[10px] text-dp-placeholder block mb-1">{{ $t('service.apikey.guardrails_db_port') }}</label>
-                  <input v-model.number="grFormDBPort" type="number" class="w-full px-2 py-1.5 rounded border border-slate-200 text-xs" />
+                  <label class="text-[10px] text-dp-placeholder block mb-1">{{
+                    $t('service.apikey.guardrails_db_port')
+                  }}</label>
+                  <input
+                    v-model.number="grFormDBPort"
+                    type="number"
+                    class="w-full px-2 py-1.5 rounded border border-slate-200 text-xs"
+                  />
                 </div>
               </div>
               <div>
-                <label class="text-[10px] text-dp-placeholder block mb-1">{{ $t('service.apikey.guardrails_db_host') }}</label>
-                <input v-model="grFormDBHost" type="text" class="w-full px-2 py-1.5 rounded border border-slate-200 text-xs" />
+                <label class="text-[10px] text-dp-placeholder block mb-1">{{
+                  $t('service.apikey.guardrails_db_host')
+                }}</label>
+                <input
+                  v-model="grFormDBHost"
+                  type="text"
+                  class="w-full px-2 py-1.5 rounded border border-slate-200 text-xs"
+                />
               </div>
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="text-[10px] text-dp-placeholder block mb-1">{{ $t('service.apikey.guardrails_db_user') }}</label>
-                  <input v-model="grFormDBUser" type="text" class="w-full px-2 py-1.5 rounded border border-slate-200 text-xs" />
+                  <label class="text-[10px] text-dp-placeholder block mb-1">{{
+                    $t('service.apikey.guardrails_db_user')
+                  }}</label>
+                  <input
+                    v-model="grFormDBUser"
+                    type="text"
+                    class="w-full px-2 py-1.5 rounded border border-slate-200 text-xs"
+                  />
                 </div>
                 <div>
-                  <label class="text-[10px] text-dp-placeholder block mb-1">{{ $t('service.apikey.guardrails_db_password') }}</label>
-                  <input v-model="grFormDBPassword" type="password" class="w-full px-2 py-1.5 rounded border border-slate-200 text-xs" />
+                  <label class="text-[10px] text-dp-placeholder block mb-1">{{
+                    $t('service.apikey.guardrails_db_password')
+                  }}</label>
+                  <input
+                    v-model="grFormDBPassword"
+                    type="password"
+                    class="w-full px-2 py-1.5 rounded border border-slate-200 text-xs"
+                  />
                 </div>
               </div>
               <div>
-                <label class="text-[10px] text-dp-placeholder block mb-1">{{ $t('service.apikey.guardrails_db_name') }}</label>
-                <input v-model="grFormDBName" type="text" class="w-full px-2 py-1.5 rounded border border-slate-200 text-xs" />
+                <label class="text-[10px] text-dp-placeholder block mb-1">{{
+                  $t('service.apikey.guardrails_db_name')
+                }}</label>
+                <input
+                  v-model="grFormDBName"
+                  type="text"
+                  class="w-full px-2 py-1.5 rounded border border-slate-200 text-xs"
+                />
               </div>
             </div>
             <!-- Submit -->
-            <button @click="handleGrSubmit" :disabled="grFormSubmitting || !grFormName.trim() || !grFormPrompt.trim() || !grFormEvalModel || !grFormEvalAPIKeyId"
-              class="w-full py-2.5 rounded-xl bg-dp-blue text-white text-sm font-medium hover:bg-dp-blue-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-              {{ grFormSubmitting ? '...' : (grEditingId ? $t('service.apikey.save') : $t('service.apikey.guardrails_add')) }}
+            <button
+              @click="handleGrSubmit"
+              :disabled="
+                grFormSubmitting ||
+                !grFormName.trim() ||
+                !grFormPrompt.trim() ||
+                !grFormEvalModel ||
+                !grFormEvalAPIKeyId
+              "
+              class="w-full py-2.5 rounded-xl bg-dp-blue text-white text-sm font-medium hover:bg-dp-blue-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {{
+                grFormSubmitting ? '...' : grEditingId ? $t('service.apikey.save') : $t('service.apikey.guardrails_add')
+              }}
             </button>
           </div>
         </div>
@@ -422,25 +761,52 @@
     <div v-else class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-lg font-bold text-dp-title">{{ $t('service.apikey.title') }}</h2>
-        <button @click="showCreateDialog = true" class="px-3 py-1.5 rounded-lg bg-dp-blue text-white text-xs font-medium hover:bg-dp-blue-dark transition-colors">+ {{ $t('service.apikey.create') }}</button>
+        <button
+          @click="showCreateDialog = true"
+          class="px-3 py-1.5 rounded-lg bg-dp-blue text-white text-xs font-medium hover:bg-dp-blue-dark transition-colors"
+        >
+          + {{ $t('service.apikey.create') }}
+        </button>
       </div>
       <div v-if="newlyCreatedKey" class="mb-4 p-3 rounded-lg bg-green-50 border border-green-200">
         <p class="text-xs font-medium text-green-800 mb-1">{{ $t('service.apikey.created_tip') }}</p>
         <div class="flex items-center gap-2">
           <code class="flex-1 text-xs bg-green-100 px-2 py-1 rounded font-mono break-all">{{ newlyCreatedKey }}</code>
-          <button @click="copyKey(newlyCreatedKey!)" class="shrink-0 text-xs text-green-700 hover:text-green-900 font-medium">{{ $t('service.apikey.copy') }}</button>
+          <button
+            @click="copyKey(newlyCreatedKey!)"
+            class="shrink-0 text-xs text-green-700 hover:text-green-900 font-medium"
+          >
+            {{ $t('service.apikey.copy') }}
+          </button>
         </div>
-        <button @click="newlyCreatedKey = null" class="mt-2 text-xs text-green-600 hover:underline">{{ $t('service.apikey.dismiss') }}</button>
+        <button @click="newlyCreatedKey = null" class="mt-2 text-xs text-green-600 hover:underline">
+          {{ $t('service.apikey.dismiss') }}
+        </button>
       </div>
-      <div v-if="apiKeys.length === 0 && !keysLoading" class="text-center text-dp-muted text-sm py-8">{{ $t('service.apikey.empty') }}</div>
+      <div v-if="apiKeys.length === 0 && !keysLoading" class="text-center text-dp-muted text-sm py-8">
+        {{ $t('service.apikey.empty') }}
+      </div>
       <div v-else class="space-y-2">
-        <div v-for="key in apiKeys" :key="key.id"
+        <div
+          v-for="key in apiKeys"
+          :key="key.id"
           class="group flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:border-slate-200 hover:bg-slate-50/50 cursor-pointer transition-all"
-          @click="openKeyDetail(key)">
+          @click="openKeyDetail(key)"
+        >
           <!-- Key icon -->
           <div class="shrink-0 w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
-            <svg class="w-4.5 h-4.5 text-dp-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+            <svg
+              class="w-4.5 h-4.5 text-dp-blue"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z"
+              />
             </svg>
           </div>
           <!-- Key info -->
@@ -450,40 +816,63 @@
           </div>
           <!-- Rate limit badge -->
           <div class="hidden sm:block text-[10px] text-dp-placeholder shrink-0">
-            RPM {{ key.rate_limit_rpm === 0 ? '∞' : key.rate_limit_rpm }} · TPM {{ key.rate_limit_tpm === 0 ? '∞' : formatTokens(key.rate_limit_tpm) }}
+            RPM {{ key.rate_limit_rpm === 0 ? '∞' : key.rate_limit_rpm }} · TPM
+            {{ key.rate_limit_tpm === 0 ? '∞' : formatTokens(key.rate_limit_tpm) }}
           </div>
           <!-- Delete button -->
-          <button @click.stop="handleDelete(key.id)"
+          <button
+            @click.stop="handleDelete(key.id)"
             class="shrink-0 p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-            :title="$t('service.apikey.delete')">
+            :title="$t('service.apikey.delete')"
+          >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+              />
             </svg>
           </button>
           <!-- Copy button -->
-          <button @click.stop="handleCopyStoredKey(key.id)"
+          <button
+            @click.stop="handleCopyStoredKey(key.id)"
             class="shrink-0 p-2 rounded-lg text-slate-400 hover:text-dp-blue hover:bg-blue-50 transition-colors"
-            :title="$t('service.apikey.copy')">
+            :title="$t('service.apikey.copy')"
+          >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"
+              />
             </svg>
           </button>
           <!-- Arrow -->
-          <svg class="w-4 h-4 text-slate-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+          <svg
+            class="w-4 h-4 text-slate-300 shrink-0"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+          </svg>
         </div>
       </div>
     </div>
 
     <!-- Create API Key dialog -->
-    <div v-if="showCreateDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div
+      v-if="showCreateDialog"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+    >
       <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4">
         <h3 class="text-lg font-bold text-dp-title mb-4">{{ $t('service.apikey.create_title') }}</h3>
         <input
           v-model="newKeyName"
           type="text"
           :placeholder="$t('service.apikey.name_placeholder')"
-          class="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body
-                 placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+          class="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
           @keydown.enter="handleCreate"
         />
         <!-- RPM/TPM settings -->
@@ -511,7 +900,10 @@
         <p class="text-[10px] text-dp-placeholder mt-1.5">{{ $t('service.apikey.detail_rate_limit_hint') }}</p>
         <div class="flex gap-3 mt-4">
           <button
-            @click="showCreateDialog = false; newKeyName = ''"
+            @click="
+              showCreateDialog = false
+              newKeyName = ''
+            "
             class="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-muted hover:bg-slate-50 transition-colors"
           >
             {{ $t('service.apikey.cancel') }}
@@ -519,24 +911,42 @@
           <button
             @click="handleCreate"
             :disabled="!newKeyName.trim() || creating"
-            class="flex-1 py-2.5 rounded-lg bg-dp-blue text-white text-sm font-medium
-                   hover:bg-dp-blue-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            class="flex-1 py-2.5 rounded-lg bg-dp-blue text-white text-sm font-medium hover:bg-dp-blue-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {{ creating ? '...' : $t('service.apikey.confirm') }}
           </button>
         </div>
       </div>
     </div>
-
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { createAPIKey, updateAPIKey, listAPIKeys, deleteAPIKey, fetchKeySecret, type APIKey, type CreateAPIKeyParams } from '@/api/apikey'
+import {
+  createAPIKey,
+  updateAPIKey,
+  listAPIKeys,
+  deleteAPIKey,
+  fetchKeySecret,
+  type APIKey,
+  type CreateAPIKeyParams,
+} from '@/api/apikey'
 import { getConsumption } from '@/api/usage'
-import { listGuardrailTemplates, createGuardrail, listGuardrails, updateGuardrail, deleteGuardrail, listGuardrailResults, type GuardrailTemplate, type Guardrail, type GuardrailResult, type CreateGuardrailParams, type UpdateGuardrailParams } from '@/api/guardrail'
+import {
+  listGuardrailTemplates,
+  createGuardrail,
+  listGuardrails,
+  updateGuardrail,
+  deleteGuardrail,
+  listGuardrailResults,
+  type GuardrailTemplate,
+  type Guardrail,
+  type GuardrailResult,
+  type CreateGuardrailParams,
+  type UpdateGuardrailParams,
+} from '@/api/guardrail'
 import * as echarts from 'echarts/core'
 import { LineChart, BarChart } from 'echarts/charts'
 import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
@@ -717,7 +1127,7 @@ async function handleUpdateName() {
   try {
     await updateAPIKey(detailKey.value.id, { name: detailEditName.value.trim() })
     await fetchKeys()
-    detailKey.value = apiKeys.value.find(k => k.id === detailKey.value!.id) || null
+    detailKey.value = apiKeys.value.find((k) => k.id === detailKey.value!.id) || null
     emit('toast', t('service.apikey.name_updated'), 'success')
   } catch (err) {
     console.error('[ApiKeyManager] update name failed', err)
@@ -732,7 +1142,7 @@ async function handleUpdateRateLimit() {
       rate_limit_tpm: detailEditTPM.value,
     })
     await fetchKeys()
-    detailKey.value = apiKeys.value.find(k => k.id === detailKey.value!.id) || null
+    detailKey.value = apiKeys.value.find((k) => k.id === detailKey.value!.id) || null
     emit('toast', t('service.apikey.limit_updated'), 'success')
   } catch (err) {
     console.error('[ApiKeyManager] update rate limit failed', err)
@@ -776,7 +1186,7 @@ async function handleCopyStoredKey(id: number) {
     return
   }
 
-  const keyRecord = apiKeys.value.find(k => k.id === id)
+  const keyRecord = apiKeys.value.find((k) => k.id === id)
   if (keyRecord?.key_prefix) {
     try {
       await copyText(keyRecord.key_prefix)
@@ -871,7 +1281,10 @@ async function fetchKeyUsageData() {
     const items = res.data?.data?.items || []
 
     // Aggregate by date
-    const dateMap = new Map<string, { requests: number; tokens: number; prompt: number; completion: number; userIds: Set<number> }>()
+    const dateMap = new Map<
+      string,
+      { requests: number; tokens: number; prompt: number; completion: number; userIds: Set<number> }
+    >()
     for (const item of items) {
       const d = String((item as any).usage_date || '')
       if (!d) continue
@@ -922,7 +1335,7 @@ async function fetchKeyUsageData() {
 }
 
 function renderCharts() {
-  const dates = chartData.value.map(d => d.date)
+  const dates = chartData.value.map((d) => d.date)
   const isSinglePoint = dates.length === 1
   const chartType = isSinglePoint ? 'bar' : 'line'
 
@@ -938,14 +1351,33 @@ function renderCharts() {
     requestsChart.setOption({
       ...commonOptions,
       yAxis: { type: 'value', minInterval: 1, axisLabel: { fontSize: 10 } },
-      series: [{
-        type: chartType, data: chartData.value.map(d => d.requests),
-        smooth: !isSinglePoint, symbol: 'circle', symbolSize: isSinglePoint ? 10 : 5,
-        barMaxWidth: 40,
-        lineStyle: { color: '#4F7BF7', width: 2 }, itemStyle: { color: '#4F7BF7' },
-        areaStyle: isSinglePoint ? undefined : { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
-          colorStops: [{ offset: 0, color: 'rgba(79,123,247,0.25)' }, { offset: 1, color: 'rgba(79,123,247,0.02)' }] } },
-      }],
+      series: [
+        {
+          type: chartType,
+          data: chartData.value.map((d) => d.requests),
+          smooth: !isSinglePoint,
+          symbol: 'circle',
+          symbolSize: isSinglePoint ? 10 : 5,
+          barMaxWidth: 40,
+          lineStyle: { color: '#4F7BF7', width: 2 },
+          itemStyle: { color: '#4F7BF7' },
+          areaStyle: isSinglePoint
+            ? undefined
+            : {
+                color: {
+                  type: 'linear',
+                  x: 0,
+                  y: 0,
+                  x2: 0,
+                  y2: 1,
+                  colorStops: [
+                    { offset: 0, color: 'rgba(79,123,247,0.25)' },
+                    { offset: 1, color: 'rgba(79,123,247,0.02)' },
+                  ],
+                },
+              },
+        },
+      ],
     })
   }
 
@@ -964,17 +1396,29 @@ function renderCharts() {
       yAxis: { type: 'value', axisLabel: { fontSize: 10, formatter: tokenFormatter } },
       series: [
         {
-          name: 'Prompt Tokens', type: chartType, stack: 'tokens',
-          data: chartData.value.map(d => d.promptTokens),
-          smooth: !isSinglePoint, symbol: 'circle', symbolSize: isSinglePoint ? 10 : 4, barMaxWidth: 40,
-          lineStyle: { color: '#4F7BF7', width: 1.5 }, itemStyle: { color: '#4F7BF7' },
+          name: 'Prompt Tokens',
+          type: chartType,
+          stack: 'tokens',
+          data: chartData.value.map((d) => d.promptTokens),
+          smooth: !isSinglePoint,
+          symbol: 'circle',
+          symbolSize: isSinglePoint ? 10 : 4,
+          barMaxWidth: 40,
+          lineStyle: { color: '#4F7BF7', width: 1.5 },
+          itemStyle: { color: '#4F7BF7' },
           areaStyle: isSinglePoint ? undefined : { color: 'rgba(79,123,247,0.15)' },
         },
         {
-          name: 'Completion Tokens', type: chartType, stack: 'tokens',
-          data: chartData.value.map(d => d.completionTokens),
-          smooth: !isSinglePoint, symbol: 'circle', symbolSize: isSinglePoint ? 10 : 4, barMaxWidth: 40,
-          lineStyle: { color: '#10B981', width: 1.5 }, itemStyle: { color: '#10B981' },
+          name: 'Completion Tokens',
+          type: chartType,
+          stack: 'tokens',
+          data: chartData.value.map((d) => d.completionTokens),
+          smooth: !isSinglePoint,
+          symbol: 'circle',
+          symbolSize: isSinglePoint ? 10 : 4,
+          barMaxWidth: 40,
+          lineStyle: { color: '#10B981', width: 1.5 },
+          itemStyle: { color: '#10B981' },
           areaStyle: isSinglePoint ? undefined : { color: 'rgba(16,185,129,0.15)' },
         },
       ],
@@ -987,22 +1431,50 @@ function renderCharts() {
     usersChart.setOption({
       ...commonOptions,
       yAxis: { type: 'value', minInterval: 1, axisLabel: { fontSize: 10 } },
-      series: [{
-        type: chartType, data: chartData.value.map(d => d.users),
-        smooth: !isSinglePoint, symbol: 'circle', symbolSize: isSinglePoint ? 10 : 5,
-        barMaxWidth: 40,
-        lineStyle: { color: '#F59E0B', width: 2 }, itemStyle: { color: '#F59E0B' },
-        areaStyle: isSinglePoint ? undefined : { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
-          colorStops: [{ offset: 0, color: 'rgba(245,158,11,0.25)' }, { offset: 1, color: 'rgba(245,158,11,0.02)' }] } },
-      }],
+      series: [
+        {
+          type: chartType,
+          data: chartData.value.map((d) => d.users),
+          smooth: !isSinglePoint,
+          symbol: 'circle',
+          symbolSize: isSinglePoint ? 10 : 5,
+          barMaxWidth: 40,
+          lineStyle: { color: '#F59E0B', width: 2 },
+          itemStyle: { color: '#F59E0B' },
+          areaStyle: isSinglePoint
+            ? undefined
+            : {
+                color: {
+                  type: 'linear',
+                  x: 0,
+                  y: 0,
+                  x2: 0,
+                  y2: 1,
+                  colorStops: [
+                    { offset: 0, color: 'rgba(245,158,11,0.25)' },
+                    { offset: 1, color: 'rgba(245,158,11,0.02)' },
+                  ],
+                },
+              },
+        },
+      ],
     })
   }
 }
 
 function disposeCharts() {
-  if (requestsChart) { requestsChart.dispose(); requestsChart = null }
-  if (tokensChart) { tokensChart.dispose(); tokensChart = null }
-  if (usersChart) { usersChart.dispose(); usersChart = null }
+  if (requestsChart) {
+    requestsChart.dispose()
+    requestsChart = null
+  }
+  if (tokensChart) {
+    tokensChart.dispose()
+    tokensChart = null
+  }
+  if (usersChart) {
+    usersChart.dispose()
+    usersChart = null
+  }
 }
 
 function handleChartResize() {
@@ -1171,7 +1643,7 @@ function openGrEditForm(gr: Guardrail) {
 }
 
 function onGrTemplateChange() {
-  const tpl = grTemplates.value.find(t => t.name === grFormTemplate.value)
+  const tpl = grTemplates.value.find((t) => t.name === grFormTemplate.value)
   if (tpl) {
     grFormName.value = tpl.display_name
     grFormPrompt.value = tpl.prompt_template
@@ -1242,7 +1714,11 @@ async function handleToggleGuardrail(gr: Guardrail) {
   try {
     await updateGuardrail(detailKey.value.id, gr.id, { enabled: !gr.enabled })
     await fetchGuardrailList()
-    emit('toast', gr.enabled ? t('service.apikey.guardrails_disabled') : t('service.apikey.guardrails_enabled'), 'success')
+    emit(
+      'toast',
+      gr.enabled ? t('service.apikey.guardrails_disabled') : t('service.apikey.guardrails_enabled'),
+      'success',
+    )
   } catch (err) {
     console.error('[ApiKeyManager] toggle guardrail failed', err)
   }

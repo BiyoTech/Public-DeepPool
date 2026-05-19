@@ -20,8 +20,7 @@
             min="0.01"
             step="0.01"
             placeholder="输入提现金额"
-            class="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body
-                   focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+            class="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
           />
         </div>
 
@@ -30,8 +29,7 @@
           <label class="text-sm font-medium text-dp-body mb-1.5 block">提现到</label>
           <select
             v-model="selectedCard"
-            class="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body
-                   focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+            class="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
           >
             <option value="" disabled>选择银行卡</option>
             <option v-for="card in cards" :key="card.id" :value="card.id">
@@ -47,14 +45,17 @@
       <!-- Confirm button -->
       <button
         :disabled="!canSubmit || loading"
-        class="w-full py-3 rounded-xl bg-gradient-to-r from-dp-blue to-dp-blue-dark text-white font-medium
-               shadow-sm hover:shadow-md transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+        class="w-full py-3 rounded-xl bg-gradient-to-r from-dp-blue to-dp-blue-dark text-white font-medium shadow-sm hover:shadow-md transition-all disabled:opacity-60 disabled:cursor-not-allowed"
         @click="handleWithdraw"
       >
         {{ loading ? '...' : '确认提现' }}
       </button>
 
-      <div v-if="msg" class="mt-4 p-3 rounded-lg text-sm text-center" :class="msgOk ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
+      <div
+        v-if="msg"
+        class="mt-4 p-3 rounded-lg text-sm text-center"
+        :class="msgOk ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'"
+      >
         {{ msg }}
       </div>
     </div>
@@ -90,7 +91,9 @@ async function fetchData() {
     const [wRes, cRes] = await Promise.all([getWallet(), listBankCards()])
     wallet.value = wRes.data?.data || { balance: 0, frozen: 0 }
     cards.value = cRes.data?.data || []
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 async function handleWithdraw() {

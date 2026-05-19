@@ -7,8 +7,7 @@
         <p class="text-sm text-dp-muted mt-1">{{ $t('experiment.trace.desc') }}</p>
       </div>
       <button
-        class="px-4 py-2 rounded-lg bg-gradient-to-r from-dp-blue to-dp-blue-dark text-white text-sm font-medium
-               hover:from-dp-blue-dark hover:to-dp-blue-deeper transition-all shadow-sm hover:shadow-md"
+        class="px-4 py-2 rounded-lg bg-gradient-to-r from-dp-blue to-dp-blue-dark text-white text-sm font-medium hover:from-dp-blue-dark hover:to-dp-blue-deeper transition-all shadow-sm hover:shadow-md"
         @click="openCreate()"
       >
         + {{ $t('experiment.trace.create') }}
@@ -19,8 +18,18 @@
     <div v-if="loading" class="text-center py-16 text-dp-muted text-sm">{{ $t('experiment.loading') }}...</div>
     <div v-else-if="traces.length === 0" class="bg-white rounded-xl border border-slate-200 p-6">
       <div class="text-center py-12">
-        <svg class="w-12 h-12 mx-auto text-slate-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9.348 14.652a3.75 3.75 0 010-5.304m5.304 0a3.75 3.75 0 010 5.304m-7.425 2.121a6.75 6.75 0 010-9.546m9.546 0a6.75 6.75 0 010 9.546M5.106 18.894c-3.808-3.808-3.808-9.98 0-13.788m13.788 0c3.808 3.808 3.808 9.98 0 13.788M12 12h.008v.008H12V12z" />
+        <svg
+          class="w-12 h-12 mx-auto text-slate-300 mb-3"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="1.5"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M9.348 14.652a3.75 3.75 0 010-5.304m5.304 0a3.75 3.75 0 010 5.304m-7.425 2.121a6.75 6.75 0 010-9.546m9.546 0a6.75 6.75 0 010 9.546M5.106 18.894c-3.808-3.808-3.808-9.98 0-13.788m13.788 0c3.808 3.808 3.808 9.98 0 13.788M12 12h.008v.008H12V12z"
+          />
         </svg>
         <p class="text-sm text-dp-muted">{{ $t('experiment.trace.empty') }}</p>
       </div>
@@ -34,24 +43,50 @@
         <div class="flex items-start justify-between">
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2">
-              <h3 class="font-semibold text-dp-title hover:text-dp-blue cursor-pointer transition-colors" @click="viewLogs(trace)">{{ trace.name }}</h3>
+              <h3
+                class="font-semibold text-dp-title hover:text-dp-blue cursor-pointer transition-colors"
+                @click="viewLogs(trace)"
+              >
+                {{ trace.name }}
+              </h3>
               <span
                 class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
-                :class="trace.status === 'running'
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-slate-100 text-slate-500'"
+                :class="trace.status === 'running' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'"
               >
-                <span v-if="trace.status === 'running'" class="w-1.5 h-1.5 rounded-full bg-green-500 mr-1 animate-pulse" />
-                {{ trace.status === 'running' ? $t('experiment.trace.status_running') : $t('experiment.trace.status_stopped') }}
+                <span
+                  v-if="trace.status === 'running'"
+                  class="w-1.5 h-1.5 rounded-full bg-green-500 mr-1 animate-pulse"
+                />
+                {{
+                  trace.status === 'running'
+                    ? $t('experiment.trace.status_running')
+                    : $t('experiment.trace.status_stopped')
+                }}
               </span>
             </div>
             <div class="mt-2 flex flex-wrap gap-4 text-xs text-dp-muted">
               <span>
-                <span v-if="trace.storage_type === 'builtin'" class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-dp-blue">{{ $t('experiment.trace.storage_builtin') }}</span>
-                <span v-else class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-500">{{ trace.db_type }}</span>
+                <span
+                  v-if="trace.storage_type === 'builtin'"
+                  class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-dp-blue"
+                  >{{ $t('experiment.trace.storage_builtin') }}</span
+                >
+                <span
+                  v-else
+                  class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-500"
+                  >{{ trace.db_type }}</span
+                >
               </span>
-              <span>{{ $t('experiment.trace.api_keys') }}: <b class="text-dp-title">{{ trace.api_key_ids?.length || 0 }}</b></span>
-              <span>{{ $t('experiment.trace.models') }}: <b class="text-dp-title">{{ trace.model_names?.length ? trace.model_names.join(', ') : $t('experiment.trace.all_models') }}</b></span>
+              <span
+                >{{ $t('experiment.trace.api_keys') }}:
+                <b class="text-dp-title">{{ trace.api_key_ids?.length || 0 }}</b></span
+              >
+              <span
+                >{{ $t('experiment.trace.models') }}:
+                <b class="text-dp-title">{{
+                  trace.model_names?.length ? trace.model_names.join(', ') : $t('experiment.trace.all_models')
+                }}</b></span
+              >
               <span>{{ $t('experiment.trace.created') }}: {{ trace.created_at }}</span>
             </div>
           </div>
@@ -59,36 +94,52 @@
             <button
               class="px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
               @click="viewLogs(trace)"
-            >{{ $t('experiment.trace.view_logs') }}</button>
+            >
+              {{ $t('experiment.trace.view_logs') }}
+            </button>
             <button
               v-if="trace.status === 'stopped'"
               class="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-50 text-dp-blue hover:bg-blue-100 transition-colors"
               @click="openEdit(trace)"
-            >{{ $t('experiment.trace.edit') }}</button>
+            >
+              {{ $t('experiment.trace.edit') }}
+            </button>
             <button
               v-if="trace.status === 'stopped'"
               class="px-3 py-1.5 rounded-lg text-xs font-medium bg-green-50 text-green-600 hover:bg-green-100 transition-colors"
               @click="toggleStatus(trace, 'running')"
-            >{{ $t('experiment.trace.start') }}</button>
+            >
+              {{ $t('experiment.trace.start') }}
+            </button>
             <button
               v-else
               class="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors"
               @click="toggleStatus(trace, 'stopped')"
-            >{{ $t('experiment.trace.stop') }}</button>
+            >
+              {{ $t('experiment.trace.stop') }}
+            </button>
             <button
               class="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
               @click="confirmDelete(trace)"
-            >{{ $t('experiment.trace.delete') }}</button>
+            >
+              {{ $t('experiment.trace.delete') }}
+            </button>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Create / Edit dialog -->
-    <div v-if="showDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" @click.self="showDialog = false">
+    <div
+      v-if="showDialog"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      @click.self="showDialog = false"
+    >
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-200">
-          <h3 class="text-lg font-semibold text-dp-title">{{ editingTrace ? $t('experiment.trace.edit_title') : $t('experiment.trace.create_title') }}</h3>
+          <h3 class="text-lg font-semibold text-dp-title">
+            {{ editingTrace ? $t('experiment.trace.edit_title') : $t('experiment.trace.create_title') }}
+          </h3>
         </div>
         <div class="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
           <!-- Name -->
@@ -103,8 +154,12 @@
 
           <!-- API Key selection -->
           <div>
-            <label class="block text-sm font-medium text-dp-title mb-1">{{ $t('experiment.trace.select_apikeys') }}</label>
-            <div v-if="apiKeys.length === 0" class="text-xs text-dp-muted py-2">{{ $t('experiment.trace.no_apikeys') }}</div>
+            <label class="block text-sm font-medium text-dp-title mb-1">{{
+              $t('experiment.trace.select_apikeys')
+            }}</label>
+            <div v-if="apiKeys.length === 0" class="text-xs text-dp-muted py-2">
+              {{ $t('experiment.trace.no_apikeys') }}
+            </div>
             <div v-else class="space-y-1.5 max-h-32 overflow-y-auto">
               <label
                 v-for="key in apiKeys"
@@ -121,21 +176,30 @@
 
           <!-- Model selection (search dropdown) -->
           <div>
-            <label class="block text-sm font-medium text-dp-title mb-1">{{ $t('experiment.trace.select_models') }}</label>
+            <label class="block text-sm font-medium text-dp-title mb-1">{{
+              $t('experiment.trace.select_models')
+            }}</label>
             <p class="text-xs text-dp-muted mb-2">{{ $t('experiment.trace.models_hint') }}</p>
 
             <!-- Search dropdown -->
             <div class="relative" ref="modelDropdownRef">
               <button
                 type="button"
-                class="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border text-sm text-left
-                       focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
-                :class="modelDropdownOpen ? 'border-dp-blue ring-2 ring-blue-100 bg-white' : 'border-slate-300 bg-white'"
+                class="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border text-sm text-left focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+                :class="
+                  modelDropdownOpen ? 'border-dp-blue ring-2 ring-blue-100 bg-white' : 'border-slate-300 bg-white'
+                "
                 @click="modelDropdownOpen = !modelDropdownOpen"
               >
                 <span class="text-dp-muted truncate">{{ $t('experiment.trace.models_search_placeholder') }}</span>
-                <svg class="w-4 h-4 shrink-0 text-slate-400 transition-transform" :class="{ 'rotate-180': modelDropdownOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                <svg
+                  class="w-4 h-4 shrink-0 text-slate-400 transition-transform"
+                  :class="{ 'rotate-180': modelDropdownOpen }"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
 
@@ -157,8 +221,7 @@
                       v-model="modelSearchQuery"
                       type="text"
                       :placeholder="$t('experiment.trace.models_search_input')"
-                      class="w-full px-3 py-1.5 rounded-md border border-slate-200 text-sm text-slate-700 placeholder-slate-400
-                             focus:outline-none focus:border-blue-400"
+                      class="w-full px-3 py-1.5 rounded-md border border-slate-200 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-blue-400"
                       @click.stop
                     />
                   </li>
@@ -170,22 +233,36 @@
                     @click="toggleModel(model.id)"
                   >
                     <div class="flex-1 min-w-0">
-                      <div class="truncate" :class="form.model_names.includes(model.id) ? 'text-dp-blue font-medium' : ''">{{ model.id }}</div>
+                      <div
+                        class="truncate"
+                        :class="form.model_names.includes(model.id) ? 'text-dp-blue font-medium' : ''"
+                      >
+                        {{ model.id }}
+                      </div>
                       <div class="flex flex-wrap items-center gap-1 mt-0.5">
                         <span
-                          v-for="tag in (model.tags || [])"
+                          v-for="tag in model.tags || []"
                           :key="tag"
                           class="inline-flex items-center rounded-full bg-slate-100 px-1.5 py-0 text-[10px] text-slate-500"
-                        >{{ tag }}</span>
+                          >{{ tag }}</span
+                        >
                       </div>
                     </div>
                     <span
                       class="inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none"
                       :class="vendorTypeTagClass(model.vendor_type)"
-                    >{{ model.vendor_type }}</span>
+                      >{{ model.vendor_type }}</span
+                    >
                     <!-- Checkmark for selected -->
-                    <svg v-if="form.model_names.includes(model.id)" class="w-4 h-4 text-dp-blue shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                    <svg
+                      v-if="form.model_names.includes(model.id)"
+                      class="w-4 h-4 text-dp-blue shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                   </li>
                   <li v-if="filteredModels.length === 0" class="px-3 py-3 text-xs text-dp-muted text-center">
@@ -203,47 +280,70 @@
                 class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-50 text-xs text-dp-blue font-medium"
               >
                 {{ m }}
-                <button class="text-dp-blue/50 hover:text-red-500 transition-colors" @click="form.model_names.splice(i, 1)">&times;</button>
+                <button
+                  class="text-dp-blue/50 hover:text-red-500 transition-colors"
+                  @click="form.model_names.splice(i, 1)"
+                >
+                  &times;
+                </button>
               </span>
             </div>
           </div>
 
           <!-- Storage Engine Selection -->
           <div>
-            <label class="block text-sm font-medium text-dp-title mb-1.5">{{ $t('experiment.trace.storage_engine') }}</label>
+            <label class="block text-sm font-medium text-dp-title mb-1.5">{{
+              $t('experiment.trace.storage_engine')
+            }}</label>
             <div class="flex gap-2">
               <button
                 v-if="builtinAvailable"
                 type="button"
                 class="flex-1 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all"
-                :class="form.storage_type === 'builtin'
-                  ? 'border-dp-blue bg-blue-50 text-dp-blue shadow-sm'
-                  : 'border-slate-200 text-dp-muted hover:bg-slate-50'"
+                :class="
+                  form.storage_type === 'builtin'
+                    ? 'border-dp-blue bg-blue-50 text-dp-blue shadow-sm'
+                    : 'border-slate-200 text-dp-muted hover:bg-slate-50'
+                "
                 @click="form.storage_type = 'builtin'"
               >
                 <div class="flex items-center justify-center gap-1.5">
                   <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"/>
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"
+                    />
                   </svg>
                   {{ $t('experiment.trace.storage_builtin') }}
                 </div>
-                <p class="text-[10px] mt-0.5 font-normal opacity-70">{{ $t('experiment.trace.storage_builtin_desc') }}</p>
+                <p class="text-[10px] mt-0.5 font-normal opacity-70">
+                  {{ $t('experiment.trace.storage_builtin_desc') }}
+                </p>
               </button>
               <button
                 type="button"
                 class="flex-1 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all"
-                :class="form.storage_type === 'external'
-                  ? 'border-dp-blue bg-blue-50 text-dp-blue shadow-sm'
-                  : 'border-slate-200 text-dp-muted hover:bg-slate-50'"
+                :class="
+                  form.storage_type === 'external'
+                    ? 'border-dp-blue bg-blue-50 text-dp-blue shadow-sm'
+                    : 'border-slate-200 text-dp-muted hover:bg-slate-50'
+                "
                 @click="form.storage_type = 'external'"
               >
                 <div class="flex items-center justify-center gap-1.5">
                   <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"
+                    />
                   </svg>
                   {{ $t('experiment.trace.storage_external') }}
                 </div>
-                <p class="text-[10px] mt-0.5 font-normal opacity-70">{{ $t('experiment.trace.storage_external_desc') }}</p>
+                <p class="text-[10px] mt-0.5 font-normal opacity-70">
+                  {{ $t('experiment.trace.storage_external_desc') }}
+                </p>
               </button>
             </div>
           </div>
@@ -255,9 +355,7 @@
               <label class="block text-xs font-medium text-dp-muted mb-1">{{ $t('experiment.trace.db_type') }}</label>
               <select
                 :value="form.db_type"
-                class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white
-                       focus:outline-none focus:ring-2 focus:ring-dp-blue/40 focus:border-dp-blue
-                       appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2394a3b8%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22M6%209l6%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px] bg-[right_12px_center] bg-no-repeat"
+                class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-dp-blue/40 focus:border-dp-blue appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2394a3b8%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22M6%209l6%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px] bg-[right_12px_center] bg-no-repeat"
                 @change="onDBTypeChange(($event.target as HTMLSelectElement).value)"
               >
                 <option v-for="dbOpt in dbOptions" :key="dbOpt.value" :value="dbOpt.value">
@@ -294,12 +392,18 @@
                 />
               </div>
               <div>
-                <label class="block text-xs font-medium text-dp-muted mb-1">{{ $t('experiment.trace.db_password') }}</label>
+                <label class="block text-xs font-medium text-dp-muted mb-1">{{
+                  $t('experiment.trace.db_password')
+                }}</label>
                 <input
                   v-model="form.db_password"
                   type="password"
                   class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-dp-blue/40"
-                  :placeholder="editingTrace ? $t('experiment.trace.db_password_keep') : $t('experiment.trace.db_password_placeholder')"
+                  :placeholder="
+                    editingTrace
+                      ? $t('experiment.trace.db_password_keep')
+                      : $t('experiment.trace.db_password_placeholder')
+                  "
                 />
               </div>
               <div class="col-span-2">
@@ -324,7 +428,11 @@
             >
               {{ testing ? $t('experiment.trace.testing') : $t('experiment.trace.test_connection') }}
             </button>
-            <span v-if="testResult !== null" class="ml-2 text-xs" :class="testResult ? 'text-green-600' : 'text-red-500'">
+            <span
+              v-if="testResult !== null"
+              class="ml-2 text-xs"
+              :class="testResult ? 'text-green-600' : 'text-red-500'"
+            >
               {{ testResult ? $t('experiment.trace.test_pass') : testError }}
             </span>
           </div>
@@ -333,26 +441,40 @@
           <button
             class="px-4 py-2 rounded-lg text-sm font-medium text-dp-muted hover:text-dp-title transition-colors"
             @click="showDialog = false"
-          >{{ $t('experiment.trace.cancel') }}</button>
+          >
+            {{ $t('experiment.trace.cancel') }}
+          </button>
           <button
             class="px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-dp-blue to-dp-blue-dark text-white hover:from-dp-blue-dark hover:to-dp-blue-deeper transition-all shadow-sm"
             :disabled="submitting"
             @click="submitForm"
-          >{{ submitting ? '...' : (editingTrace ? $t('experiment.trace.save') : $t('experiment.trace.confirm')) }}</button>
+          >
+            {{ submitting ? '...' : editingTrace ? $t('experiment.trace.save') : $t('experiment.trace.confirm') }}
+          </button>
         </div>
       </div>
     </div>
 
     <!-- Delete confirmation -->
-    <div v-if="deleteTarget" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" @click.self="deleteTarget = null">
+    <div
+      v-if="deleteTarget"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      @click.self="deleteTarget = null"
+    >
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
-        <p class="text-sm text-dp-title mb-4">{{ $t('experiment.trace.delete_confirm', { name: deleteTarget.name }) }}</p>
+        <p class="text-sm text-dp-title mb-4">
+          {{ $t('experiment.trace.delete_confirm', { name: deleteTarget.name }) }}
+        </p>
         <div class="flex justify-end gap-3">
-          <button class="px-4 py-2 rounded-lg text-sm text-dp-muted hover:text-dp-title" @click="deleteTarget = null">{{ $t('experiment.trace.cancel') }}</button>
+          <button class="px-4 py-2 rounded-lg text-sm text-dp-muted hover:text-dp-title" @click="deleteTarget = null">
+            {{ $t('experiment.trace.cancel') }}
+          </button>
           <button
             class="px-4 py-2 rounded-lg text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-colors"
             @click="doDelete"
-          >{{ $t('experiment.trace.delete') }}</button>
+          >
+            {{ $t('experiment.trace.delete') }}
+          </button>
         </div>
       </div>
     </div>
@@ -363,7 +485,16 @@
 import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { listTraces, createTrace as apiCreateTrace, updateTraceStatus, updateTrace as apiUpdateTrace, deleteTrace as apiDeleteTrace, testDBConnection, getTraceStorageOptions, type TraceConfig } from '@/api/experiment'
+import {
+  listTraces,
+  createTrace as apiCreateTrace,
+  updateTraceStatus,
+  updateTrace as apiUpdateTrace,
+  deleteTrace as apiDeleteTrace,
+  testDBConnection,
+  getTraceStorageOptions,
+  type TraceConfig,
+} from '@/api/experiment'
 import { listAPIKeys, type APIKey } from '@/api/apikey'
 import { listCustomModels } from '@/api/custom-model'
 
@@ -399,7 +530,7 @@ const modelSearchQuery = ref('')
 const filteredModels = computed(() => {
   const q = modelSearchQuery.value.trim().toLowerCase()
   if (!q) return allModels.value
-  return allModels.value.filter(m => m.id.toLowerCase().includes(q))
+  return allModels.value.filter((m) => m.id.toLowerCase().includes(q))
 })
 
 /** Toggle a model in/out of the selected list. */
@@ -414,10 +545,14 @@ function toggleModel(id: string) {
 
 function vendorTypeTagClass(vendorType?: string): string {
   switch (vendorType) {
-    case 'hybrid': return 'bg-purple-100 text-purple-700'
-    case 'provider': return 'bg-emerald-100 text-emerald-700'
-    case 'deepnode': return 'bg-blue-100 text-blue-700'
-    default: return 'bg-slate-100 text-slate-500'
+    case 'hybrid':
+      return 'bg-purple-100 text-purple-700'
+    case 'provider':
+      return 'bg-emerald-100 text-emerald-700'
+    case 'deepnode':
+      return 'bg-blue-100 text-blue-700'
+    default:
+      return 'bg-slate-100 text-slate-500'
   }
 }
 
@@ -428,8 +563,12 @@ function handleClickOutside(e: MouseEvent) {
   }
 }
 
-onMounted(() => { document.addEventListener('click', handleClickOutside) })
-onBeforeUnmount(() => { document.removeEventListener('click', handleClickOutside) })
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 
 /** Fetch available models from gateway /v1/models + user custom models. */
 async function fetchModels() {
@@ -442,7 +581,7 @@ async function fetchModels() {
     // Fetch platform models and user custom models in parallel
     const [gatewayRes, customRes] = await Promise.allSettled([
       fetch(`${gatewayBase}/models`, {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       }),
       listCustomModels(),
     ])
@@ -470,7 +609,7 @@ async function fetchModels() {
     if (customRes.status === 'fulfilled') {
       const customModels = customRes.value.data?.data || []
       for (const cm of customModels) {
-        if (cm.enabled && !models.some(m => m.id === cm.model_name)) {
+        if (cm.enabled && !models.some((m) => m.id === cm.model_name)) {
           models.push({
             id: cm.model_name,
             vendor_type: cm.vendor_type || 'provider',
@@ -527,12 +666,7 @@ function onDBTypeChange(dbType: string) {
 }
 
 const canTestConnection = computed(() => {
-  return Boolean(
-    form.db_host.trim()
-    && form.db_port > 0
-    && form.db_user.trim()
-    && form.db_name.trim(),
-  )
+  return Boolean(form.db_host.trim() && form.db_port > 0 && form.db_user.trim() && form.db_name.trim())
 })
 
 const dbConnectionPreview = computed(() => {
@@ -547,7 +681,10 @@ const dbConnectionPreview = computed(() => {
 onMounted(async () => {
   try {
     const [tracesRes, keysRes, , storageRes] = await Promise.allSettled([
-      listTraces(), listAPIKeys(), fetchModels(), getTraceStorageOptions(),
+      listTraces(),
+      listAPIKeys(),
+      fetchModels(),
+      getTraceStorageOptions(),
     ])
     if (tracesRes.status === 'fulfilled') {
       traces.value = tracesRes.value.data?.data || []
@@ -691,7 +828,7 @@ async function doUpdateTrace() {
     const res = await apiUpdateTrace(editingTrace.value.id, params)
     if (res.data?.data) {
       // Update the trace in-place in the list
-      const idx = traces.value.findIndex(t => t.id === editingTrace.value!.id)
+      const idx = traces.value.findIndex((t) => t.id === editingTrace.value!.id)
       if (idx >= 0) {
         traces.value[idx] = res.data.data
       }
@@ -722,7 +859,7 @@ async function doDelete() {
   if (!deleteTarget.value) return
   try {
     await apiDeleteTrace(deleteTarget.value.id)
-    traces.value = traces.value.filter(t => t.id !== deleteTarget.value!.id)
+    traces.value = traces.value.filter((t) => t.id !== deleteTarget.value!.id)
     deleteTarget.value = null
   } catch (e: any) {
     alert(e.response?.data?.message || 'Delete failed')

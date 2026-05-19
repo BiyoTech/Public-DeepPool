@@ -17,7 +17,9 @@
           @click="showCustomModelCreate = true"
           class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition shadow-sm"
         >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
           {{ $t('service.mymodels.create_custom') }}
         </button>
       </div>
@@ -27,14 +29,22 @@
         <button
           @click="activePageTab = 'apikeys'"
           class="px-5 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px"
-          :class="activePageTab === 'apikeys' ? 'border-dp-blue text-dp-blue' : 'border-transparent text-dp-muted hover:text-dp-body'"
+          :class="
+            activePageTab === 'apikeys'
+              ? 'border-dp-blue text-dp-blue'
+              : 'border-transparent text-dp-muted hover:text-dp-body'
+          "
         >
           API Key
         </button>
         <button
           @click="activePageTab = 'playground'"
           class="px-5 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px"
-          :class="activePageTab === 'playground' ? 'border-dp-blue text-dp-blue' : 'border-transparent text-dp-muted hover:text-dp-body'"
+          :class="
+            activePageTab === 'playground'
+              ? 'border-dp-blue text-dp-blue'
+              : 'border-transparent text-dp-muted hover:text-dp-body'
+          "
         >
           Playground
         </button>
@@ -52,12 +62,7 @@
 
       <!-- ===== TAB: Playground ===== -->
       <div v-show="activePageTab === 'playground'">
-        <PlaygroundPanel
-          ref="playgroundRef"
-          :api-keys="apiKeys"
-          :get-full-key="getFullKey"
-          @toast="showToast"
-        />
+        <PlaygroundPanel ref="playgroundRef" :api-keys="apiKeys" :get-full-key="getFullKey" @toast="showToast" />
       </div>
     </div>
 

@@ -24,7 +24,8 @@
           <span
             class="w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center"
             :class="step >= 1 ? 'bg-dp-blue text-white' : 'bg-slate-200 text-dp-muted'"
-          >1</span>
+            >1</span
+          >
           <span class="text-xs" :class="step >= 1 ? 'text-dp-blue font-medium' : 'text-dp-muted'">
             {{ $t('auth.forgot.step1_title') }}
           </span>
@@ -34,7 +35,8 @@
           <span
             class="w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center"
             :class="step >= 2 ? 'bg-dp-blue text-white' : 'bg-slate-200 text-dp-muted'"
-          >2</span>
+            >2</span
+          >
           <span class="text-xs" :class="step >= 2 ? 'text-dp-blue font-medium' : 'text-dp-muted'">
             {{ $t('auth.forgot.step2_title') }}
           </span>
@@ -59,9 +61,7 @@
             v-model="form.email"
             type="email"
             :placeholder="$t('auth.forgot.email_placeholder')"
-            class="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body
-                   placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100
-                   transition-all duration-200"
+            class="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100 transition-all duration-200"
             required
           />
         </div>
@@ -74,22 +74,19 @@
               type="text"
               maxlength="6"
               :placeholder="$t('auth.forgot.code_placeholder')"
-              class="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body
-                     placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100
-                     transition-all duration-200"
+              class="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100 transition-all duration-200"
               required
             />
             <button
               type="button"
               :disabled="codeCooldown > 0 || sendingCode"
-              class="shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-                     disabled:opacity-60 disabled:cursor-not-allowed"
-              :class="codeCooldown > 0
-                ? 'bg-slate-100 text-dp-muted'
-                : 'bg-blue-50 text-dp-blue hover:bg-blue-100'"
+              class="shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+              :class="codeCooldown > 0 ? 'bg-slate-100 text-dp-muted' : 'bg-blue-50 text-dp-blue hover:bg-blue-100'"
               @click="handleSendCode"
             >
-              {{ codeCooldown > 0 ? $t('auth.forgot.code_sent', { seconds: codeCooldown }) : $t('auth.forgot.send_code') }}
+              {{
+                codeCooldown > 0 ? $t('auth.forgot.code_sent', { seconds: codeCooldown }) : $t('auth.forgot.send_code')
+              }}
             </button>
           </div>
         </div>
@@ -97,8 +94,7 @@
         <button
           type="submit"
           :disabled="loading"
-          class="w-full py-3 rounded-lg bg-gradient-to-r from-dp-blue to-dp-blue-dark text-white font-medium
-                 shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+          class="w-full py-3 rounded-lg bg-gradient-to-r from-dp-blue to-dp-blue-dark text-white font-medium shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {{ loading ? '...' : $t('auth.forgot.next_step') }}
         </button>
@@ -112,9 +108,7 @@
             v-model="form.newPassword"
             type="password"
             :placeholder="$t('auth.forgot.new_password_placeholder')"
-            class="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body
-                   placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100
-                   transition-all duration-200"
+            class="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100 transition-all duration-200"
             required
           />
         </div>
@@ -125,9 +119,7 @@
             v-model="form.confirmPassword"
             type="password"
             :placeholder="$t('auth.forgot.confirm_password_placeholder')"
-            class="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body
-                   placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100
-                   transition-all duration-200"
+            class="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body placeholder:text-dp-placeholder focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100 transition-all duration-200"
             required
           />
         </div>
@@ -135,8 +127,7 @@
         <button
           type="submit"
           :disabled="loading"
-          class="w-full py-3 rounded-lg bg-gradient-to-r from-dp-blue to-dp-blue-dark text-white font-medium
-                 shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+          class="w-full py-3 rounded-lg bg-gradient-to-r from-dp-blue to-dp-blue-dark text-white font-medium shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {{ loading ? '...' : $t('auth.forgot.reset_submit') }}
         </button>

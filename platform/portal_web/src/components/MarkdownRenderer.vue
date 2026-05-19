@@ -21,7 +21,9 @@ const md = new MarkdownIt({
     if (lang && hljs.getLanguage(lang)) {
       try {
         return `<pre class="hljs rounded-lg overflow-x-auto"><code>${hljs.highlight(str, { language: lang }).value}</code></pre>`
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     return `<pre class="hljs rounded-lg overflow-x-auto"><code>${md.utils.escapeHtml(str)}</code></pre>`
   },

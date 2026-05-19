@@ -92,13 +92,18 @@
           </div>
         </div>
 
-        <div v-for="(msg, idx) in currentMessages" :key="idx" class="flex" :class="[msg.role === 'user' ? 'justify-end' : 'justify-start']">
+        <div
+          v-for="(msg, idx) in currentMessages"
+          :key="idx"
+          class="flex"
+          :class="[msg.role === 'user' ? 'justify-end' : 'justify-start']"
+        >
           <div
             class="max-w-2xl rounded-2xl px-4 py-3 text-sm leading-relaxed"
             :class="[
               msg.role === 'user'
                 ? 'bg-dp-blue text-white rounded-br-md'
-                : 'bg-dp-bg-4 text-dp-text-1 rounded-bl-md border border-white/5'
+                : 'bg-dp-bg-4 text-dp-text-1 rounded-bl-md border border-white/5',
             ]"
           >
             <div v-if="msg.reasoning" class="mb-3">
@@ -108,8 +113,13 @@
                 </t-collapse-panel>
               </t-collapse>
             </div>
-            <div class="whitespace-pre-wrap">{{ msg.content }}<span v-if="msg.streaming" class="animate-pulse">▌</span></div>
-            <div v-if="msg.role === 'assistant' && !msg.streaming && msg.timing" class="mt-2 pt-2 border-t border-white/5 flex gap-3 text-[11px] text-dp-text-3">
+            <div class="whitespace-pre-wrap">
+              {{ msg.content }}<span v-if="msg.streaming" class="animate-pulse">▌</span>
+            </div>
+            <div
+              v-if="msg.role === 'assistant' && !msg.streaming && msg.timing"
+              class="mt-2 pt-2 border-t border-white/5 flex gap-3 text-[11px] text-dp-text-3"
+            >
               <span>首次响应: {{ msg.timing.ttft }}ms</span>
               <span>总耗时: {{ msg.timing.total }}ms</span>
             </div>
@@ -210,7 +220,9 @@ async function fetchModels() {
     const items = res?.data?.data || []
     const models = items
       .map((item: any) => ({
-        label: item.provider_type ? `${item.model_name} (${item.provider_type}/${item.vendor_type})` : `${item.model_name} (${item.vendor_type || 'deepnode'})`,
+        label: item.provider_type
+          ? `${item.model_name} (${item.provider_type}/${item.vendor_type})`
+          : `${item.model_name} (${item.vendor_type || 'deepnode'})`,
         value: item.model_name,
         vendorType: item.vendor_type || 'deepnode',
         providerType: item.provider_type || '',
@@ -226,10 +238,7 @@ async function fetchModels() {
 }
 
 onMounted(async () => {
-  const [nodeRes] = await Promise.all([
-    getNodeManagers().catch(() => null),
-    fetchModels(),
-  ])
+  const [nodeRes] = await Promise.all([getNodeManagers().catch(() => null), fetchModels()])
   if (nodeRes?.data?.data) {
     nodeOptions.value = nodeRes.data.data.map((nm: any) => ({
       label: `${nm.name} (${nm.addr})`,

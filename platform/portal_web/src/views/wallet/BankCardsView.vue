@@ -5,7 +5,10 @@
 
       <!-- 银行卡列表 -->
       <div class="space-y-3 mb-6">
-        <div v-if="cards.length === 0 && !loading" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-8 text-center text-dp-muted text-sm">
+        <div
+          v-if="cards.length === 0 && !loading"
+          class="bg-white rounded-2xl border border-slate-100 shadow-sm p-8 text-center text-dp-muted text-sm"
+        >
           暂无绑定银行卡
         </div>
         <div
@@ -18,10 +21,7 @@
             <div class="text-xs text-dp-muted font-mono mt-0.5">**** **** **** {{ card.card_number }}</div>
             <div class="text-xs text-dp-placeholder mt-0.5">{{ card.card_holder }}</div>
           </div>
-          <button
-            class="text-xs text-red-400 hover:text-red-600 transition-colors"
-            @click="handleDelete(card.id)"
-          >
+          <button class="text-xs text-red-400 hover:text-red-600 transition-colors" @click="handleDelete(card.id)">
             解绑
           </button>
         </div>
@@ -37,8 +37,7 @@
               v-model="form.bank_name"
               type="text"
               placeholder="例如：中国银行"
-              class="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body
-                     focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+              class="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
               required
             />
           </div>
@@ -48,8 +47,7 @@
               v-model="form.card_number"
               type="text"
               placeholder="输入银行卡号"
-              class="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body
-                     focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+              class="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
               required
             />
           </div>
@@ -59,16 +57,14 @@
               v-model="form.card_holder"
               type="text"
               placeholder="输入持卡人姓名"
-              class="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body
-                     focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
+              class="w-full px-4 py-2.5 rounded-lg border border-slate-200 text-sm text-dp-body focus:outline-none focus:border-dp-blue focus:ring-2 focus:ring-blue-100"
               required
             />
           </div>
           <button
             type="submit"
             :disabled="creating"
-            class="w-full py-3 rounded-lg bg-gradient-to-r from-dp-blue to-dp-blue-dark text-white font-medium
-                   shadow-sm hover:shadow-md transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+            class="w-full py-3 rounded-lg bg-gradient-to-r from-dp-blue to-dp-blue-dark text-white font-medium shadow-sm hover:shadow-md transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {{ creating ? '...' : '绑定银行卡' }}
           </button>
@@ -92,8 +88,11 @@ async function fetchCards() {
   try {
     const res = await listBankCards()
     cards.value = res.data?.data || []
-  } catch { /* ignore */ }
-  finally { loading.value = false }
+  } catch {
+    /* ignore */
+  } finally {
+    loading.value = false
+  }
 }
 
 async function handleCreate() {
@@ -103,8 +102,11 @@ async function handleCreate() {
     await createBankCard(form.value)
     form.value = { bank_name: '', card_number: '', card_holder: '' }
     await fetchCards()
-  } catch { /* ignore */ }
-  finally { creating.value = false }
+  } catch {
+    /* ignore */
+  } finally {
+    creating.value = false
+  }
 }
 
 async function handleDelete(id: number) {
@@ -112,7 +114,9 @@ async function handleDelete(id: number) {
   try {
     await deleteBankCard(id)
     await fetchCards()
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 onMounted(fetchCards)

@@ -1,6 +1,9 @@
 <template>
   <!-- Full-screen overlay dialog -->
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" @click.self="$emit('close')">
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+    @click.self="$emit('close')"
+  >
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] mx-4 overflow-hidden max-h-[90vh] flex flex-col">
       <!-- Header -->
       <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between shrink-0">
@@ -13,9 +16,12 @@
             {{ log.success ? $t('experiment.trace.logs.status_success') : $t('experiment.trace.logs.status_failed') }}
           </span>
         </div>
-        <button class="p-1 rounded-lg text-dp-muted hover:text-dp-title hover:bg-slate-100 transition-colors" @click="$emit('close')">
+        <button
+          class="p-1 rounded-lg text-dp-muted hover:text-dp-title hover:bg-slate-100 transition-colors"
+          @click="$emit('close')"
+        >
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
@@ -30,12 +36,20 @@
           <div class="space-y-3">
             <MetaItem label="Request ID" :mono="true">{{ log.request_id }}</MetaItem>
             <MetaItem :label="$t('experiment.trace.logs.col_model')">
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-dp-blue">
+              <span
+                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-dp-blue"
+              >
                 {{ log.model_name }}
               </span>
             </MetaItem>
             <MetaItem label="API Key ID" :mono="true">{{ log.api_key_id }}</MetaItem>
-            <MetaItem :label="log.is_stream ? $t('experiment.trace.logs.detail_stream') : $t('experiment.trace.logs.detail_non_stream')">
+            <MetaItem
+              :label="
+                log.is_stream
+                  ? $t('experiment.trace.logs.detail_stream')
+                  : $t('experiment.trace.logs.detail_non_stream')
+              "
+            >
               <span
                 class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
                 :class="log.is_stream ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-600'"
@@ -51,10 +65,27 @@
             <div class="pt-2 border-t border-slate-200">
               <h5 class="text-xs font-semibold text-dp-muted uppercase tracking-wider mb-2">Tokens</h5>
               <div class="grid grid-cols-2 gap-2">
-                <TokenStat :label="$t('experiment.trace.logs.detail_prompt_tokens')" :value="log.prompt_tokens" color="blue" />
-                <TokenStat :label="$t('experiment.trace.logs.detail_completion_tokens')" :value="log.completion_tokens" color="green" />
-                <TokenStat :label="$t('experiment.trace.logs.detail_total_tokens')" :value="log.total_tokens" color="slate" />
-                <TokenStat v-if="log.reasoning_tokens > 0" :label="$t('experiment.trace.logs.detail_reasoning_tokens')" :value="log.reasoning_tokens" color="purple" />
+                <TokenStat
+                  :label="$t('experiment.trace.logs.detail_prompt_tokens')"
+                  :value="log.prompt_tokens"
+                  color="blue"
+                />
+                <TokenStat
+                  :label="$t('experiment.trace.logs.detail_completion_tokens')"
+                  :value="log.completion_tokens"
+                  color="green"
+                />
+                <TokenStat
+                  :label="$t('experiment.trace.logs.detail_total_tokens')"
+                  :value="log.total_tokens"
+                  color="slate"
+                />
+                <TokenStat
+                  v-if="log.reasoning_tokens > 0"
+                  :label="$t('experiment.trace.logs.detail_reasoning_tokens')"
+                  :value="log.reasoning_tokens"
+                  color="purple"
+                />
               </div>
             </div>
 
@@ -76,7 +107,9 @@
 
             <!-- Tools summary -->
             <div v-if="toolsDefined.length > 0" class="pt-2 border-t border-slate-200">
-              <h5 class="text-xs font-semibold text-dp-muted uppercase tracking-wider mb-2">Tools ({{ toolsDefined.length }})</h5>
+              <h5 class="text-xs font-semibold text-dp-muted uppercase tracking-wider mb-2">
+                Tools ({{ toolsDefined.length }})
+              </h5>
               <div class="space-y-1">
                 <div v-for="tool in toolsDefined" :key="tool.name" class="text-xs">
                   <span class="font-mono text-indigo-600">{{ tool.name }}</span>
@@ -87,7 +120,9 @@
 
             <!-- Error message -->
             <div v-if="!log.success && log.error_message" class="pt-2 border-t border-slate-200">
-              <h5 class="text-xs font-semibold text-red-500 uppercase tracking-wider mb-1">{{ $t('experiment.trace.logs.detail_error') }}</h5>
+              <h5 class="text-xs font-semibold text-red-500 uppercase tracking-wider mb-1">
+                {{ $t('experiment.trace.logs.detail_error') }}
+              </h5>
               <p class="text-xs text-red-600 bg-red-50 rounded-lg p-2 break-all">{{ log.error_message }}</p>
             </div>
 
@@ -106,12 +141,18 @@
                 v-for="tab in tabs"
                 :key="tab"
                 class="px-4 py-3 text-sm font-medium border-b-2 transition-colors"
-                :class="activeTab === tab
-                  ? 'border-dp-blue text-dp-blue'
-                  : 'border-transparent text-dp-muted hover:text-dp-title'"
+                :class="
+                  activeTab === tab
+                    ? 'border-dp-blue text-dp-blue'
+                    : 'border-transparent text-dp-muted hover:text-dp-title'
+                "
                 @click="activeTab = tab"
               >
-                {{ tab === 'request' ? $t('experiment.trace.logs.detail_request') : $t('experiment.trace.logs.detail_response') }}
+                {{
+                  tab === 'request'
+                    ? $t('experiment.trace.logs.detail_request')
+                    : $t('experiment.trace.logs.detail_response')
+                }}
               </button>
               <!-- View mode toggle -->
               <div class="ml-auto flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
@@ -121,7 +162,13 @@
                   class="px-3 py-1 rounded-md text-xs font-medium transition-colors"
                   :class="viewMode === mode ? 'bg-white text-dp-title shadow-sm' : 'text-dp-muted hover:text-dp-title'"
                   @click="viewMode = mode"
-                >{{ mode === 'pretty' ? $t('experiment.trace.logs.detail_pretty') : $t('experiment.trace.logs.detail_json') }}</button>
+                >
+                  {{
+                    mode === 'pretty'
+                      ? $t('experiment.trace.logs.detail_pretty')
+                      : $t('experiment.trace.logs.detail_json')
+                  }}
+                </button>
               </div>
             </div>
 
@@ -135,78 +182,185 @@
                 <div v-if="viewMode === 'pretty'" class="space-y-4">
                   <template v-if="activeTab === 'request'">
                     <div v-for="(msg, i) in requestMessages" :key="i" class="flex gap-3">
-                      <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5" :class="roleBadgeClass(msg.role)">{{ roleInitial(msg.role) }}</div>
+                      <div
+                        class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5"
+                        :class="roleBadgeClass(msg.role)"
+                      >
+                        {{ roleInitial(msg.role) }}
+                      </div>
                       <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 mb-1">
                           <span class="text-xs font-medium text-dp-muted">{{ msg.role }}</span>
                           <span v-if="msg.name" class="text-[10px] font-mono text-slate-400">({{ msg.name }})</span>
-                          <span v-if="msg.toolCallId" class="text-[10px] font-mono text-purple-400">{{ msg.toolCallId }}</span>
+                          <span v-if="msg.toolCallId" class="text-[10px] font-mono text-purple-400">{{
+                            msg.toolCallId
+                          }}</span>
                         </div>
-                        <div v-if="msg.content" class="bg-slate-50 rounded-lg p-3 text-sm text-dp-title whitespace-pre-wrap break-words">{{ msg.content }}</div>
-                        <div v-if="msg.toolCalls && msg.toolCalls.length > 0" class="space-y-2" :class="{ 'mt-2': msg.content }">
-                          <div v-for="(tc, j) in msg.toolCalls" :key="j" class="bg-indigo-50 border border-indigo-100 rounded-lg p-3">
+                        <div
+                          v-if="msg.content"
+                          class="bg-slate-50 rounded-lg p-3 text-sm text-dp-title whitespace-pre-wrap break-words"
+                        >
+                          {{ msg.content }}
+                        </div>
+                        <div
+                          v-if="msg.toolCalls && msg.toolCalls.length > 0"
+                          class="space-y-2"
+                          :class="{ 'mt-2': msg.content }"
+                        >
+                          <div
+                            v-for="(tc, j) in msg.toolCalls"
+                            :key="j"
+                            class="bg-indigo-50 border border-indigo-100 rounded-lg p-3"
+                          >
                             <div class="flex items-center gap-2 mb-1.5">
-                              <span class="text-[10px] font-semibold text-indigo-500 uppercase tracking-wider">Function Call</span>
+                              <span class="text-[10px] font-semibold text-indigo-500 uppercase tracking-wider"
+                                >Function Call</span
+                              >
                               <span class="font-mono text-xs text-indigo-700 font-medium">{{ tc.functionName }}</span>
-                              <span v-if="tc.id" class="text-[10px] font-mono text-indigo-400 ml-auto">{{ tc.id }}</span>
+                              <span v-if="tc.id" class="text-[10px] font-mono text-indigo-400 ml-auto">{{
+                                tc.id
+                              }}</span>
                             </div>
-                            <pre class="text-xs font-mono text-indigo-900 bg-indigo-100/50 rounded p-2 overflow-x-auto whitespace-pre-wrap break-all">{{ tc.arguments }}</pre>
+                            <pre
+                              class="text-xs font-mono text-indigo-900 bg-indigo-100/50 rounded p-2 overflow-x-auto whitespace-pre-wrap break-all"
+                              >{{ tc.arguments }}</pre
+                            >
                           </div>
                         </div>
                       </div>
                     </div>
-                    <div v-if="requestMessages.length === 0" class="text-sm text-dp-muted text-center py-8">No messages parsed — switch to JSON view</div>
+                    <div v-if="requestMessages.length === 0" class="text-sm text-dp-muted text-center py-8">
+                      No messages parsed — switch to JSON view
+                    </div>
                   </template>
                   <template v-else>
-                    <div v-if="responseMeta" class="mb-4 bg-slate-50 rounded-lg px-4 py-3 flex flex-wrap gap-x-6 gap-y-1 text-xs">
-                      <span v-if="responseMeta.id" class="text-dp-muted">id: <span class="font-mono text-dp-title">{{ responseMeta.id }}</span></span>
-                      <span v-if="responseMeta.model" class="text-dp-muted">model: <span class="font-mono text-dp-title">{{ responseMeta.model }}</span></span>
-                      <span v-if="responseMeta.created" class="text-dp-muted">created: <span class="text-dp-title">{{ formatTime(new Date(responseMeta.created * 1000).toISOString()) }}</span></span>
+                    <div
+                      v-if="responseMeta"
+                      class="mb-4 bg-slate-50 rounded-lg px-4 py-3 flex flex-wrap gap-x-6 gap-y-1 text-xs"
+                    >
+                      <span v-if="responseMeta.id" class="text-dp-muted"
+                        >id: <span class="font-mono text-dp-title">{{ responseMeta.id }}</span></span
+                      >
+                      <span v-if="responseMeta.model" class="text-dp-muted"
+                        >model: <span class="font-mono text-dp-title">{{ responseMeta.model }}</span></span
+                      >
+                      <span v-if="responseMeta.created" class="text-dp-muted"
+                        >created:
+                        <span class="text-dp-title">{{
+                          formatTime(new Date(responseMeta.created * 1000).toISOString())
+                        }}</span></span
+                      >
                     </div>
                     <div v-for="(choice, ci) in responseChoices" :key="ci" class="space-y-3">
                       <div v-if="responseChoices.length > 1" class="flex items-center gap-2 text-xs text-dp-muted">
                         <span class="font-medium">Choice {{ choice.index }}</span>
-                        <span v-if="choice.finishReason" class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium" :class="finishReasonClass(choice.finishReason)">{{ choice.finishReason }}</span>
+                        <span
+                          v-if="choice.finishReason"
+                          class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium"
+                          :class="finishReasonClass(choice.finishReason)"
+                          >{{ choice.finishReason }}</span
+                        >
                       </div>
                       <div v-else-if="choice.finishReason" class="flex items-center gap-2 text-xs text-dp-muted mb-1">
                         <span>finish_reason:</span>
-                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium" :class="finishReasonClass(choice.finishReason)">{{ choice.finishReason }}</span>
+                        <span
+                          class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium"
+                          :class="finishReasonClass(choice.finishReason)"
+                          >{{ choice.finishReason }}</span
+                        >
                       </div>
                       <div class="flex gap-3">
-                        <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5" :class="roleBadgeClass(choice.message.role)">{{ roleInitial(choice.message.role) }}</div>
+                        <div
+                          class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5"
+                          :class="roleBadgeClass(choice.message.role)"
+                        >
+                          {{ roleInitial(choice.message.role) }}
+                        </div>
                         <div class="flex-1 min-w-0">
                           <div class="text-xs font-medium text-dp-muted mb-1">{{ choice.message.role }}</div>
-                          <div v-if="choice.message.reasoning" class="bg-purple-50 rounded-lg p-3 text-sm text-purple-800 whitespace-pre-wrap break-words mb-2">
+                          <div
+                            v-if="choice.message.reasoning"
+                            class="bg-purple-50 rounded-lg p-3 text-sm text-purple-800 whitespace-pre-wrap break-words mb-2"
+                          >
                             <span class="text-xs font-medium text-purple-500 block mb-1">Reasoning</span>
                             {{ choice.message.reasoning }}
                           </div>
-                          <div v-if="choice.message.content" class="bg-slate-50 rounded-lg p-3 text-sm text-dp-title whitespace-pre-wrap break-words">{{ choice.message.content }}</div>
-                          <div v-if="choice.message.toolCalls && choice.message.toolCalls.length > 0" class="space-y-2" :class="{ 'mt-2': choice.message.content }">
-                            <div v-for="(tc, j) in choice.message.toolCalls" :key="j" class="bg-indigo-50 border border-indigo-100 rounded-lg p-3">
+                          <div
+                            v-if="choice.message.content"
+                            class="bg-slate-50 rounded-lg p-3 text-sm text-dp-title whitespace-pre-wrap break-words"
+                          >
+                            {{ choice.message.content }}
+                          </div>
+                          <div
+                            v-if="choice.message.toolCalls && choice.message.toolCalls.length > 0"
+                            class="space-y-2"
+                            :class="{ 'mt-2': choice.message.content }"
+                          >
+                            <div
+                              v-for="(tc, j) in choice.message.toolCalls"
+                              :key="j"
+                              class="bg-indigo-50 border border-indigo-100 rounded-lg p-3"
+                            >
                               <div class="flex items-center gap-2 mb-1.5">
-                                <span class="text-[10px] font-semibold text-indigo-500 uppercase tracking-wider">Function Call</span>
+                                <span class="text-[10px] font-semibold text-indigo-500 uppercase tracking-wider"
+                                  >Function Call</span
+                                >
                                 <span class="font-mono text-xs text-indigo-700 font-medium">{{ tc.functionName }}</span>
-                                <span v-if="tc.id" class="text-[10px] font-mono text-indigo-400 ml-auto">{{ tc.id }}</span>
+                                <span v-if="tc.id" class="text-[10px] font-mono text-indigo-400 ml-auto">{{
+                                  tc.id
+                                }}</span>
                               </div>
-                              <pre class="text-xs font-mono text-indigo-900 bg-indigo-100/50 rounded p-2 overflow-x-auto whitespace-pre-wrap break-all">{{ tc.arguments }}</pre>
+                              <pre
+                                class="text-xs font-mono text-indigo-900 bg-indigo-100/50 rounded p-2 overflow-x-auto whitespace-pre-wrap break-all"
+                                >{{ tc.arguments }}</pre
+                              >
                             </div>
                           </div>
-                          <div v-if="!choice.message.content && (!choice.message.toolCalls || choice.message.toolCalls.length === 0) && !choice.message.reasoning" class="text-xs text-dp-muted italic">(empty response)</div>
+                          <div
+                            v-if="
+                              !choice.message.content &&
+                              (!choice.message.toolCalls || choice.message.toolCalls.length === 0) &&
+                              !choice.message.reasoning
+                            "
+                            class="text-xs text-dp-muted italic"
+                          >
+                            (empty response)
+                          </div>
                         </div>
                       </div>
                     </div>
-                    <div v-if="responseMeta?.usage" class="mt-4 bg-slate-50 rounded-lg px-4 py-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-dp-muted">
-                      <span>prompt_tokens: <span class="font-mono text-dp-title">{{ responseMeta.usage.prompt_tokens }}</span></span>
-                      <span>completion_tokens: <span class="font-mono text-dp-title">{{ responseMeta.usage.completion_tokens }}</span></span>
-                      <span>total_tokens: <span class="font-mono text-dp-title">{{ responseMeta.usage.total_tokens }}</span></span>
-                      <span v-if="responseMeta.usage.reasoning_tokens">reasoning_tokens: <span class="font-mono text-dp-title">{{ responseMeta.usage.reasoning_tokens }}</span></span>
+                    <div
+                      v-if="responseMeta?.usage"
+                      class="mt-4 bg-slate-50 rounded-lg px-4 py-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-dp-muted"
+                    >
+                      <span
+                        >prompt_tokens:
+                        <span class="font-mono text-dp-title">{{ responseMeta.usage.prompt_tokens }}</span></span
+                      >
+                      <span
+                        >completion_tokens:
+                        <span class="font-mono text-dp-title">{{ responseMeta.usage.completion_tokens }}</span></span
+                      >
+                      <span
+                        >total_tokens:
+                        <span class="font-mono text-dp-title">{{ responseMeta.usage.total_tokens }}</span></span
+                      >
+                      <span v-if="responseMeta.usage.reasoning_tokens"
+                        >reasoning_tokens:
+                        <span class="font-mono text-dp-title">{{ responseMeta.usage.reasoning_tokens }}</span></span
+                      >
                     </div>
-                    <div v-if="responseChoices.length === 0" class="text-sm text-dp-muted text-center py-8">No response content — switch to JSON view</div>
+                    <div v-if="responseChoices.length === 0" class="text-sm text-dp-muted text-center py-8">
+                      No response content — switch to JSON view
+                    </div>
                   </template>
                 </div>
                 <!-- ═══ JSON view ═══ -->
                 <div v-else>
-                  <pre class="bg-slate-900 text-slate-100 rounded-xl p-4 text-xs font-mono overflow-x-auto whitespace-pre-wrap break-all max-h-[60vh]">{{ activeTab === 'request' ? formattedRequestJSON : formattedResponseJSON }}</pre>
+                  <pre
+                    class="bg-slate-900 text-slate-100 rounded-xl p-4 text-xs font-mono overflow-x-auto whitespace-pre-wrap break-all max-h-[60vh]"
+                    >{{ activeTab === 'request' ? formattedRequestJSON : formattedResponseJSON }}</pre
+                  >
                 </div>
               </template>
             </div>
@@ -219,7 +373,10 @@
           />
 
           <!-- Evaluation panel (always visible) -->
-          <div class="shrink-0 border-l border-slate-200 bg-slate-50/50 flex flex-col overflow-hidden" :style="{ width: evalPanelWidth + 'px' }">
+          <div
+            class="shrink-0 border-l border-slate-200 bg-slate-50/50 flex flex-col overflow-hidden"
+            :style="{ width: evalPanelWidth + 'px' }"
+          >
             <div class="px-4 py-3 border-b border-slate-200 shrink-0">
               <h4 class="text-xs font-semibold text-dp-muted uppercase tracking-wider">
                 {{ $t('experiment.trace.logs.annotation.title') }}
@@ -229,19 +386,29 @@
               <!-- Feedback section -->
               <div>
                 <div class="flex items-center justify-between mb-2">
-                  <h5 class="text-xs font-semibold text-dp-title uppercase tracking-wider">{{ $t('experiment.trace.logs.annotation.feedback') }}</h5>
-                  <button
-                    class="text-xs text-dp-blue hover:text-dp-blue/80 font-medium"
-                    @click="addFeedback"
-                  >+ {{ $t('experiment.trace.logs.annotation.add_feedback') }}</button>
+                  <h5 class="text-xs font-semibold text-dp-title uppercase tracking-wider">
+                    {{ $t('experiment.trace.logs.annotation.feedback') }}
+                  </h5>
+                  <button class="text-xs text-dp-blue hover:text-dp-blue/80 font-medium" @click="addFeedback">
+                    + {{ $t('experiment.trace.logs.annotation.add_feedback') }}
+                  </button>
                 </div>
                 <div v-if="feedbacks.length === 0" class="text-xs text-dp-muted italic py-2">
                   {{ $t('experiment.trace.logs.annotation.feedback_empty') }}
                 </div>
-                <div v-for="(fb, i) in feedbacks" :key="i" class="bg-white rounded-lg border border-slate-200 p-3 mb-2 space-y-2">
+                <div
+                  v-for="(fb, i) in feedbacks"
+                  :key="i"
+                  class="bg-white rounded-lg border border-slate-200 p-3 mb-2 space-y-2"
+                >
                   <div class="flex items-center justify-between">
-                    <span class="text-[10px] text-dp-muted font-medium uppercase shrink-0 mr-1">{{ $t('experiment.trace.logs.annotation.feedback_name') }} *</span>
-                    <button class="text-xs text-red-400 hover:text-red-600 shrink-0 ml-2" @click="feedbacks.splice(i, 1)">
+                    <span class="text-[10px] text-dp-muted font-medium uppercase shrink-0 mr-1"
+                      >{{ $t('experiment.trace.logs.annotation.feedback_name') }} *</span
+                    >
+                    <button
+                      class="text-xs text-red-400 hover:text-red-600 shrink-0 ml-2"
+                      @click="feedbacks.splice(i, 1)"
+                    >
                       {{ $t('experiment.trace.logs.annotation.delete_feedback') }}
                     </button>
                   </div>
@@ -251,24 +418,37 @@
                     class="w-full text-sm font-medium text-dp-title border border-slate-200 rounded-md px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-dp-blue/50 focus:border-dp-blue/50"
                   />
                   <div class="flex items-center gap-3">
-                    <span class="text-xs text-dp-muted">{{ $t('experiment.trace.logs.annotation.feedback_passed') }}</span>
+                    <span class="text-xs text-dp-muted">{{
+                      $t('experiment.trace.logs.annotation.feedback_passed')
+                    }}</span>
                     <button
                       class="px-2 py-0.5 rounded text-xs font-medium transition-colors"
                       :class="fb.passed ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'"
                       @click="fb.passed = true"
-                    >{{ $t('experiment.trace.logs.annotation.yes') }}</button>
+                    >
+                      {{ $t('experiment.trace.logs.annotation.yes') }}
+                    </button>
                     <button
                       class="px-2 py-0.5 rounded text-xs font-medium transition-colors"
                       :class="!fb.passed ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-500'"
                       @click="fb.passed = false"
-                    >{{ $t('experiment.trace.logs.annotation.no') }}</button>
+                    >
+                      {{ $t('experiment.trace.logs.annotation.no') }}
+                    </button>
                   </div>
                   <div class="flex items-center gap-2">
-                    <span class="text-xs text-dp-muted">{{ $t('experiment.trace.logs.annotation.feedback_source') }}</span>
+                    <span class="text-xs text-dp-muted">{{
+                      $t('experiment.trace.logs.annotation.feedback_source')
+                    }}</span>
                     <span
                       class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium"
                       :class="fb.source === 'ai_judge' ? 'bg-purple-100 text-purple-700' : 'bg-blue-50 text-dp-blue'"
-                    >{{ fb.source === 'ai_judge' ? $t('experiment.trace.logs.annotation.source_ai_judge') : $t('experiment.trace.logs.annotation.source_human') }}</span>
+                      >{{
+                        fb.source === 'ai_judge'
+                          ? $t('experiment.trace.logs.annotation.source_ai_judge')
+                          : $t('experiment.trace.logs.annotation.source_human')
+                      }}</span
+                    >
                   </div>
                   <textarea
                     v-model="fb.reason"
@@ -282,30 +462,40 @@
               <!-- Expectation section -->
               <div>
                 <div class="flex items-center justify-between mb-2">
-                  <h5 class="text-xs font-semibold text-dp-title uppercase tracking-wider">{{ $t('experiment.trace.logs.annotation.expectation') }}</h5>
+                  <h5 class="text-xs font-semibold text-dp-title uppercase tracking-wider">
+                    {{ $t('experiment.trace.logs.annotation.expectation') }}
+                  </h5>
                   <button
                     v-if="!expectation"
                     class="text-xs text-dp-blue hover:text-dp-blue/80 font-medium"
                     @click="addExpectation"
-                  >+ {{ $t('experiment.trace.logs.annotation.add_expectation') }}</button>
+                  >
+                    + {{ $t('experiment.trace.logs.annotation.add_expectation') }}
+                  </button>
                   <button
                     v-else
                     class="text-xs text-red-400 hover:text-red-600 font-medium"
                     @click="expectation = null"
-                  >{{ $t('experiment.trace.logs.annotation.delete_expectation') }}</button>
+                  >
+                    {{ $t('experiment.trace.logs.annotation.delete_expectation') }}
+                  </button>
                 </div>
                 <div v-if="!expectation" class="text-xs text-dp-muted italic py-2">
                   {{ $t('experiment.trace.logs.annotation.expectation_empty') }}
                 </div>
                 <div v-else class="bg-white rounded-lg border border-slate-200 p-3 space-y-2">
-                  <div class="text-[10px] text-dp-muted font-medium uppercase">{{ $t('experiment.trace.logs.annotation.expectation_name') }} *</div>
+                  <div class="text-[10px] text-dp-muted font-medium uppercase">
+                    {{ $t('experiment.trace.logs.annotation.expectation_name') }} *
+                  </div>
                   <input
                     v-model="expectation.name"
                     :placeholder="$t('experiment.trace.logs.annotation.expectation_name_placeholder')"
                     class="w-full text-sm font-medium text-dp-title border border-slate-200 rounded-md px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-dp-blue/50 focus:border-dp-blue/50"
                   />
                   <div class="flex items-center gap-2">
-                    <span class="text-xs text-dp-muted shrink-0">{{ $t('experiment.trace.logs.annotation.expectation_data_type') }}</span>
+                    <span class="text-xs text-dp-muted shrink-0">{{
+                      $t('experiment.trace.logs.annotation.expectation_data_type')
+                    }}</span>
                     <select
                       v-model="expectation.data_type"
                       class="text-xs border border-slate-200 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-dp-blue/50"
@@ -337,7 +527,11 @@
               <div
                 v-if="annotationToast"
                 class="px-3 py-2 rounded-lg text-xs font-medium transition-all"
-                :class="annotationToast.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'"
+                :class="
+                  annotationToast.type === 'success'
+                    ? 'bg-green-50 text-green-700 border border-green-200'
+                    : 'bg-red-50 text-red-700 border border-red-200'
+                "
               >
                 {{ annotationToast.message }}
               </div>
@@ -347,7 +541,11 @@
                 :disabled="annotationSaving"
                 @click="handleSaveAnnotation"
               >
-                {{ annotationSaving ? $t('experiment.trace.logs.annotation.saving') : $t('experiment.trace.logs.annotation.save') }}
+                {{
+                  annotationSaving
+                    ? $t('experiment.trace.logs.annotation.saving')
+                    : $t('experiment.trace.logs.annotation.save')
+                }}
               </button>
             </div>
           </div>
@@ -381,10 +579,10 @@ interface ToolCall {
 interface ChatMessage {
   role: string
   content: string
-  name?: string        // function name (for tool role messages)
-  toolCallId?: string  // tool_call_id (for tool role messages)
+  name?: string // function name (for tool role messages)
+  toolCallId?: string // tool_call_id (for tool role messages)
   toolCalls?: ToolCall[]
-  reasoning?: string   // reasoning_content (for response)
+  reasoning?: string // reasoning_content (for response)
 }
 
 // Request parameter extracted from body
@@ -424,7 +622,9 @@ let toastTimer: ReturnType<typeof setTimeout> | null = null
 function showToast(type: 'success' | 'error', message: string) {
   annotationToast.value = { type, message }
   if (toastTimer) clearTimeout(toastTimer)
-  toastTimer = setTimeout(() => { annotationToast.value = null }, 3000)
+  toastTimer = setTimeout(() => {
+    annotationToast.value = null
+  }, 3000)
 }
 
 // --- Evaluation panel drag resize ---
@@ -540,7 +740,11 @@ function parseToolCalls(toolCalls: any[]): ToolCall[] {
 function prettyArgs(args: any): string {
   if (!args) return ''
   if (typeof args === 'string') {
-    try { return JSON.stringify(JSON.parse(args), null, 2) } catch { return args }
+    try {
+      return JSON.stringify(JSON.parse(args), null, 2)
+    } catch {
+      return args
+    }
   }
   return JSON.stringify(args, null, 2)
 }
@@ -554,7 +758,7 @@ const requestMessages = computed<ChatMessage[]>(() => {
     return parsed.messages.map((m: any) => {
       const msg: ChatMessage = {
         role: String(m.role || 'unknown'),
-        content: typeof m.content === 'string' ? m.content : (m.content ? JSON.stringify(m.content, null, 2) : ''),
+        content: typeof m.content === 'string' ? m.content : m.content ? JSON.stringify(m.content, null, 2) : '',
         name: m.name || undefined,
         toolCallId: m.tool_call_id || undefined,
       }
@@ -563,7 +767,9 @@ const requestMessages = computed<ChatMessage[]>(() => {
       }
       return msg
     })
-  } catch { return [] }
+  } catch {
+    return []
+  }
 })
 
 // Parsed OpenAI response metadata (top-level fields)
@@ -608,7 +814,9 @@ const responseMeta = computed<ResponseMeta | null>(() => {
     if (raw.startsWith('data:') || raw.includes('\ndata:')) {
       return parseSSEMeta(raw)
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return null
 })
 
@@ -625,7 +833,8 @@ const responseChoices = computed<ResponseChoice[]>(() => {
           const src = c.message || c.delta || {}
           const msg: ChatMessage = {
             role: String(src.role || 'assistant'),
-            content: typeof src.content === 'string' ? src.content : (src.content ? JSON.stringify(src.content, null, 2) : ''),
+            content:
+              typeof src.content === 'string' ? src.content : src.content ? JSON.stringify(src.content, null, 2) : '',
             reasoning: src.reasoning_content || '',
           }
           if (Array.isArray(src.tool_calls) && src.tool_calls.length > 0) {
@@ -643,7 +852,9 @@ const responseChoices = computed<ResponseChoice[]>(() => {
     if (raw.startsWith('data:') || raw.includes('\ndata:')) {
       return parseSSEChoices(raw)
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return []
 })
 
@@ -673,7 +884,9 @@ function parseSSEMeta(raw: string): ResponseMeta {
           meta.usage.reasoning_tokens = chunk.usage.completion_tokens_details.reasoning_tokens
         }
       }
-    } catch { /* skip */ }
+    } catch {
+      /* skip */
+    }
   }
   return meta
 }
@@ -682,17 +895,26 @@ function parseSSEMeta(raw: string): ResponseMeta {
 function parseSSEChoices(raw: string): ResponseChoice[] {
   const lines = raw.split('\n')
   // Accumulate per-choice data (keyed by choice index)
-  const choiceMap = new Map<number, {
-    role: string
-    contentParts: string[]
-    reasoningParts: string[]
-    toolCalls: Map<number, { id: string; name: string; args: string }>
-    finishReason: string
-  }>()
+  const choiceMap = new Map<
+    number,
+    {
+      role: string
+      contentParts: string[]
+      reasoningParts: string[]
+      toolCalls: Map<number, { id: string; name: string; args: string }>
+      finishReason: string
+    }
+  >()
 
   function getOrCreate(idx: number) {
     if (!choiceMap.has(idx)) {
-      choiceMap.set(idx, { role: 'assistant', contentParts: [], reasoningParts: [], toolCalls: new Map(), finishReason: '' })
+      choiceMap.set(idx, {
+        role: 'assistant',
+        contentParts: [],
+        reasoningParts: [],
+        toolCalls: new Map(),
+        finishReason: '',
+      })
     }
     return choiceMap.get(idx)!
   }
@@ -731,7 +953,9 @@ function parseSSEChoices(raw: string): ResponseChoice[] {
           }
         }
       }
-    } catch { /* skip */ }
+    } catch {
+      /* skip */
+    }
   }
 
   // Convert accumulated data into ResponseChoice objects
@@ -743,7 +967,7 @@ function parseSSEChoices(raw: string): ResponseChoice[] {
       reasoning: acc.reasoningParts.join('') || undefined,
     }
     if (acc.toolCalls.size > 0) {
-      msg.toolCalls = Array.from(acc.toolCalls.values()).map(tc => ({
+      msg.toolCalls = Array.from(acc.toolCalls.values()).map((tc) => ({
         id: tc.id,
         functionName: tc.name,
         arguments: prettyArgs(tc.args),
@@ -760,14 +984,27 @@ const requestParams = computed<RequestParam[]>(() => {
   try {
     const parsed = JSON.parse(detail.value.request_body)
     const params: RequestParam[] = []
-    const paramKeys = ['model', 'temperature', 'top_p', 'max_tokens', 'stream', 'tool_choice', 'reasoning_effort', 'frequency_penalty', 'presence_penalty', 'seed']
+    const paramKeys = [
+      'model',
+      'temperature',
+      'top_p',
+      'max_tokens',
+      'stream',
+      'tool_choice',
+      'reasoning_effort',
+      'frequency_penalty',
+      'presence_penalty',
+      'seed',
+    ]
     for (const key of paramKeys) {
       if (parsed[key] !== undefined && parsed[key] !== null) {
         params.push({ key, value: String(parsed[key]) })
       }
     }
     return params
-  } catch { return [] }
+  } catch {
+    return []
+  }
 })
 
 /** Extract tool definitions summary for metadata panel */
@@ -782,19 +1019,27 @@ const toolsDefined = computed<ToolDef[]>(() => {
         name: t.function.name || 'unknown',
         desc: truncate(t.function.description || '', 60),
       }))
-  } catch { return [] }
+  } catch {
+    return []
+  }
 })
 
 const formattedRequestJSON = computed(() => {
   if (!detail.value?.request_body) return '(empty)'
-  try { return JSON.stringify(JSON.parse(detail.value.request_body), null, 2) }
-  catch { return detail.value.request_body }
+  try {
+    return JSON.stringify(JSON.parse(detail.value.request_body), null, 2)
+  } catch {
+    return detail.value.request_body
+  }
 })
 
 const formattedResponseJSON = computed(() => {
   if (!detail.value?.response_body) return '(empty)'
-  try { return JSON.stringify(JSON.parse(detail.value.response_body), null, 2) }
-  catch { return detail.value.response_body }
+  try {
+    return JSON.stringify(JSON.parse(detail.value.response_body), null, 2)
+  } catch {
+    return detail.value.response_body
+  }
 })
 
 function truncate(s: string, max: number): string {
@@ -808,28 +1053,44 @@ function formatDuration(ms: number): string {
 
 function formatTime(ts: string): string {
   if (!ts) return ''
-  try { return new Date(ts).toLocaleString() } catch { return ts }
+  try {
+    return new Date(ts).toLocaleString()
+  } catch {
+    return ts
+  }
 }
 
 function roleBadgeClass(role: string): string {
   switch (role) {
-    case 'system': return 'bg-amber-100 text-amber-700'
-    case 'user': return 'bg-blue-100 text-blue-700'
-    case 'assistant': return 'bg-green-100 text-green-700'
-    case 'tool': return 'bg-purple-100 text-purple-700'
-    case 'function': return 'bg-indigo-100 text-indigo-700'
-    default: return 'bg-slate-100 text-slate-600'
+    case 'system':
+      return 'bg-amber-100 text-amber-700'
+    case 'user':
+      return 'bg-blue-100 text-blue-700'
+    case 'assistant':
+      return 'bg-green-100 text-green-700'
+    case 'tool':
+      return 'bg-purple-100 text-purple-700'
+    case 'function':
+      return 'bg-indigo-100 text-indigo-700'
+    default:
+      return 'bg-slate-100 text-slate-600'
   }
 }
 
 function finishReasonClass(reason: string): string {
   switch (reason) {
-    case 'stop': return 'bg-green-100 text-green-700'
-    case 'tool_calls': return 'bg-indigo-100 text-indigo-700'
-    case 'function_call': return 'bg-indigo-100 text-indigo-700'
-    case 'length': return 'bg-amber-100 text-amber-700'
-    case 'content_filter': return 'bg-red-100 text-red-700'
-    default: return 'bg-slate-100 text-slate-600'
+    case 'stop':
+      return 'bg-green-100 text-green-700'
+    case 'tool_calls':
+      return 'bg-indigo-100 text-indigo-700'
+    case 'function_call':
+      return 'bg-indigo-100 text-indigo-700'
+    case 'length':
+      return 'bg-amber-100 text-amber-700'
+    case 'content_filter':
+      return 'bg-red-100 text-red-700'
+    default:
+      return 'bg-slate-100 text-slate-600'
   }
 }
 
@@ -842,9 +1103,13 @@ function roleInitial(role: string): string {
 const MetaItem = (props: { label: string; mono?: boolean }, { slots }: any) => {
   return createVNode('div', null, [
     createVNode('div', { class: 'text-xs text-dp-muted mb-0.5' }, props.label),
-    createVNode('div', {
-      class: ['text-sm text-dp-title break-all', props.mono ? 'font-mono text-xs' : ''].join(' ')
-    }, slots.default?.())
+    createVNode(
+      'div',
+      {
+        class: ['text-sm text-dp-title break-all', props.mono ? 'font-mono text-xs' : ''].join(' '),
+      },
+      slots.default?.(),
+    ),
   ])
 }
 
@@ -857,7 +1122,7 @@ const TokenStat = (props: { label: string; value: number; color: string }) => {
   }
   return createVNode('div', { class: `rounded-lg p-2 ${colorClasses[props.color] || colorClasses.slate}` }, [
     createVNode('div', { class: 'text-[10px] font-medium opacity-70 truncate' }, props.label),
-    createVNode('div', { class: 'text-sm font-bold font-mono mt-0.5' }, String(props.value.toLocaleString()))
+    createVNode('div', { class: 'text-sm font-bold font-mono mt-0.5' }, String(props.value.toLocaleString())),
   ])
 }
 </script>

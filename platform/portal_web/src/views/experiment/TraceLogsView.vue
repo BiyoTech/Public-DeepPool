@@ -7,7 +7,7 @@
         @click="$router.push('/experiment/trace')"
       >
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
         {{ $t('experiment.trace.logs.back') }}
       </button>
@@ -19,7 +19,9 @@
     <div class="bg-white rounded-xl border border-slate-200 p-4 mb-4">
       <div class="grid grid-cols-3 gap-3 mb-3">
         <div>
-          <label class="block text-xs font-medium text-dp-muted mb-1">{{ $t('experiment.trace.logs.model_name') }}</label>
+          <label class="block text-xs font-medium text-dp-muted mb-1">{{
+            $t('experiment.trace.logs.model_name')
+          }}</label>
           <input
             v-model.trim="filters.model_name"
             class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-dp-blue/40"
@@ -27,7 +29,9 @@
           />
         </div>
         <div>
-          <label class="block text-xs font-medium text-dp-muted mb-1">{{ $t('experiment.trace.logs.api_key_id') }}</label>
+          <label class="block text-xs font-medium text-dp-muted mb-1">{{
+            $t('experiment.trace.logs.api_key_id')
+          }}</label>
           <input
             v-model.trim="filters.api_key_id"
             class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-dp-blue/40"
@@ -35,7 +39,9 @@
           />
         </div>
         <div>
-          <label class="block text-xs font-medium text-dp-muted mb-1">{{ $t('experiment.trace.logs.request_id') }}</label>
+          <label class="block text-xs font-medium text-dp-muted mb-1">{{
+            $t('experiment.trace.logs.request_id')
+          }}</label>
           <input
             v-model.trim="filters.request_id"
             class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-dp-blue/40"
@@ -45,7 +51,9 @@
       </div>
       <div class="flex items-end gap-3">
         <div class="flex-1">
-          <label class="block text-xs font-medium text-dp-muted mb-1">{{ $t('experiment.trace.logs.start_time') }}</label>
+          <label class="block text-xs font-medium text-dp-muted mb-1">{{
+            $t('experiment.trace.logs.start_time')
+          }}</label>
           <input
             v-model="filters.start_time"
             type="datetime-local"
@@ -63,11 +71,15 @@
         <button
           class="px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-dp-blue to-dp-blue-dark text-white hover:from-dp-blue-dark hover:to-dp-blue-deeper transition-all shadow-sm"
           @click="doSearch"
-        >{{ $t('experiment.trace.logs.search') }}</button>
+        >
+          {{ $t('experiment.trace.logs.search') }}
+        </button>
         <button
           class="px-4 py-2 rounded-lg text-sm font-medium text-dp-muted border border-slate-200 hover:text-dp-title hover:border-slate-300 transition-colors"
           @click="resetFilters"
-        >{{ $t('experiment.trace.logs.reset') }}</button>
+        >
+          {{ $t('experiment.trace.logs.reset') }}
+        </button>
       </div>
     </div>
 
@@ -107,7 +119,9 @@
               <span class="block truncate" :title="log.user_query">{{ log.user_query || '—' }}</span>
             </td>
             <td class="px-4 py-3">
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-dp-blue">
+              <span
+                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-dp-blue"
+              >
                 {{ log.model_name }}
               </span>
             </td>
@@ -118,17 +132,27 @@
                 class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
                 :class="log.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
               >
-                {{ log.success ? $t('experiment.trace.logs.status_success') : $t('experiment.trace.logs.status_failed') }}
+                {{
+                  log.success ? $t('experiment.trace.logs.status_success') : $t('experiment.trace.logs.status_failed')
+                }}
               </span>
             </td>
             <td class="px-4 py-3 text-center">
-              <span v-if="!annotationMap[log.id]" class="text-xs text-dp-muted">{{ $t('experiment.trace.logs.feedback_none') }}</span>
+              <span v-if="!annotationMap[log.id]" class="text-xs text-dp-muted">{{
+                $t('experiment.trace.logs.feedback_none')
+              }}</span>
               <span
                 v-else-if="annotationMap[log.id].has_feedback"
                 class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
-                :class="annotationMap[log.id].feedback_passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
+                :class="
+                  annotationMap[log.id].feedback_passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                "
               >
-                {{ annotationMap[log.id].feedback_passed ? $t('experiment.trace.logs.feedback_all_passed') : $t('experiment.trace.logs.feedback_has_failed') }}
+                {{
+                  annotationMap[log.id].feedback_passed
+                    ? $t('experiment.trace.logs.feedback_all_passed')
+                    : $t('experiment.trace.logs.feedback_has_failed')
+                }}
                 <span class="ml-1 text-[10px] opacity-70">({{ annotationMap[log.id].feedback_count }})</span>
               </span>
               <span v-else class="text-xs text-dp-muted">{{ $t('experiment.trace.logs.feedback_none') }}</span>
@@ -137,7 +161,8 @@
               <span
                 v-if="annotationMap[log.id]?.has_expectation"
                 class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-dp-blue"
-              >{{ $t('experiment.trace.logs.expectation_yes') }}</span>
+                >{{ $t('experiment.trace.logs.expectation_yes') }}</span
+              >
               <span v-else class="text-xs text-dp-muted">{{ $t('experiment.trace.logs.expectation_none') }}</span>
             </td>
             <td class="px-4 py-3 text-xs text-dp-muted whitespace-nowrap">{{ formatTime(log.created_at) }}</td>
@@ -147,12 +172,13 @@
 
       <!-- Infinite scroll sentinel -->
       <div v-if="logs.length > 0 && hasMore" ref="scrollSentinel" class="flex justify-center py-4">
-        <div v-if="loadingMore" class="w-5 h-5 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+        <div
+          v-if="loadingMore"
+          class="w-5 h-5 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin"
+        ></div>
         <span v-else class="text-xs text-dp-muted">Scroll to load more</span>
       </div>
-      <div v-if="logs.length > 0 && !hasMore" class="text-center py-3 text-xs text-dp-muted">
-        — End —
-      </div>
+      <div v-if="logs.length > 0 && !hasMore" class="text-center py-3 text-xs text-dp-muted">— End —</div>
     </div>
 
     <!-- Log Detail Dialog -->
@@ -215,11 +241,14 @@ watch(scrollSentinel, () => {
 function setupObserver() {
   observer?.disconnect()
   if (!scrollSentinel.value) return
-  observer = new IntersectionObserver((entries) => {
-    if (entries[0]?.isIntersecting && hasMore.value && !loadingMore.value) {
-      loadMore()
-    }
-  }, { threshold: 0.1 })
+  observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0]?.isIntersecting && hasMore.value && !loadingMore.value) {
+        loadMore()
+      }
+    },
+    { threshold: 0.1 },
+  )
   observer.observe(scrollSentinel.value)
 }
 
@@ -234,7 +263,7 @@ async function fetchLogs() {
     logs.value = data.logs
     hasMore.value = data.has_more
     if (logs.value.length > 0) {
-      fetchAnnotationSummaries(logs.value.map(l => l.id))
+      fetchAnnotationSummaries(logs.value.map((l) => l.id))
     }
   } finally {
     loading.value = false
@@ -255,7 +284,7 @@ async function loadMore() {
       logs.value.push(...data.logs)
       hasMore.value = data.has_more
       // Fetch annotation summaries for newly loaded logs
-      fetchAnnotationSummaries(data.logs.map(l => l.id))
+      fetchAnnotationSummaries(data.logs.map((l) => l.id))
     } else {
       hasMore.value = false
     }

@@ -166,18 +166,22 @@ export interface TraceAnnotation {
 /** Get annotation (feedbacks + expectation) for a trace log */
 export function getAnnotation(traceId: number, logId: number) {
   return http.get<{ code: number; data: TraceAnnotation | null }>(
-    `/experiment/traces/${traceId}/logs/${logId}/annotation`
+    `/experiment/traces/${traceId}/logs/${logId}/annotation`,
   )
 }
 
 /** Save (create or update) annotation for a trace log */
-export function saveAnnotation(traceId: number, logId: number, data: {
-  feedbacks: FeedbackItem[]
-  expectation: ExpectationItem | null
-}) {
+export function saveAnnotation(
+  traceId: number,
+  logId: number,
+  data: {
+    feedbacks: FeedbackItem[]
+    expectation: ExpectationItem | null
+  },
+) {
   return http.put<{ code: number; data: TraceAnnotation }>(
     `/experiment/traces/${traceId}/logs/${logId}/annotation`,
-    data
+    data,
   )
 }
 
@@ -195,7 +199,7 @@ export interface AnnotationSummary {
 export function batchGetAnnotationSummaries(traceId: number, logIds: number[]) {
   return http.post<{ code: number; data: Record<string, AnnotationSummary> | null }>(
     `/experiment/traces/${traceId}/annotation-summaries`,
-    { log_ids: logIds }
+    { log_ids: logIds },
   )
 }
 
@@ -324,7 +328,7 @@ export function listJudgeRuns(judgeId: number) {
 export function getJudgeRunResults(judgeId: number, runId: number, page = 1, pageSize = 30) {
   return http.get<{ code: number; data: { items: JudgeResultDTO[]; has_more: boolean } }>(
     `/experiment/judges/${judgeId}/runs/${runId}/results`,
-    { params: { page, page_size: pageSize } }
+    { params: { page, page_size: pageSize } },
   )
 }
 
@@ -332,7 +336,7 @@ export function getJudgeRunResults(judgeId: number, runId: number, page = 1, pag
 export function getJudgeResults(id: number, page = 1, pageSize = 30) {
   return http.get<{ code: number; data: { items: JudgeResultDTO[]; has_more: boolean } }>(
     `/experiment/judges/${id}/results`,
-    { params: { page, page_size: pageSize } }
+    { params: { page, page_size: pageSize } },
   )
 }
 

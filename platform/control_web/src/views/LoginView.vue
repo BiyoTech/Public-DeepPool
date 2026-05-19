@@ -12,9 +12,7 @@
           <DeepPoolLogo :size="48" />
           <span class="text-3xl font-bold text-dp-text-1">DeepPool</span>
         </div>
-        <h2 class="text-xl text-dp-text-2 leading-relaxed">
-          分布式 LLM 推理算力池<br />管控平台
-        </h2>
+        <h2 class="text-xl text-dp-text-2 leading-relaxed">分布式 LLM 推理算力池<br />管控平台</h2>
         <p class="text-dp-text-3 text-sm leading-relaxed max-w-sm">
           统一管理所有 NodeManager 节点与在线设备，监控平台运行状态，调试 OpenAI 兼容推理接口。
         </p>
