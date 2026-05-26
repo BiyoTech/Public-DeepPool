@@ -11,7 +11,7 @@
     "lint": "eslint src/"
   },
   "dependencies": {
-    "autoprefixer": "^10.4.27",
+    "autoprefixer": "^10.5.0",
     "axios": "^1.13.6",
     "pinia": "^3.0.4",
     "postcss": "^8.5.8",
