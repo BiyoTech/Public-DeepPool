@@ -19,7 +19,7 @@ psutil>=6.1.0                   # CPU/内存/硬件信息采集
 
 # ── 模型下载 ──
 huggingface-hub>=0.26.0         # HuggingFace 模型下载（snapshot_download）
-modelscope>=1.18.0              # ModelScope 模型下载（dual-source support）
+modelscope>=1.37.1              # ModelScope 模型下载（dual-source support）
 
 # ── 开发/构建工具（仅编译 proto 时需要，运行时不需要）──
 # grpcio-tools>=1.68.0
