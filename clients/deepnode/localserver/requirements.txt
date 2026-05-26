@@ -7,7 +7,7 @@
 
 # ── Web 框架 + ASGI 服务 ──
 fastapi>=0.115.0                # HTTP API 框架（自动拉取 starlette, pydantic, anyio 等）
-uvicorn[standard]>=0.32.0       # ASGI 服务运行（[standard] 含 httptools, uvloop, websockets）
+uvicorn[standard]>=0.48.0       # ASGI 服务运行（[standard] 含 httptools, uvloop, websockets）
 
 # ── gRPC 通信 ──
 grpcio>=1.68.0                  # gRPC 客户端/服务端
