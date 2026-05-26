@@ -18,7 +18,7 @@
     "tailwind-merge": "^2.6.1",
     "tailwindcss": "^3.4.17",
     "tailwindcss-animate": "^1.0.7",
-    "tdesign-icons-vue-next": "^0.3.6",
+    "tdesign-icons-vue-next": "^0.4.4",
     "tdesign-vue-next": "^1.13.1",
     "vue": "^3.5.13",
     "vue-router": "^4.6.4"
