@@ -8,7 +8,7 @@
     A unified gateway to the world's leading LLMs — intelligent routing, request tracing & evaluation, guardrails, and token governance in one platform.
   </p>
   <p align="center">
-    <a href="https://deeppool.tech">🌐 Try DeepPool</a> •
+    <a href="https://test.deeppool.tech">🌐 Try DeepPool</a> •
     <a href="#quick-start">Quick Start</a> •
     <a href="#  -overview">Architecture</a> •
     <a href="#project-structure">Project Structure</a> •
