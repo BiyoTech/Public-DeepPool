@@ -8,7 +8,7 @@
     统一接入全球主流大模型，提供智能融合调度、请求追踪与评估分析、安全护栏、Token 用量治理的一站式 AI 网关。
   </p>
   <p align="center">
-    <a href="https://deeppool.tech">🌐 立即体验 DeepPool</a> •
+    <a href="https://test.deeppool.tech">🌐 立即体验 DeepPool</a> •
     <a href="#快速开始">快速开始</a> •
     <a href="#架构概览">架构概览</a> •
     <a href="#项目结构">项目结构</a> •

@@ -10,7 +10,7 @@
   <p align="center">
     <a href="https://deeppool.tech">🌐 Try DeepPool</a> •
     <a href="#quick-start">Quick Start</a> •
-    <a href="#architecture-overview">Architecture</a> •
+    <a href="#  -overview">Architecture</a> •
     <a href="#project-structure">Project Structure</a> •
     <a href="#deployment">Deployment</a> •
     <a href="#api-documentation">API Docs</a> •
