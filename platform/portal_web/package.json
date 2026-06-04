@@ -23,7 +23,7 @@
     "tailwindcss": "^3.4.17",
     "tailwindcss-animate": "^1.0.7",
     "tdesign-icons-vue-next": "^0.3.6",
-    "tdesign-vue-next": "^1.13.1",
+    "tdesign-vue-next": "^1.20.0",
     "vue": "^3.5.13",
     "vue-i18n": "^9.14.0",
     "vue-router": "^4.6.4"
