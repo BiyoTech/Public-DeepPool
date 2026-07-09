@@ -10,7 +10,7 @@ fastapi>=0.115.0                # HTTP API 框架（自动拉取 starlette, pyda
 uvicorn[standard]>=0.32.0       # ASGI 服务运行（[standard] 含 httptools, uvloop, websockets）
 
 # ── gRPC 通信 ──
-grpcio>=1.68.0                  # gRPC 客户端/服务端
+grpcio>=1.80.0                  # gRPC 客户端/服务端
 protobuf>=5.29.0                # proto 序列化（generated/ 下的 pb2 文件依赖）
 
 # ── 配置 / 工具 ──
